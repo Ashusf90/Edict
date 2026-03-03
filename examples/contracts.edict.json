@@ -147,6 +147,61 @@
                     }
                 }
             ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-result-001",
+                    "name": "divResult",
+                    "value": {
+                        "kind": "call",
+                        "id": "call-div-main-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-div-main-001",
+                            "name": "safeDivide"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-10-001",
+                                "value": 10.0,
+                                "type": {
+                                    "kind": "basic",
+                                    "name": "Float"
+                                }
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-2-001",
+                                "value": 2.0,
+                                "type": {
+                                    "kind": "basic",
+                                    "name": "Float"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-main-001",
+                    "value": 0
+                }
+            ]
         }
     ]
 }
