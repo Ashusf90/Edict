@@ -14,6 +14,7 @@ import {
     handleCheck,
     handleCompile,
     handleRun,
+    handleVersion,
 } from "../../src/mcp/handlers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -263,5 +264,13 @@ describe("end-to-end roundtrip", () => {
             const result = await handleCheck(ex.ast);
             expect(result.ok, `example ${ex.name} should pass check`).toBe(true);
         }
+    });
+
+    it("edict_version returns valid capability info", () => {
+        const result = handleVersion();
+        expect(result.version).toBeDefined();
+        expect(result.schemaVersion).toBeDefined();
+        expect(result.builtins.length).toBeGreaterThan(0);
+        expect(result.features.contracts).toBeDefined();
     });
 });

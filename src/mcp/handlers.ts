@@ -12,6 +12,7 @@ import { validate } from "../validator/validate.js";
 import { check } from "../check.js";
 import { compile } from "../codegen/codegen.js";
 import { run } from "../codegen/runner.js";
+import { BUILTIN_FUNCTIONS } from "../codegen/builtins.js";
 import type { StructuredError } from "../errors/structured-errors.js";
 
 // =============================================================================
@@ -85,6 +86,14 @@ export interface RunResult {
     returnValue?: number;
 }
 
+export interface VersionResult {
+    version: string;
+    schemaVersion: string;
+    builtins: string[];
+    features: Record<string, boolean>;
+    limits: Record<string, number>;
+}
+
 // =============================================================================
 // Handlers
 // =============================================================================
@@ -139,5 +148,26 @@ export async function handleRun(wasmBase64: string): Promise<RunResult> {
         output: result.output,
         exitCode: result.exitCode,
         returnValue: result.returnValue,
+    };
+}
+
+export function handleVersion(): VersionResult {
+    // Note: We could read the version from package.json dynamically,
+    // but for the MCP server it's safer to hardcode the API version it thinks it serves.
+    return {
+        version: "0.1.0",
+        schemaVersion: "1.0",
+        builtins: Array.from(BUILTIN_FUNCTIONS.keys()),
+        features: {
+            contracts: true,
+            effects: true,
+            unitTypes: false,
+            multiModule: false,
+            compactAst: false,
+        },
+        limits: {
+            z3TimeoutMs: 5000,
+            maxModules: 1,
+        },
     };
 }
