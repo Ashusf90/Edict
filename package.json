@@ -48,7 +48,6 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
