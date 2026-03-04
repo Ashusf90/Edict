@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/Sowiedu/Edict/compare/v1.0.0...v1.1.0) (2026-03-04)
+
+
+### Features
+
+* add edict_patch MCP tool for surgical AST patching ([c0ef2c4](https://github.com/Sowiedu/Edict/commit/c0ef2c4916f3e5abb04316b47c7445710d70f7c9)), closes [#6](https://github.com/Sowiedu/Edict/issues/6)
+* add math builtins (abs, min, max, pow, sqrt, floor, ceil, round) ([83f205b](https://github.com/Sowiedu/Edict/commit/83f205bf84aa4736885405f6f3b0f9b4ea0c5338)), closes [#15](https://github.com/Sowiedu/Edict/issues/15)
+
 ## 1.0.0 (2026-03-04)
 
 
