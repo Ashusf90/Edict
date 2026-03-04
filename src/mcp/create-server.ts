@@ -10,6 +10,7 @@ import {
     handleRun,
     handleVersion,
     handlePatch,
+    handleErrorCatalog,
 } from "./handlers.js";
 
 // =============================================================================
@@ -197,6 +198,19 @@ export function createEdictServer(): McpServer {
         },
     );
 
+    // edict_errors — Return machine-readable catalog of all error types
+    server.tool("edict_errors", {}, async () => {
+        const result = handleErrorCatalog();
+        return {
+            content: [
+                {
+                    type: "text",
+                    text: JSON.stringify(result, null, 2),
+                },
+            ],
+        };
+    });
+
     // =============================================================================
     // Resources
     // =============================================================================
@@ -232,6 +246,27 @@ export function createEdictServer(): McpServer {
                 contents: [
                     {
                         uri: "edict://examples",
+                        mimeType: "application/json",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+            };
+        },
+    );
+
+    server.resource(
+        "errors",
+        "edict://errors",
+        {
+            description: "Machine-readable catalog of all structured error types with fields, pipeline stages, and example cause/fix ASTs",
+            mimeType: "application/json",
+        },
+        async () => {
+            const result = handleErrorCatalog();
+            return {
+                contents: [
+                    {
+                        uri: "edict://errors",
                         mimeType: "application/json",
                         text: JSON.stringify(result, null, 2),
                     },

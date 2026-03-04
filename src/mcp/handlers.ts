@@ -15,6 +15,7 @@ import { run } from "../codegen/runner.js";
 import { BUILTIN_FUNCTIONS } from "../codegen/builtins.js";
 import type { StructuredError } from "../errors/structured-errors.js";
 import { applyPatches, type AstPatch } from "../patch/apply.js";
+import { buildErrorCatalog, type ErrorCatalog } from "../errors/error-catalog.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -180,6 +181,10 @@ export async function handlePatch(
     const result: PatchResult = { ok: true };
     if (returnAst) result.patchedAst = patchResult.ast;
     return result;
+}
+
+export function handleErrorCatalog(): ErrorCatalog {
+    return buildErrorCatalog();
 }
 
 export function handleVersion(): VersionResult {

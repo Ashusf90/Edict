@@ -182,3 +182,7 @@ export type {
 export { StringTable } from "./codegen/string-table.js";
 export { BUILTIN_FUNCTIONS, isBuiltin, getBuiltin } from "./codegen/builtins.js";
 
+// Error catalog
+export { buildErrorCatalog } from "./errors/error-catalog.js";
+export type { ErrorCatalog, ErrorCatalogEntry } from "./errors/error-catalog.js";
+
