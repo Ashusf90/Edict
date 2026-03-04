@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0](https://github.com/Sowiedu/Edict/compare/v1.1.0...v1.2.0) (2026-03-04)
+
+
+### Features
+
+* add array builtins (length, get, set, push, pop, concat, slice, isEmpty, contains, reverse) ([6e67aa7](https://github.com/Sowiedu/Edict/commit/6e67aa77fc0a010123c8857c9aa094b294a8d95a))
+* add edict://errors MCP resource and edict_errors tool — machine-readable error catalog ([6b7cf0f](https://github.com/Sowiedu/Edict/commit/6b7cf0f5d4e8b49be9482f2edbbc84b7fa712ede)), closes [#10](https://github.com/Sowiedu/Edict/issues/10)
+* add minimal schema variant for token-efficient agent bootstrap ([43cb6dc](https://github.com/Sowiedu/Edict/commit/43cb6dcd1457bb7b011bf0ced5a77429275cb345)), closes [#12](https://github.com/Sowiedu/Edict/issues/12)
+* add string builtins (length, substring, concat, indexOf, upper/lower, trim, startsWith, endsWith, contains, repeat) ([119ed1c](https://github.com/Sowiedu/Edict/commit/119ed1c46bf449a887c4dde45d58063897cd7838))
+* add string_interp expression (closes [#32](https://github.com/Sowiedu/Edict/issues/32)) ([4209f4c](https://github.com/Sowiedu/Edict/commit/4209f4ca5eaccc378bf8acdd5fafcf8aeb10912e))
+
 ## [1.1.0](https://github.com/Sowiedu/Edict/compare/v1.0.0...v1.1.0) (2026-03-04)
 
 
