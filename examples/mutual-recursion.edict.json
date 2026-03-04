@@ -1,0 +1,240 @@
+{
+    "kind": "module",
+    "id": "mod-mutual-001",
+    "name": "mutual_recursion",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-isEven-001",
+            "name": "isEven",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-n-even-001",
+                    "name": "n",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    }
+                }
+            ],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [
+                {
+                    "kind": "pre",
+                    "id": "pre-even-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "expr-pre-even-001",
+                        "op": ">=",
+                        "left": {
+                            "kind": "ident",
+                            "id": "ident-n-pre-even-001",
+                            "name": "n"
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "lit-zero-pre-even-001",
+                            "value": 0
+                        }
+                    }
+                }
+            ],
+            "body": [
+                {
+                    "kind": "if",
+                    "id": "if-even-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "expr-eq-even-001",
+                        "op": "==",
+                        "left": {
+                            "kind": "ident",
+                            "id": "ident-n-even-001",
+                            "name": "n"
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "lit-zero-even-001",
+                            "value": 0
+                        }
+                    },
+                    "then": [
+                        {
+                            "kind": "literal",
+                            "id": "lit-true-even-001",
+                            "value": 1
+                        }
+                    ],
+                    "else": [
+                        {
+                            "kind": "call",
+                            "id": "call-isOdd-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-isOdd-001",
+                                "name": "isOdd"
+                            },
+                            "args": [
+                                {
+                                    "kind": "binop",
+                                    "id": "expr-sub-even-001",
+                                    "op": "-",
+                                    "left": {
+                                        "kind": "ident",
+                                        "id": "ident-n-sub-even-001",
+                                        "name": "n"
+                                    },
+                                    "right": {
+                                        "kind": "literal",
+                                        "id": "lit-one-even-001",
+                                        "value": 1
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-isOdd-001",
+            "name": "isOdd",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-n-odd-001",
+                    "name": "n",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    }
+                }
+            ],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [
+                {
+                    "kind": "pre",
+                    "id": "pre-odd-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "expr-pre-odd-001",
+                        "op": ">=",
+                        "left": {
+                            "kind": "ident",
+                            "id": "ident-n-pre-odd-001",
+                            "name": "n"
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "lit-zero-pre-odd-001",
+                            "value": 0
+                        }
+                    }
+                }
+            ],
+            "body": [
+                {
+                    "kind": "if",
+                    "id": "if-odd-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "expr-eq-odd-001",
+                        "op": "==",
+                        "left": {
+                            "kind": "ident",
+                            "id": "ident-n-odd-001",
+                            "name": "n"
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "lit-zero-odd-001",
+                            "value": 0
+                        }
+                    },
+                    "then": [
+                        {
+                            "kind": "literal",
+                            "id": "lit-false-odd-001",
+                            "value": 0
+                        }
+                    ],
+                    "else": [
+                        {
+                            "kind": "call",
+                            "id": "call-isEven-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-isEven-001",
+                                "name": "isEven"
+                            },
+                            "args": [
+                                {
+                                    "kind": "binop",
+                                    "id": "expr-sub-odd-001",
+                                    "op": "-",
+                                    "left": {
+                                        "kind": "ident",
+                                        "id": "ident-n-sub-odd-001",
+                                        "name": "n"
+                                    },
+                                    "right": {
+                                        "kind": "literal",
+                                        "id": "lit-one-odd-001",
+                                        "value": 1
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "call",
+                    "id": "call-isEven-main-001",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-isEven-main-001",
+                        "name": "isEven"
+                    },
+                    "args": [
+                        {
+                            "kind": "literal",
+                            "id": "lit-ten-001",
+                            "value": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
