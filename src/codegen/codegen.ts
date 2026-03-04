@@ -296,6 +296,16 @@ export function compile(module: EdictModule): CompileResult {
 
         // Pre-scan: build function signature registry
         const fnSigs = new Map<string, FunctionSig>();
+
+        // Register builtins in fnSigs so the generic call path has correct
+        // return types and can coerce arguments (e.g. i32→f64 for sqrt)
+        for (const [name, builtin] of BUILTIN_FUNCTIONS) {
+            fnSigs.set(name, {
+                returnType: edictTypeToWasm(builtin.type.returnType),
+                paramTypes: builtin.type.params.map(p => edictTypeToWasm(p)),
+            });
+        }
+
         for (const def of module.definitions) {
             if (def.kind === "fn") {
                 fnSigs.set(def.name, {
@@ -324,7 +334,7 @@ export function compile(module: EdictModule): CompileResult {
                 wasmParams.length > 0
                     ? binaryen.createType(wasmParams)
                     : binaryen.none,
-                binaryen.i32, // all current builtins return i32 (ptr)
+                edictTypeToWasm(builtin.type.returnType),
             );
         }
 

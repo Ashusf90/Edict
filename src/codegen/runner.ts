@@ -106,6 +106,17 @@ export async function run(
 
                 return resultPtr;
             },
+            // =================================================================
+            // Math builtins
+            // =================================================================
+            abs: (x: number): number => Math.abs(x),
+            min: (a: number, b: number): number => Math.min(a, b),
+            max: (a: number, b: number): number => Math.max(a, b),
+            pow: (base: number, exp: number): number => (Math.pow(base, exp) | 0),
+            sqrt: (x: number): number => Math.sqrt(x),
+            floor: (x: number): number => (Math.floor(x) | 0),
+            ceil: (x: number): number => (Math.ceil(x) | 0),
+            round: (x: number): number => (Math.round(x) | 0),
         },
     };
 

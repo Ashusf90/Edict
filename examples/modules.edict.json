@@ -5,11 +5,10 @@
     "imports": [
         {
             "kind": "import",
-            "id": "imp-math-001",
+            "id": "imp-log-001",
             "module": "math",
             "names": [
-                "sqrt",
-                "pow"
+                "log"
             ]
         },
         {
@@ -17,7 +16,7 @@
             "id": "imp-io-001",
             "module": "io",
             "names": [
-                "print"
+                "read_line"
             ]
         }
     ],
@@ -33,7 +32,7 @@
                     "name": "a",
                     "type": {
                         "kind": "basic",
-                        "name": "Float"
+                        "name": "Int"
                     }
                 },
                 {
@@ -42,7 +41,7 @@
                     "name": "b",
                     "type": {
                         "kind": "basic",
-                        "name": "Float"
+                        "name": "Int"
                     }
                 }
             ],
@@ -51,67 +50,56 @@
             ],
             "returnType": {
                 "kind": "basic",
-                "name": "Float"
+                "name": "Int"
             },
             "contracts": [],
             "body": [
                 {
-                    "kind": "call",
-                    "id": "call-sqrt-001",
-                    "fn": {
-                        "kind": "ident",
-                        "id": "ident-sqrt-001",
-                        "name": "sqrt"
-                    },
-                    "args": [
-                        {
-                            "kind": "binop",
-                            "id": "expr-sum-sq-001",
-                            "op": "+",
-                            "left": {
-                                "kind": "call",
-                                "id": "call-pow-a-001",
-                                "fn": {
-                                    "kind": "ident",
-                                    "id": "ident-pow-a-001",
-                                    "name": "pow"
-                                },
-                                "args": [
-                                    {
-                                        "kind": "ident",
-                                        "id": "ident-a-imp-001",
-                                        "name": "a"
-                                    },
-                                    {
-                                        "kind": "literal",
-                                        "id": "lit-two-imp-001",
-                                        "value": 2.0
-                                    }
-                                ]
+                    "kind": "binop",
+                    "id": "expr-sum-sq-001",
+                    "op": "+",
+                    "left": {
+                        "kind": "call",
+                        "id": "call-pow-a-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-pow-a-001",
+                            "name": "pow"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-a-imp-001",
+                                "name": "a"
                             },
-                            "right": {
-                                "kind": "call",
-                                "id": "call-pow-b-001",
-                                "fn": {
-                                    "kind": "ident",
-                                    "id": "ident-pow-b-001",
-                                    "name": "pow"
-                                },
-                                "args": [
-                                    {
-                                        "kind": "ident",
-                                        "id": "ident-b-imp-001",
-                                        "name": "b"
-                                    },
-                                    {
-                                        "kind": "literal",
-                                        "id": "lit-two-imp-002",
-                                        "value": 2.0
-                                    }
-                                ]
+                            {
+                                "kind": "literal",
+                                "id": "lit-two-imp-001",
+                                "value": 2
                             }
-                        }
-                    ]
+                        ]
+                    },
+                    "right": {
+                        "kind": "call",
+                        "id": "call-pow-b-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-pow-b-001",
+                            "name": "pow"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-b-imp-001",
+                                "name": "b"
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-two-imp-002",
+                                "value": 2
+                            }
+                        ]
+                    }
                 }
             ]
         }

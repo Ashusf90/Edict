@@ -17,6 +17,8 @@ export interface BuiltinFunction {
 }
 
 const STRING_TYPE: TypeExpr = { kind: "basic", name: "String" };
+const INT_TYPE: TypeExpr = { kind: "basic", name: "Int" };
+const FLOAT_TYPE: TypeExpr = { kind: "basic", name: "Float" };
 
 /**
  * All built-in functions.
@@ -50,6 +52,73 @@ export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map([
             },
             effects: ["pure"],
             wasmImport: ["host", "string_replace"],
+        },
+    ],
+    // =========================================================================
+    // Math builtins — pure, no string handling needed
+    // =========================================================================
+    [
+        "abs",
+        {
+            type: { kind: "fn_type", params: [INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "abs"],
+        },
+    ],
+    [
+        "min",
+        {
+            type: { kind: "fn_type", params: [INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "min"],
+        },
+    ],
+    [
+        "max",
+        {
+            type: { kind: "fn_type", params: [INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "max"],
+        },
+    ],
+    [
+        "pow",
+        {
+            type: { kind: "fn_type", params: [INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "pow"],
+        },
+    ],
+    [
+        "sqrt",
+        {
+            type: { kind: "fn_type", params: [FLOAT_TYPE], effects: ["pure"], returnType: FLOAT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "sqrt"],
+        },
+    ],
+    [
+        "floor",
+        {
+            type: { kind: "fn_type", params: [FLOAT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "floor"],
+        },
+    ],
+    [
+        "ceil",
+        {
+            type: { kind: "fn_type", params: [FLOAT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "ceil"],
+        },
+    ],
+    [
+        "round",
+        {
+            type: { kind: "fn_type", params: [FLOAT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            effects: ["pure"],
+            wasmImport: ["host", "round"],
         },
     ],
 ]);
