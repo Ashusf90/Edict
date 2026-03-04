@@ -28,12 +28,24 @@ export function createEdictServer(): McpServer {
     // =============================================================================
 
     // edict_schema — Return the JSON Schema for EdictModule
-    server.tool("edict_schema", {}, async () => {
-        const result = handleSchema();
-        return {
-            content: [{ type: "text", text: JSON.stringify(result.schema) }],
-        };
-    });
+    server.tool(
+        "edict_schema",
+        "Return the JSON Schema defining valid Edict AST programs. Use format 'minimal' for reduced token cost (strips descriptions).",
+        {
+            format: z.enum(["full", "minimal"]).optional().default("full").describe("Schema format: 'full' (default, with descriptions) or 'minimal' (stripped for token efficiency)"),
+        },
+        async ({ format }) => {
+            const result = handleSchema(format);
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ schema: result.schema, format: result.format, tokenEstimate: result.tokenEstimate }),
+                    },
+                ],
+            };
+        },
+    );
 
     // edict_version — Return capability info
     server.tool("edict_version", {}, async () => {
@@ -223,11 +235,32 @@ export function createEdictServer(): McpServer {
             mimeType: "application/json",
         },
         async () => {
-            const result = handleSchema();
+            const result = handleSchema("full");
             return {
                 contents: [
                     {
                         uri: "edict://schema",
+                        mimeType: "application/json",
+                        text: JSON.stringify(result.schema, null, 2),
+                    },
+                ],
+            };
+        },
+    );
+
+    server.resource(
+        "schema-minimal",
+        "edict://schema/minimal",
+        {
+            description: "Token-optimized JSON Schema (descriptions stripped) for minimal context window usage",
+            mimeType: "application/json",
+        },
+        async () => {
+            const result = handleSchema("minimal");
+            return {
+                contents: [
+                    {
+                        uri: "edict://schema/minimal",
                         mimeType: "application/json",
                         text: JSON.stringify(result.schema, null, 2),
                     },

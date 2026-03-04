@@ -16,6 +16,7 @@ import { BUILTIN_FUNCTIONS } from "../codegen/builtins.js";
 import type { StructuredError } from "../errors/structured-errors.js";
 import { applyPatches, type AstPatch } from "../patch/apply.js";
 import { buildErrorCatalog, type ErrorCatalog } from "../errors/error-catalog.js";
+import { stripDescriptions } from "./minimal-schema.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -31,6 +32,7 @@ const examplesDir = resolve(projectRoot, "examples");
 // =============================================================================
 
 let cachedSchema: string | null = null;
+let cachedMinimalSchema: unknown | null = null;
 let cachedExamples: { name: string; ast: unknown }[] | null = null;
 
 function loadSchema(): string {
@@ -59,6 +61,8 @@ function loadExamples(): { name: string; ast: unknown }[] {
 
 export interface SchemaResult {
     schema: unknown;
+    format: "full" | "minimal";
+    tokenEstimate: number;
 }
 
 export interface ExamplesResult {
@@ -100,9 +104,18 @@ export interface VersionResult {
 // Handlers
 // =============================================================================
 
-export function handleSchema(): SchemaResult {
+export function handleSchema(format: "full" | "minimal" = "full"): SchemaResult {
     const raw = loadSchema();
-    return { schema: JSON.parse(raw) as unknown };
+    if (format === "minimal") {
+        if (!cachedMinimalSchema) {
+            cachedMinimalSchema = stripDescriptions(JSON.parse(raw));
+        }
+        const text = JSON.stringify(cachedMinimalSchema);
+        return { schema: cachedMinimalSchema, format: "minimal", tokenEstimate: Math.ceil(text.length / 4) };
+    }
+    const full = JSON.parse(raw) as unknown;
+    const text = JSON.stringify(full);
+    return { schema: full, format: "full", tokenEstimate: Math.ceil(text.length / 4) };
 }
 
 export function handleExamples(): ExamplesResult {
