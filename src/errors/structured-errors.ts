@@ -50,7 +50,12 @@ export type StructuredError =
     | ContractFailureError
     | VerificationTimeoutError
     | UndecidablePredicateError
-    | PreconditionNotMetError;
+    | PreconditionNotMetError
+    // Patch errors
+    | PatchNodeNotFoundError
+    | PatchInvalidFieldError
+    | PatchIndexOutOfRangeError
+    | PatchDeleteNotInArrayError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -524,4 +529,74 @@ export function preconditionNotMet(
     counterexample: Record<string, unknown>,
 ): PreconditionNotMetError {
     return { error: "precondition_not_met", nodeId, callSiteId, callerName, calleeName, contractId, counterexample };
+}
+
+// =============================================================================
+// Patch errors
+// =============================================================================
+
+export interface PatchNodeNotFoundError {
+    error: "patch_node_not_found";
+    nodeId: string | null;
+    patchIndex: number;
+}
+
+export interface PatchInvalidFieldError {
+    error: "patch_invalid_field";
+    nodeId: string;
+    field: string;
+    availableFields: string[];
+    patchIndex: number;
+}
+
+export interface PatchIndexOutOfRangeError {
+    error: "patch_index_out_of_range";
+    nodeId: string;
+    field: string;
+    index: number;
+    arrayLength: number;
+    patchIndex: number;
+}
+
+export interface PatchDeleteNotInArrayError {
+    error: "patch_delete_not_in_array";
+    nodeId: string;
+    patchIndex: number;
+}
+
+// =============================================================================
+// Patch error constructors
+// =============================================================================
+
+export function patchNodeNotFound(
+    nodeId: string | null,
+    patchIndex: number,
+): PatchNodeNotFoundError {
+    return { error: "patch_node_not_found", nodeId, patchIndex };
+}
+
+export function patchInvalidField(
+    nodeId: string,
+    field: string,
+    availableFields: string[],
+    patchIndex: number,
+): PatchInvalidFieldError {
+    return { error: "patch_invalid_field", nodeId, field, availableFields, patchIndex };
+}
+
+export function patchIndexOutOfRange(
+    nodeId: string,
+    field: string,
+    index: number,
+    arrayLength: number,
+    patchIndex: number,
+): PatchIndexOutOfRangeError {
+    return { error: "patch_index_out_of_range", nodeId, field, index, arrayLength, patchIndex };
+}
+
+export function patchDeleteNotInArray(
+    nodeId: string,
+    patchIndex: number,
+): PatchDeleteNotInArrayError {
+    return { error: "patch_delete_not_in_array", nodeId, patchIndex };
 }

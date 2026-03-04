@@ -14,6 +14,7 @@ import { compile } from "../codegen/codegen.js";
 import { run } from "../codegen/runner.js";
 import { BUILTIN_FUNCTIONS } from "../codegen/builtins.js";
 import type { StructuredError } from "../errors/structured-errors.js";
+import { applyPatches, type AstPatch } from "../patch/apply.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -149,6 +150,36 @@ export async function handleRun(wasmBase64: string): Promise<RunResult> {
         exitCode: result.exitCode,
         returnValue: result.returnValue,
     };
+}
+
+export interface PatchResult {
+    ok: boolean;
+    errors?: StructuredError[];
+    patchedAst?: unknown;
+}
+
+export async function handlePatch(
+    baseAst: unknown,
+    patches: AstPatch[],
+    returnAst: boolean = false,
+): Promise<PatchResult> {
+    // Step 1: Apply patches
+    const patchResult = applyPatches(baseAst, patches);
+    if (!patchResult.ok) {
+        return { ok: false, errors: patchResult.errors };
+    }
+
+    // Step 2: Run full check pipeline on patched AST
+    const checkResult = await check(patchResult.ast);
+    if (!checkResult.ok) {
+        const result: PatchResult = { ok: false, errors: checkResult.errors };
+        if (returnAst) result.patchedAst = patchResult.ast;
+        return result;
+    }
+
+    const result: PatchResult = { ok: true };
+    if (returnAst) result.patchedAst = patchResult.ast;
+    return result;
 }
 
 export function handleVersion(): VersionResult {
