@@ -8,6 +8,17 @@ import type { Effect } from "../ast/nodes.js";
 import type { TypeExpr } from "../ast/types.js";
 
 /**
+ * A concrete AST patch an agent can apply to fix an error.
+ * `nodeId` identifies the node to patch, `field` is the field to change,
+ * and `value` is the new value for that field.
+ */
+export interface FixSuggestion {
+    nodeId: string | null;
+    field: string;
+    value: unknown;
+}
+
+/**
  * Union of all compiler errors (Phase 1–4).
  */
 export type StructuredError =
@@ -116,6 +127,7 @@ export interface UndefinedReferenceError {
     nodeId: string | null;
     name: string;
     candidates: string[];
+    suggestion?: FixSuggestion;
 }
 
 export interface DuplicateDefinitionError {
@@ -130,6 +142,7 @@ export interface UnknownRecordError {
     nodeId: string | null;
     name: string;
     candidates: string[];
+    suggestion?: FixSuggestion;
 }
 
 export interface UnknownEnumError {
@@ -137,6 +150,7 @@ export interface UnknownEnumError {
     nodeId: string | null;
     name: string;
     candidates: string[];
+    suggestion?: FixSuggestion;
 }
 
 export interface UnknownVariantError {
@@ -145,6 +159,7 @@ export interface UnknownVariantError {
     enumName: string;
     variantName: string;
     availableVariants: string[];
+    suggestion?: FixSuggestion;
 }
 
 // =============================================================================
@@ -156,6 +171,7 @@ export interface TypeMismatchError {
     nodeId: string | null;
     expected: TypeExpr;
     actual: TypeExpr;
+    suggestion?: FixSuggestion;
 }
 
 export interface ArityMismatchError {
@@ -177,6 +193,7 @@ export interface UnknownFieldError {
     recordName: string;
     fieldName: string;
     availableFields: string[];
+    suggestion?: FixSuggestion;
 }
 
 export interface MissingRecordFieldsError {
@@ -184,6 +201,7 @@ export interface MissingRecordFieldsError {
     nodeId: string | null;
     recordName: string;
     missingFields: string[];
+    suggestion?: FixSuggestion;
 }
 
 // =============================================================================
@@ -274,8 +292,11 @@ export function undefinedReference(
     nodeId: string | null,
     name: string,
     candidates: string[],
+    suggestion?: FixSuggestion,
 ): UndefinedReferenceError {
-    return { error: "undefined_reference", nodeId, name, candidates };
+    const err: UndefinedReferenceError = { error: "undefined_reference", nodeId, name, candidates };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function duplicateDefinition(
@@ -290,16 +311,22 @@ export function unknownRecord(
     nodeId: string | null,
     name: string,
     candidates: string[],
+    suggestion?: FixSuggestion,
 ): UnknownRecordError {
-    return { error: "unknown_record", nodeId, name, candidates };
+    const err: UnknownRecordError = { error: "unknown_record", nodeId, name, candidates };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function unknownEnum(
     nodeId: string | null,
     name: string,
     candidates: string[],
+    suggestion?: FixSuggestion,
 ): UnknownEnumError {
-    return { error: "unknown_enum", nodeId, name, candidates };
+    const err: UnknownEnumError = { error: "unknown_enum", nodeId, name, candidates };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function unknownVariant(
@@ -307,16 +334,22 @@ export function unknownVariant(
     enumName: string,
     variantName: string,
     availableVariants: string[],
+    suggestion?: FixSuggestion,
 ): UnknownVariantError {
-    return { error: "unknown_variant", nodeId, enumName, variantName, availableVariants };
+    const err: UnknownVariantError = { error: "unknown_variant", nodeId, enumName, variantName, availableVariants };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function typeMismatch(
     nodeId: string | null,
     expected: TypeExpr,
     actual: TypeExpr,
+    suggestion?: FixSuggestion,
 ): TypeMismatchError {
-    return { error: "type_mismatch", nodeId, expected, actual };
+    const err: TypeMismatchError = { error: "type_mismatch", nodeId, expected, actual };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function arityMismatch(
@@ -339,16 +372,22 @@ export function unknownField(
     recordName: string,
     fieldName: string,
     availableFields: string[],
+    suggestion?: FixSuggestion,
 ): UnknownFieldError {
-    return { error: "unknown_field", nodeId, recordName, fieldName, availableFields };
+    const err: UnknownFieldError = { error: "unknown_field", nodeId, recordName, fieldName, availableFields };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function missingRecordFields(
     nodeId: string | null,
     recordName: string,
     missingFields: string[],
+    suggestion?: FixSuggestion,
 ): MissingRecordFieldsError {
-    return { error: "missing_record_fields", nodeId, recordName, missingFields };
+    const err: MissingRecordFieldsError = { error: "missing_record_fields", nodeId, recordName, missingFields };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 // =============================================================================
@@ -362,6 +401,7 @@ export interface EffectViolationError {
     missingEffects: Effect[];
     callSiteNodeId: string | null;
     calleeName: string;
+    suggestion?: FixSuggestion;
 }
 
 export interface EffectInPureError {
@@ -371,6 +411,7 @@ export interface EffectInPureError {
     callSiteNodeId: string | null;
     calleeName: string;
     calleeEffects: Effect[];
+    suggestion?: FixSuggestion;
 }
 
 // =============================================================================
@@ -383,8 +424,11 @@ export function effectViolation(
     missingEffects: Effect[],
     callSiteNodeId: string | null,
     calleeName: string,
+    suggestion?: FixSuggestion,
 ): EffectViolationError {
-    return { error: "effect_violation", nodeId, functionName, missingEffects, callSiteNodeId, calleeName };
+    const err: EffectViolationError = { error: "effect_violation", nodeId, functionName, missingEffects, callSiteNodeId, calleeName };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 export function effectInPure(
@@ -393,8 +437,11 @@ export function effectInPure(
     callSiteNodeId: string | null,
     calleeName: string,
     calleeEffects: Effect[],
+    suggestion?: FixSuggestion,
 ): EffectInPureError {
-    return { error: "effect_in_pure", nodeId, functionName, callSiteNodeId, calleeName, calleeEffects };
+    const err: EffectInPureError = { error: "effect_in_pure", nodeId, functionName, callSiteNodeId, calleeName, calleeEffects };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
 
 // =============================================================================

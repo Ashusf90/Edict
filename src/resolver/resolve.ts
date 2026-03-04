@@ -18,7 +18,7 @@ import type {
 } from "../ast/nodes.js";
 import type { TypeExpr, RefinedType } from "../ast/types.js";
 import type { StructuredError } from "../errors/structured-errors.js";
-import { undefinedReference } from "../errors/structured-errors.js";
+import { undefinedReference, type FixSuggestion } from "../errors/structured-errors.js";
 import { findCandidates } from "./levenshtein.js";
 import { Scope, type SymbolInfo } from "./scope.js";
 import type { FunctionType } from "../ast/types.js";
@@ -232,8 +232,12 @@ function resolveTypeExpr(
         case "named": {
             const sym = scope.lookup(type.name);
             if (!sym) {
+                const cands = findCandidates(type.name, scope.allNames());
+                const suggestion: FixSuggestion | undefined = cands.length > 0
+                    ? { nodeId: null, field: "name", value: cands[0] }
+                    : undefined;
                 errors.push(
-                    undefinedReference(null, type.name, findCandidates(type.name, scope.allNames())),
+                    undefinedReference(null, type.name, cands, suggestion),
                 );
             }
             break;
@@ -323,8 +327,12 @@ function resolveExpression(
         case "ident": {
             const sym = scope.lookup(expr.name);
             if (!sym) {
+                const cands = findCandidates(expr.name, scope.allNames());
+                const suggestion: FixSuggestion | undefined = cands.length > 0
+                    ? { nodeId: expr.id, field: "name", value: cands[0] }
+                    : undefined;
                 errors.push(
-                    undefinedReference(expr.id, expr.name, findCandidates(expr.name, scope.allNames())),
+                    undefinedReference(expr.id, expr.name, cands, suggestion),
                 );
             }
             break;
@@ -433,8 +441,12 @@ function resolvePattern(
             // We check ALL enum defs to find a matching variant
             const found = findVariantInScope(pattern.name, moduleScope);
             if (!found) {
+                const cands = findCandidates(pattern.name, collectAllVariantNames(moduleScope));
+                const suggestion: FixSuggestion | undefined = cands.length > 0
+                    ? { nodeId: null, field: "name", value: cands[0] }
+                    : undefined;
                 errors.push(
-                    undefinedReference(null, pattern.name, findCandidates(pattern.name, collectAllVariantNames(moduleScope))),
+                    undefinedReference(null, pattern.name, cands, suggestion),
                 );
             }
             // Recursively resolve sub-patterns

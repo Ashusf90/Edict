@@ -24,7 +24,9 @@ import {
     unknownEnum,
     unknownVariant,
     missingRecordFields,
+    type FixSuggestion,
 } from "../errors/structured-errors.js";
+import { findCandidates } from "../resolver/levenshtein.js";
 import { TypeEnv } from "./type-env.js";
 import { typesEqual, isUnknown, resolveType } from "./types-equal.js";
 import { BUILTIN_FUNCTIONS } from "../codegen/builtins.js";
@@ -552,13 +554,21 @@ function inferRecordExpr(
 ): TypeExpr {
     const def = env.lookupTypeDef(expr.name);
     if (!def) {
-        errors.push(unknownRecord(expr.id, expr.name, collectTypeDefNames(env, "record")));
+        const cands = collectTypeDefNames(env, "record");
+        const suggestion: FixSuggestion | undefined = cands.length > 0
+            ? { nodeId: expr.id, field: "name", value: findCandidates(expr.name, cands)[0] ?? cands[0] }
+            : undefined;
+        errors.push(unknownRecord(expr.id, expr.name, cands, suggestion));
         // Still infer field value types
         for (const f of expr.fields) inferExpr(f.value, env, errors);
         return UNKNOWN_TYPE;
     }
     if (def.kind !== "record") {
-        errors.push(unknownRecord(expr.id, expr.name, collectTypeDefNames(env, "record")));
+        const cands = collectTypeDefNames(env, "record");
+        const suggestion: FixSuggestion | undefined = cands.length > 0
+            ? { nodeId: expr.id, field: "name", value: findCandidates(expr.name, cands)[0] ?? cands[0] }
+            : undefined;
+        errors.push(unknownRecord(expr.id, expr.name, cands, suggestion));
         for (const f of expr.fields) inferExpr(f.value, env, errors);
         return UNKNOWN_TYPE;
     }
@@ -572,18 +582,25 @@ function inferRecordExpr(
         .map((f) => f.name);
 
     if (requiredMissing.length > 0) {
-        errors.push(missingRecordFields(expr.id, expr.name, requiredMissing));
+        const suggestion: FixSuggestion = { nodeId: expr.id, field: "fields", value: requiredMissing };
+        errors.push(missingRecordFields(expr.id, expr.name, requiredMissing, suggestion));
     }
 
     // Check each provided field
     for (const fieldInit of expr.fields) {
         const fieldDef = recordDef.fields.find((f) => f.name === fieldInit.name);
         if (!fieldDef) {
+            const availFields = recordDef.fields.map((f) => f.name);
+            const cands = findCandidates(fieldInit.name, availFields);
+            const suggestion: FixSuggestion | undefined = cands.length > 0
+                ? { nodeId: expr.id, field: "field", value: cands[0] }
+                : undefined;
             errors.push(unknownField(
                 expr.id,
                 expr.name,
                 fieldInit.name,
-                recordDef.fields.map((f) => f.name),
+                availFields,
+                suggestion,
             ));
             inferExpr(fieldInit.value, env, errors);
             continue;
@@ -603,12 +620,20 @@ function inferEnumConstructor(
 ): TypeExpr {
     const def = env.lookupTypeDef(expr.enumName);
     if (!def) {
-        errors.push(unknownEnum(expr.id, expr.enumName, collectTypeDefNames(env, "enum")));
+        const cands = collectTypeDefNames(env, "enum");
+        const suggestion: FixSuggestion | undefined = cands.length > 0
+            ? { nodeId: expr.id, field: "enumName", value: findCandidates(expr.enumName, cands)[0] ?? cands[0] }
+            : undefined;
+        errors.push(unknownEnum(expr.id, expr.enumName, cands, suggestion));
         for (const f of expr.fields) inferExpr(f.value, env, errors);
         return UNKNOWN_TYPE;
     }
     if (def.kind !== "enum") {
-        errors.push(unknownEnum(expr.id, expr.enumName, collectTypeDefNames(env, "enum")));
+        const cands = collectTypeDefNames(env, "enum");
+        const suggestion: FixSuggestion | undefined = cands.length > 0
+            ? { nodeId: expr.id, field: "enumName", value: findCandidates(expr.enumName, cands)[0] ?? cands[0] }
+            : undefined;
+        errors.push(unknownEnum(expr.id, expr.enumName, cands, suggestion));
         for (const f of expr.fields) inferExpr(f.value, env, errors);
         return UNKNOWN_TYPE;
     }
@@ -616,11 +641,17 @@ function inferEnumConstructor(
     const enumDef = def as EnumDef;
     const variant = enumDef.variants.find((v) => v.name === expr.variant);
     if (!variant) {
+        const availVariants = enumDef.variants.map((v) => v.name);
+        const cands = findCandidates(expr.variant, availVariants);
+        const suggestion: FixSuggestion | undefined = cands.length > 0
+            ? { nodeId: expr.id, field: "variant", value: cands[0] }
+            : (availVariants.length > 0 ? { nodeId: expr.id, field: "variant", value: availVariants[0] } : undefined);
         errors.push(unknownVariant(
             expr.id,
             expr.enumName,
             expr.variant,
-            enumDef.variants.map((v) => v.name),
+            availVariants,
+            suggestion,
         ));
         for (const f of expr.fields) inferExpr(f.value, env, errors);
         return UNKNOWN_TYPE;
@@ -630,11 +661,17 @@ function inferEnumConstructor(
     for (const fieldInit of expr.fields) {
         const fieldDef = variant.fields.find((f) => f.name === fieldInit.name);
         if (!fieldDef) {
+            const availFields = variant.fields.map((f) => f.name);
+            const cands = findCandidates(fieldInit.name, availFields);
+            const suggestion: FixSuggestion | undefined = cands.length > 0
+                ? { nodeId: expr.id, field: "field", value: cands[0] }
+                : undefined;
             errors.push(unknownField(
                 expr.id,
                 `${expr.enumName}.${expr.variant}`,
                 fieldInit.name,
-                variant.fields.map((f) => f.name),
+                availFields,
+                suggestion,
             ));
             inferExpr(fieldInit.value, env, errors);
             continue;
@@ -668,11 +705,17 @@ function inferAccess(
 
     const field = (def as RecordDef).fields.find((f) => f.name === expr.field);
     if (!field) {
+        const availFields = (def as RecordDef).fields.map((f) => f.name);
+        const cands = findCandidates(expr.field, availFields);
+        const suggestion: FixSuggestion | undefined = cands.length > 0
+            ? { nodeId: expr.id, field: "field", value: cands[0] }
+            : undefined;
         errors.push(unknownField(
             expr.id,
             resolved.name,
             expr.field,
-            (def as RecordDef).fields.map((f) => f.name),
+            availFields,
+            suggestion,
         ));
         return UNKNOWN_TYPE;
     }
@@ -712,7 +755,10 @@ function checkExpectedType(
 ): void {
     if (isUnknown(actual) || isUnknown(expected)) return;
     if (!typesEqual(actual, expected, env)) {
-        errors.push(typeMismatch(nodeId, expected, actual));
+        const suggestion: FixSuggestion | undefined = nodeId
+            ? { nodeId, field: "type", value: expected }
+            : undefined;
+        errors.push(typeMismatch(nodeId, expected, actual, suggestion));
     }
 }
 

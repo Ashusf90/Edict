@@ -6,7 +6,7 @@
 
 import type { EdictModule } from "../ast/nodes.js";
 import type { StructuredError } from "../errors/structured-errors.js";
-import { effectViolation, effectInPure } from "../errors/structured-errors.js";
+import { effectViolation, effectInPure, type FixSuggestion } from "../errors/structured-errors.js";
 import { buildCallGraph } from "./call-graph.js";
 
 /**
@@ -39,22 +39,34 @@ export function effectCheck(module: EdictModule): StructuredError[] {
             if (calleeNonPure.length === 0) continue;
 
             if (isPure) {
+                const suggestion: FixSuggestion = {
+                    nodeId: fn.id,
+                    field: "effects",
+                    value: calleeNonPure,
+                };
                 errors.push(effectInPure(
                     fn.id,
                     fnName,
                     edge.callSiteNodeId,
                     edge.calleeName,
                     calleeNonPure,
+                    suggestion,
                 ));
             } else {
                 const missing = calleeNonPure.filter(e => !callerEffects.has(e));
                 if (missing.length > 0) {
+                    const suggestion: FixSuggestion = {
+                        nodeId: fn.id,
+                        field: "effects",
+                        value: [...fn.effects, ...missing],
+                    };
                     errors.push(effectViolation(
                         fn.id,
                         fnName,
                         missing,
                         edge.callSiteNodeId,
                         edge.calleeName,
+                        suggestion,
                     ));
                 }
             }
