@@ -159,6 +159,165 @@ function inferExprWasmType(
     }
 }
 
+// =============================================================================
+// Free variable collection (for closures)
+// =============================================================================
+
+/**
+ * Walk a lambda body and collect identifiers that reference variables from
+ * the enclosing scope ("free variables"). These are the values that must be
+ * stored in a closure environment record.
+ */
+function collectFreeVariables(
+    body: Expression[],
+    paramNames: Set<string>,
+    constGlobals: Map<string, binaryen.Type>,
+    fnSigs: Map<string, FunctionSig>,
+): Map<string, { wasmType: binaryen.Type }> {
+    const free = new Map<string, { wasmType: binaryen.Type }>();
+    const locallyDefined = new Set<string>();
+
+    function walk(expr: Expression): void {
+        switch (expr.kind) {
+            case "ident":
+                if (
+                    !paramNames.has(expr.name) &&
+                    !constGlobals.has(expr.name) &&
+                    !fnSigs.has(expr.name) &&
+                    !BUILTIN_FUNCTIONS.has(expr.name) &&
+                    !locallyDefined.has(expr.name) &&
+                    !free.has(expr.name)
+                ) {
+                    // This is a free variable — we'll determine its WASM type later
+                    // during compilation when we have access to the enclosing context.
+                    free.set(expr.name, { wasmType: binaryen.i32 }); // placeholder
+                }
+                break;
+            case "let":
+                walk(expr.value);
+                locallyDefined.add(expr.name);
+                break;
+            case "binop":
+                walk(expr.left);
+                walk(expr.right);
+                break;
+            case "unop":
+                walk(expr.operand);
+                break;
+            case "call":
+                walk(expr.fn);
+                for (const a of expr.args) walk(a);
+                break;
+            case "if":
+                walk(expr.condition);
+                for (const e of expr.then) walk(e);
+                if (expr.else) for (const e of expr.else) walk(e);
+                break;
+            case "block":
+                for (const e of expr.body) walk(e);
+                break;
+            case "match":
+                walk(expr.target);
+                for (const arm of expr.arms) {
+                    for (const e of arm.body) walk(e);
+                }
+                break;
+            case "lambda":
+                // Nested lambda — its params shadow, but we still walk its body
+                // to find free variables from OUR scope
+                {
+                    const innerParams = new Set(expr.params.map(p => p.name));
+                    const innerFree = collectFreeVariables(
+                        expr.body,
+                        innerParams,
+                        constGlobals,
+                        fnSigs,
+                    );
+                    // Any free var from the inner lambda that isn't our param
+                    // or locally defined is also free in our scope
+                    for (const [name, info] of innerFree) {
+                        if (
+                            !paramNames.has(name) &&
+                            !locallyDefined.has(name) &&
+                            !constGlobals.has(name) &&
+                            !fnSigs.has(name) &&
+                            !BUILTIN_FUNCTIONS.has(name) &&
+                            !free.has(name)
+                        ) {
+                            free.set(name, info);
+                        }
+                    }
+                }
+                break;
+            case "array":
+                for (const e of expr.elements) walk(e);
+                break;
+            case "tuple_expr":
+                for (const e of expr.elements) walk(e);
+                break;
+            case "record_expr":
+                for (const f of expr.fields) walk(f.value);
+                break;
+            case "enum_constructor":
+                for (const f of expr.fields) walk(f.value);
+                break;
+            case "access":
+                walk(expr.target);
+                break;
+            case "string_interp":
+                for (const p of expr.parts) walk(p);
+                break;
+            case "literal":
+                break;
+        }
+    }
+
+    for (const expr of body) walk(expr);
+    return free;
+}
+
+// =============================================================================
+// Closure helpers
+// =============================================================================
+
+/**
+ * Allocate a closure pair on the heap: [table_index: i32, env_ptr: i32].
+ * Returns a block expression that evaluates to the pair's heap pointer.
+ */
+function allocClosurePair(
+    mod: binaryen.Module,
+    ctx: FunctionContext,
+    tableIndexExpr: binaryen.ExpressionRef,
+    envPtrExpr: binaryen.ExpressionRef,
+    uniqueId: string,
+): binaryen.ExpressionRef {
+    const ptrIndex = ctx.addLocal(`__closure_ptr_${uniqueId}`, binaryen.i32);
+
+    return mod.block(null, [
+        // ptr = __heap_ptr
+        mod.local.set(ptrIndex, mod.global.get("__heap_ptr", binaryen.i32)),
+        // __heap_ptr += 8
+        mod.global.set(
+            "__heap_ptr",
+            mod.i32.add(
+                mod.local.get(ptrIndex, binaryen.i32),
+                mod.i32.const(8),
+            ),
+        ),
+        // store table_index at offset 0
+        mod.i32.store(0, 0,
+            mod.local.get(ptrIndex, binaryen.i32),
+            tableIndexExpr,
+        ),
+        // store env_ptr at offset 4
+        mod.i32.store(4, 0,
+            mod.local.get(ptrIndex, binaryen.i32),
+            envPtrExpr,
+        ),
+        // return the pair pointer
+        mod.local.get(ptrIndex, binaryen.i32),
+    ], binaryen.i32);
+}
 
 
 // =============================================================================
@@ -238,9 +397,10 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
 
         for (const def of module.definitions) {
             if (def.kind === "fn") {
+                // Closure convention: all user functions have __env:i32 as first WASM param
                 fnSigs.set(def.name, {
                     returnType: edictTypeToWasm(def.returnType),
-                    paramTypes: def.params.map((p) => edictTypeToWasm(p.type)),
+                    paramTypes: [binaryen.i32, ...def.params.map((p) => edictTypeToWasm(p.type))],
                 });
             }
         }
@@ -426,8 +586,16 @@ function compileFunction(
         edictTypeName: p.type.kind === "named" ? p.type.name : undefined,
     }));
 
+    // Closure convention: all user functions have __env:i32 as first WASM param.
+    // The __env param is ignored for non-lambda functions but ensures uniform
+    // call_indirect signatures when functions are used as values.
+    const allParams = [
+        { name: "__env", wasmType: binaryen.i32 as binaryen.Type, edictTypeName: undefined },
+        ...params.map((p) => ({ name: p.name, wasmType: p.wasmType, edictTypeName: p.edictTypeName })),
+    ];
+
     const ctx = new FunctionContext(
-        params.map((p) => ({ name: p.name, wasmType: p.wasmType, edictTypeName: p.edictTypeName })),
+        allParams,
         constGlobals,
         recordLayouts,
         enumLayouts,
@@ -436,7 +604,7 @@ function compileFunction(
     );
 
     const returnType = edictTypeToWasm(fn.returnType);
-    const paramTypes = params.map((p) => p.wasmType);
+    const paramTypes = allParams.map((p) => p.wasmType);
     const paramType =
         paramTypes.length > 0
             ? binaryen.createType(paramTypes)
@@ -574,11 +742,16 @@ function compileIdent(
     if (globalType !== undefined) {
         return mod.global.get(expr.name, globalType);
     }
-    // Check function table — return the function's table index as i32
-    // This enables `let f = myFunc` to store a function reference
+    // Check function table — return a closure pair (table_index, env_ptr=0)
+    // This enables `let f = myFunc` to store a function reference as a closure
     const tableIndex = ctx.fnTableIndices.get(expr.name);
     if (tableIndex !== undefined) {
-        return mod.i32.const(tableIndex);
+        return allocClosurePair(
+            mod, ctx,
+            mod.i32.const(tableIndex),
+            mod.i32.const(0),
+            `ident_${expr.name}`,
+        );
     }
     return mod.unreachable();
 }
@@ -724,11 +897,17 @@ function compileCall(
         }
 
         // Generic direct function call
+        // User-defined functions have __env as first WASM param; builtins and imports do not.
+        // fnTableIndices contains exactly the user-defined functions.
+        const isUserFn = ctx.fnTableIndices.has(fnName);
         const args = expr.args.map((a, i) => {
             const compiled = compileExpr(a, mod, ctx, strings, fnSigs, errors);
             // Coerce i32→f64 if function expects f64 but arg infers to i32
             const sig = fnSigs.get(fnName);
-            if (sig?.paramTypes && sig.paramTypes[i] === binaryen.f64) {
+            // For user functions, paramTypes[0] is __env, so Edict arg i maps to paramTypes[i+1]
+            // For builtins, paramTypes maps directly (no __env)
+            const paramIdx = isUserFn ? i + 1 : i;
+            if (sig?.paramTypes && sig.paramTypes[paramIdx] === binaryen.f64) {
                 const argType = inferExprWasmType(a, ctx, fnSigs);
                 if (argType === binaryen.i32) {
                     return mod.f64.convert_s.i32(compiled);
@@ -739,12 +918,17 @@ function compileCall(
         // Look up signature for correct return type
         const sig = fnSigs.get(fnName);
         const returnType = sig ? sig.returnType : binaryen.i32;
-        return mod.call(fnName, args, returnType);
+        // Prepend dummy __env = 0 only for user-defined functions (not builtins)
+        const callArgs = isUserFn ? [mod.i32.const(0), ...args] : args;
+        return mod.call(fnName, callArgs, returnType);
     }
 
     // === Indirect call path (call_indirect via function table) ===
-    // The fn expression evaluates to a table index (i32)
-    const target = compileExpr(expr.fn, mod, ctx, strings, fnSigs, errors);
+    // The fn expression evaluates to a closure pair pointer: [table_index, env_ptr]
+    const closurePtr = compileExpr(expr.fn, mod, ctx, strings, fnSigs, errors);
+
+    // We need to decompose the closure pair, so store it in a temp local
+    const closurePtrLocal = ctx.addLocal(`__call_closure_${expr.id}`, binaryen.i32);
 
     // Compile arguments
     const args = expr.args.map(a =>
@@ -752,15 +936,23 @@ function compileCall(
     );
 
     // Determine the WASM type signature for call_indirect:
-    // - params: infer from compiled argument types
+    // - params: __env (i32) + inferred from compiled argument types
     // - result: infer from the overall call expression type
     const argWasmTypes = expr.args.map(a => inferExprWasmType(a, ctx, fnSigs));
-    const paramType = argWasmTypes.length > 0
-        ? binaryen.createType(argWasmTypes)
-        : binaryen.none;
+    const allParamTypes = [binaryen.i32, ...argWasmTypes]; // __env + user args
+    const paramType = binaryen.createType(allParamTypes);
     const resultType = inferExprWasmType(expr as Expression, ctx, fnSigs);
 
-    return mod.call_indirect("__fn_table", target, args, paramType, resultType);
+    // Load table_index and env_ptr from the closure pair
+    const tableIdx = mod.i32.load(0, 0, mod.local.get(closurePtrLocal, binaryen.i32));
+    const envPtr = mod.i32.load(4, 0, mod.local.get(closurePtrLocal, binaryen.i32));
+
+    return mod.block(null, [
+        // Store closure pointer in temp
+        mod.local.set(closurePtrLocal, closurePtr),
+        // call_indirect with env_ptr prepended to args
+        mod.call_indirect("__fn_table", tableIdx, [envPtr, ...args], paramType, resultType),
+    ], resultType);
 }
 
 function compileIf(
@@ -1477,8 +1669,30 @@ function compileLambdaExpr(
         wasmType: edictTypeToWasm(p.type),
     }));
 
+    // Detect free variables (captures from enclosing scope)
+    const paramNames = new Set(expr.params.map(p => p.name));
+    const freeVars = collectFreeVariables(
+        expr.body, paramNames, ctx.constGlobals, fnSigs,
+    );
+
+    // Resolve WASM types for free variables from the enclosing context
+    const captures: { name: string; wasmType: binaryen.Type; offset: number }[] = [];
+    let envOffset = 0;
+    for (const [name] of freeVars) {
+        const local = ctx.getLocal(name);
+        const wasmType = local ? local.type : binaryen.i32;
+        captures.push({ name, wasmType, offset: envOffset });
+        envOffset += 8; // 8-byte slots (supports both i32 and f64)
+    }
+
+    // Build lambda context with __env as first param + lambda's own params
+    const allLambdaParams = [
+        { name: "__env", wasmType: binaryen.i32 as binaryen.Type },
+        ...params.map(p => ({ name: p.name, wasmType: p.wasmType })),
+    ];
+
     const lambdaCtx = new FunctionContext(
-        params.map(p => ({ name: p.name, wasmType: p.wasmType })),
+        allLambdaParams,
         ctx.constGlobals,
         ctx.recordLayouts,
         ctx.enumLayouts,
@@ -1486,10 +1700,32 @@ function compileLambdaExpr(
         ctx.tableFunctions,
     );
 
-    const paramTypes = params.map(p => p.wasmType);
-    const paramType = paramTypes.length > 0
-        ? binaryen.createType(paramTypes)
-        : binaryen.none;
+    // For captured variables, add locals that load from __env at known offsets.
+    // We put the loads at the top of the function body.
+    const envLoads: binaryen.ExpressionRef[] = [];
+    for (const capture of captures) {
+        const localIndex = lambdaCtx.addLocal(capture.name, capture.wasmType);
+        if (capture.wasmType === binaryen.f64) {
+            envLoads.push(
+                mod.local.set(localIndex,
+                    mod.f64.load(capture.offset, 0,
+                        mod.local.get(0, binaryen.i32), // __env is param 0
+                    ),
+                ),
+            );
+        } else {
+            envLoads.push(
+                mod.local.set(localIndex,
+                    mod.i32.load(capture.offset, 0,
+                        mod.local.get(0, binaryen.i32), // __env is param 0
+                    ),
+                ),
+            );
+        }
+    }
+
+    const allParamTypes = allLambdaParams.map(p => p.wasmType);
+    const paramType = binaryen.createType(allParamTypes);
 
     // Infer return type from last body expression
     let returnType = binaryen.i32;
@@ -1506,17 +1742,20 @@ function compileLambdaExpr(
         return compiled;
     });
 
+    // Prepend env loads to body
+    const allBodyExprs = [...envLoads, ...bodyExprs];
+
     let body: binaryen.ExpressionRef;
-    if (bodyExprs.length === 0) {
+    if (allBodyExprs.length === 0) {
         body = mod.nop();
-    } else if (bodyExprs.length === 1) {
-        body = bodyExprs[0]!;
+    } else if (allBodyExprs.length === 1) {
+        body = allBodyExprs[0]!;
     } else {
-        body = mod.block(null, bodyExprs, returnType);
+        body = mod.block(null, allBodyExprs, returnType);
     }
 
     mod.addFunction(lambdaName, paramType, returnType, lambdaCtx.varTypes, body);
-    fnSigs.set(lambdaName, { returnType, paramTypes: paramTypes });
+    fnSigs.set(lambdaName, { returnType, paramTypes: allParamTypes });
 
     // Register lambda in the function table for indirect calls
     // The table is built after all functions are compiled
@@ -1524,7 +1763,69 @@ function compileLambdaExpr(
     ctx.fnTableIndices.set(lambdaName, tableIndex);
     ctx.tableFunctions.push(lambdaName);
 
-    return mod.i32.const(tableIndex);
+    // Allocate environment record on the heap (if there are captures)
+    let envPtrExpr: binaryen.ExpressionRef;
+    if (captures.length > 0) {
+        const envSize = captures.length * 8;
+        const envPtrLocal = ctx.addLocal(`__env_ptr_${lambdaName}`, binaryen.i32);
+
+        // Allocate env record: store each captured value
+        const envStores: binaryen.ExpressionRef[] = [
+            // envPtr = __heap_ptr
+            mod.local.set(envPtrLocal, mod.global.get("__heap_ptr", binaryen.i32)),
+            // __heap_ptr += envSize
+            mod.global.set(
+                "__heap_ptr",
+                mod.i32.add(
+                    mod.local.get(envPtrLocal, binaryen.i32),
+                    mod.i32.const(envSize),
+                ),
+            ),
+        ];
+
+        for (const capture of captures) {
+            // Load captured value from enclosing ctx
+            const capturedValue = (() => {
+                const local = ctx.getLocal(capture.name);
+                if (local) return mod.local.get(local.index, local.type);
+                const globalType = ctx.constGlobals.get(capture.name);
+                if (globalType !== undefined) return mod.global.get(capture.name, globalType);
+                return mod.unreachable();
+            })();
+
+            if (capture.wasmType === binaryen.f64) {
+                envStores.push(
+                    mod.f64.store(capture.offset, 0,
+                        mod.local.get(envPtrLocal, binaryen.i32),
+                        capturedValue,
+                    ),
+                );
+            } else {
+                envStores.push(
+                    mod.i32.store(capture.offset, 0,
+                        mod.local.get(envPtrLocal, binaryen.i32),
+                        capturedValue,
+                    ),
+                );
+            }
+        }
+
+        // Build env allocation block that returns the env pointer
+        envPtrExpr = mod.block(null, [
+            ...envStores,
+            mod.local.get(envPtrLocal, binaryen.i32),
+        ], binaryen.i32);
+    } else {
+        envPtrExpr = mod.i32.const(0);
+    }
+
+    // Return a closure pair: [table_index, env_ptr]
+    return allocClosurePair(
+        mod, ctx,
+        mod.i32.const(tableIndex),
+        envPtrExpr,
+        lambdaName,
+    );
 }
 
 function compileStringInterp(
