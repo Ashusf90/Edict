@@ -5,7 +5,7 @@
 // register them automatically. The codegen imports them from the host.
 
 import type { FunctionType } from "../ast/types.js";
-import { INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOL_TYPE, ARRAY_INT_TYPE, OPTION_INT_TYPE, RESULT_INT_TYPE } from "../ast/type-constants.js";
+import { INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOL_TYPE, ARRAY_INT_TYPE, OPTION_INT_TYPE, RESULT_INT_TYPE, RESULT_STRING_TYPE } from "../ast/type-constants.js";
 
 export interface BuiltinFunction {
     /** Edict-level function type signature (includes effects, params, returnType) */
@@ -423,6 +423,47 @@ export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map([
         {
             type: { kind: "fn_type", params: [RESULT_INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
             wasmImport: ["host", "unwrapErrOr"],
+        },
+    ],
+    // =========================================================================
+    // JSON builtins — parse/stringify for string-based JSON manipulation
+    // =========================================================================
+    [
+        "jsonParse",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE], effects: ["pure"], returnType: RESULT_STRING_TYPE },
+            wasmImport: ["host", "jsonParse"],
+        },
+    ],
+    [
+        "jsonStringify",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE], effects: ["pure"], returnType: STRING_TYPE },
+            wasmImport: ["host", "jsonStringify"],
+        },
+    ],
+    // =========================================================================
+    // Random builtins — non-deterministic, use `reads` effect
+    // =========================================================================
+    [
+        "randomInt",
+        {
+            type: { kind: "fn_type", params: [INT_TYPE, INT_TYPE], effects: ["reads"], returnType: INT_TYPE },
+            wasmImport: ["host", "randomInt"],
+        },
+    ],
+    [
+        "randomFloat",
+        {
+            type: { kind: "fn_type", params: [], effects: ["reads"], returnType: FLOAT_TYPE },
+            wasmImport: ["host", "randomFloat"],
+        },
+    ],
+    [
+        "randomUuid",
+        {
+            type: { kind: "fn_type", params: [], effects: ["reads"], returnType: STRING_TYPE },
+            wasmImport: ["host", "randomUuid"],
         },
     ],
 ]);

@@ -1,0 +1,159 @@
+{
+    "kind": "module",
+    "id": "mod-json-demo",
+    "name": "json_processing",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-main",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-res",
+                    "name": "parseResult",
+                    "type": {
+                        "kind": "result",
+                        "ok": {
+                            "kind": "basic",
+                            "name": "String"
+                        },
+                        "err": {
+                            "kind": "basic",
+                            "name": "String"
+                        }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "c-parse",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "i-parse",
+                            "name": "jsonParse"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "l-json",
+                                "value": "{\"name\":\"Edict\",\"version\":1}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-normalized",
+                    "name": "normalized",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "c-stringify",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "i-stringify",
+                            "name": "jsonStringify"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "l-messy",
+                                "value": "{  \"a\" :  1,  \"b\" : [ 2, 3 ]  }"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-p1",
+                    "name": "_p1",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "c-print1",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "i-print1",
+                            "name": "print"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "i-norm",
+                                "name": "normalized"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "match",
+                    "id": "m-res",
+                    "target": {
+                        "kind": "ident",
+                        "id": "i-res2",
+                        "name": "parseResult"
+                    },
+                    "arms": [
+                        {
+                            "kind": "arm",
+                            "id": "arm-ok",
+                            "pattern": {
+                                "kind": "constructor",
+                                "name": "Ok",
+                                "fields": [
+                                    {
+                                        "kind": "binding",
+                                        "name": "val"
+                                    }
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "kind": "literal",
+                                    "id": "l-ok",
+                                    "value": 1
+                                }
+                            ]
+                        },
+                        {
+                            "kind": "arm",
+                            "id": "arm-err",
+                            "pattern": {
+                                "kind": "constructor",
+                                "name": "Err",
+                                "fields": [
+                                    {
+                                        "kind": "binding",
+                                        "name": "e"
+                                    }
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "kind": "literal",
+                                    "id": "l-err",
+                                    "value": 0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

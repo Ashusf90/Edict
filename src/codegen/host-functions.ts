@@ -73,6 +73,24 @@ function writeArrayResult(state: RuntimeState, elements: number[]): number {
     return resultPtr;
 }
 
+/**
+ * Allocate a Result value on the WASM heap: [tag: i32][pad(4)][value: i32][pad(4)]
+ * tag=0 means Ok, tag=1 means Err. Total size = 16 bytes (matches enum layout).
+ * Returns the pointer to the Result pair.
+ */
+function writeResultValue(state: RuntimeState, tag: number, value: number): number {
+    const memoryBuffer = getMemoryBuffer(state);
+    const getHeapPtr = state.instance!.exports.__get_heap_ptr as () => number;
+    const setHeapPtr = state.instance!.exports.__set_heap_ptr as (v: number) => void;
+
+    const ptr = getHeapPtr();
+    const view = new DataView(memoryBuffer);
+    view.setInt32(ptr, tag, true);      // tag at offset 0
+    view.setInt32(ptr + 8, value, true); // value at offset 8 (matches EnumVariantLayout)
+    setHeapPtr(ptr + 16);               // 16 bytes total
+    return ptr;
+}
+
 // =============================================================================
 // Core host functions (print, string_replace)
 // =============================================================================
@@ -359,6 +377,71 @@ function createResultImports(state: RuntimeState): Record<string, Function> {
 }
 
 // =============================================================================
+// JSON builtins — jsonParse validates JSON, jsonStringify normalizes
+// =============================================================================
+
+function createJsonImports(state: RuntimeState): Record<string, Function> {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    return {
+        jsonParse: (ptr: number, len: number): number => {
+            const str = decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
+            try {
+                JSON.parse(str);
+                // Valid JSON — return Ok(strPtr) with original string
+                const strPtr = writeStringResult(state, str, encoder);
+                return writeResultValue(state, 0, strPtr); // Ok
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : "Invalid JSON";
+                const errPtr = writeStringResult(state, msg, encoder);
+                return writeResultValue(state, 1, errPtr); // Err
+            }
+        },
+        jsonStringify: (ptr: number, len: number): number => {
+            const str = decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
+            try {
+                const parsed = JSON.parse(str);
+                return writeStringResult(state, JSON.stringify(parsed), encoder);
+            } catch {
+                // If input is not valid JSON, return it unchanged
+                return writeStringResult(state, str, encoder);
+            }
+        },
+    };
+}
+
+// =============================================================================
+// Random builtins — randomInt, randomFloat, randomUuid
+// =============================================================================
+
+function createRandomImports(state: RuntimeState): Record<string, Function> {
+    const encoder = new TextEncoder();
+    return {
+        randomInt: (min: number, max: number): number => {
+            // Inclusive range [min, max] with rejection sampling to avoid modulo bias
+            const range = max - min + 1;
+            const limit = 0x100000000 - (0x100000000 % range); // largest multiple of range ≤ 2^32
+            const array = new Uint32Array(1);
+            let val: number;
+            do {
+                crypto.getRandomValues(array);
+                val = array[0]!;
+            } while (val >= limit);
+            return min + (val % range);
+        },
+        randomFloat: (): number => {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            return array[0]! / 0x100000000; // [0, 1) — divide by 2^32
+        },
+        randomUuid: (): number => {
+            const uuid = crypto.randomUUID();
+            return writeStringResult(state, uuid, encoder);
+        },
+    };
+}
+
+// =============================================================================
 // Factory — combines all groups into one import object
 // =============================================================================
 
@@ -381,6 +464,8 @@ export function createHostImports(
             ...createArrayImports(state),
             ...createOptionImports(state),
             ...createResultImports(state),
+            ...createJsonImports(state),
+            ...createRandomImports(state),
         },
     };
 }
