@@ -38,4 +38,8 @@ if (url.endsWith(".ts")) {
 - **Root cause**: Tests that skip `typeCheck()` mask the issue. The type checker's `inferEnumConstructor` calls `env.lookupTypeDef(expr.enumName)` which requires a registered definition.
 - **Fix**: Register synthetic built-in type definitions in `typeCheck()` (in `check.ts`) alongside `BUILTIN_FUNCTIONS`. For enums: `rootEnv.registerTypeDef("Option", { kind: "enum", ... })`.
 - **Pattern**: When adding any built-in type, check ALL pipeline stages: validator, resolver, checker, AND codegen.
+- **Extended (Result)**: Three additional registrations needed:
+  1. **Resolver**: Register built-in enums in resolver's `builtinScope` so `Named("Result")` type refs and `Ok`/`Err` constructor patterns resolve.
+  2. **resolveAlias**: Add built-in enum aliases in `type-env.ts` so `Named("Option")` → `{ kind: "option" }` and `Named("Result")` → `{ kind: "result" }`, preventing type mismatch with builtin function param types.
+  3. **codegen edictTypeName**: Extend `edictTypeName` inference (let bindings, params, match targets) to map `option`/`result` type kinds to `"Option"`/`"Result"` enum layout names.
 

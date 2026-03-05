@@ -5,7 +5,7 @@
 // register them automatically. The codegen imports them from the host.
 
 import type { FunctionType } from "../ast/types.js";
-import { INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOL_TYPE, ARRAY_INT_TYPE, OPTION_INT_TYPE } from "../ast/type-constants.js";
+import { INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOL_TYPE, ARRAY_INT_TYPE, OPTION_INT_TYPE, RESULT_INT_TYPE } from "../ast/type-constants.js";
 
 export interface BuiltinFunction {
     /** Edict-level function type signature (includes effects, params, returnType) */
@@ -377,6 +377,52 @@ export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map([
         {
             type: { kind: "fn_type", params: [OPTION_INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
             wasmImport: ["host", "unwrapOr"],
+        },
+    ],
+    // =========================================================================
+    // Result builtins — operate on heap-allocated [tag: i32][value_or_error: i32]
+    // Ok = tag 0, Err = tag 1
+    // =========================================================================
+    [
+        "isOk",
+        {
+            type: { kind: "fn_type", params: [RESULT_INT_TYPE], effects: ["pure"], returnType: BOOL_TYPE },
+            wasmImport: ["host", "isOk"],
+        },
+    ],
+    [
+        "isErr",
+        {
+            type: { kind: "fn_type", params: [RESULT_INT_TYPE], effects: ["pure"], returnType: BOOL_TYPE },
+            wasmImport: ["host", "isErr"],
+        },
+    ],
+    [
+        "unwrapOk",
+        {
+            type: { kind: "fn_type", params: [RESULT_INT_TYPE], effects: ["fails"], returnType: INT_TYPE },
+            wasmImport: ["host", "unwrapOk"],
+        },
+    ],
+    [
+        "unwrapErr",
+        {
+            type: { kind: "fn_type", params: [RESULT_INT_TYPE], effects: ["fails"], returnType: INT_TYPE },
+            wasmImport: ["host", "unwrapErr"],
+        },
+    ],
+    [
+        "unwrapOkOr",
+        {
+            type: { kind: "fn_type", params: [RESULT_INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            wasmImport: ["host", "unwrapOkOr"],
+        },
+    ],
+    [
+        "unwrapErrOr",
+        {
+            type: { kind: "fn_type", params: [RESULT_INT_TYPE, INT_TYPE], effects: ["pure"], returnType: INT_TYPE },
+            wasmImport: ["host", "unwrapErrOr"],
         },
     ],
 ]);

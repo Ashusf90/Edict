@@ -556,6 +556,60 @@ export async function runDirect(
                 if (tag === 1) return view.getInt32(ptr + 8, true);
                 return defaultVal;
             },
+            // =================================================================
+            // Result builtins — [tag: i32][value_or_error: i32] at 8-byte slots
+            // Ok = tag 0, Err = tag 1
+            // =================================================================
+            isOk: (ptr: number): number => {
+                const memoryBuffer = (
+                    instance.exports.memory as WebAssembly.Memory
+                ).buffer;
+                const view = new DataView(memoryBuffer);
+                return view.getInt32(ptr, true) === 0 ? 1 : 0;
+            },
+            isErr: (ptr: number): number => {
+                const memoryBuffer = (
+                    instance.exports.memory as WebAssembly.Memory
+                ).buffer;
+                const view = new DataView(memoryBuffer);
+                return view.getInt32(ptr, true) === 1 ? 1 : 0;
+            },
+            unwrapOk: (ptr: number): number => {
+                const memoryBuffer = (
+                    instance.exports.memory as WebAssembly.Memory
+                ).buffer;
+                const view = new DataView(memoryBuffer);
+                const tag = view.getInt32(ptr, true);
+                if (tag === 0) return view.getInt32(ptr + 8, true);
+                throw new Error("unwrapOk called on Err");
+            },
+            unwrapErr: (ptr: number): number => {
+                const memoryBuffer = (
+                    instance.exports.memory as WebAssembly.Memory
+                ).buffer;
+                const view = new DataView(memoryBuffer);
+                const tag = view.getInt32(ptr, true);
+                if (tag === 1) return view.getInt32(ptr + 8, true);
+                throw new Error("unwrapErr called on Ok");
+            },
+            unwrapOkOr: (ptr: number, defaultVal: number): number => {
+                const memoryBuffer = (
+                    instance.exports.memory as WebAssembly.Memory
+                ).buffer;
+                const view = new DataView(memoryBuffer);
+                const tag = view.getInt32(ptr, true);
+                if (tag === 0) return view.getInt32(ptr + 8, true);
+                return defaultVal;
+            },
+            unwrapErrOr: (ptr: number, defaultVal: number): number => {
+                const memoryBuffer = (
+                    instance.exports.memory as WebAssembly.Memory
+                ).buffer;
+                const view = new DataView(memoryBuffer);
+                const tag = view.getInt32(ptr, true);
+                if (tag === 1) return view.getInt32(ptr + 8, true);
+                return defaultVal;
+            },
         },
     };
 

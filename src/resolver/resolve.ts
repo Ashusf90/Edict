@@ -23,6 +23,7 @@ import { findCandidates } from "./levenshtein.js";
 import { Scope, type SymbolInfo } from "./scope.js";
 import type { FunctionType } from "../ast/types.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
+import { BUILTIN_ENUMS } from "../builtins/builtin-enums.js";
 
 /**
  * Entry point: resolve all names in a validated Edict module.
@@ -40,6 +41,18 @@ export function resolve(module: EdictModule): StructuredError[] {
             type: builtin.type,
         });
     }
+
+    // Register built-in enums (Option, Result) so named types and
+    // constructor patterns resolve through the full pipeline.
+    for (const enumDef of BUILTIN_ENUMS) {
+        builtinScope.define(enumDef.name, {
+            name: enumDef.name,
+            kind: "enum",
+            nodeId: enumDef.id,
+            definition: enumDef,
+        });
+    }
+
     const moduleScope = new Scope(builtinScope);
 
     // =========================================================================

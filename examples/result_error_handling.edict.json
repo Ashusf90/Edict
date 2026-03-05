@@ -1,0 +1,314 @@
+{
+    "kind": "module",
+    "id": "mod-result-demo",
+    "name": "result_error_handling",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-safeDivide",
+            "name": "safeDivide",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "p-a",
+                    "name": "a",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    }
+                },
+                {
+                    "kind": "param",
+                    "id": "p-b",
+                    "name": "b",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    }
+                }
+            ],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "result",
+                "ok": {
+                    "kind": "basic",
+                    "name": "Int"
+                },
+                "err": {
+                    "kind": "basic",
+                    "name": "Int"
+                }
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "if",
+                    "id": "if-guard",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "b-eq",
+                        "op": "==",
+                        "left": {
+                            "kind": "ident",
+                            "id": "i-b",
+                            "name": "b"
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "l-0",
+                            "value": 0
+                        }
+                    },
+                    "then": [
+                        {
+                            "kind": "enum_constructor",
+                            "id": "ec-err",
+                            "enumName": "Result",
+                            "variant": "Err",
+                            "fields": [
+                                {
+                                    "kind": "field_init",
+                                    "name": "error",
+                                    "value": {
+                                        "kind": "literal",
+                                        "id": "l-neg1",
+                                        "value": -1
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "else": [
+                        {
+                            "kind": "enum_constructor",
+                            "id": "ec-ok",
+                            "enumName": "Result",
+                            "variant": "Ok",
+                            "fields": [
+                                {
+                                    "kind": "field_init",
+                                    "name": "value",
+                                    "value": {
+                                        "kind": "binop",
+                                        "id": "b-div",
+                                        "op": "/",
+                                        "left": {
+                                            "kind": "ident",
+                                            "id": "i-a",
+                                            "name": "a"
+                                        },
+                                        "right": {
+                                            "kind": "ident",
+                                            "id": "i-b2",
+                                            "name": "b"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-r1",
+                    "name": "r1",
+                    "type": {
+                        "kind": "result",
+                        "ok": {
+                            "kind": "basic",
+                            "name": "Int"
+                        },
+                        "err": {
+                            "kind": "basic",
+                            "name": "Int"
+                        }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "c-div1",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "i-div1",
+                            "name": "safeDivide"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "l-10",
+                                "value": 10
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "l-2",
+                                "value": 2
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-v1",
+                    "name": "v1",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "match",
+                        "id": "m-1",
+                        "target": {
+                            "kind": "ident",
+                            "id": "i-r1",
+                            "name": "r1"
+                        },
+                        "arms": [
+                            {
+                                "kind": "arm",
+                                "id": "arm-ok1",
+                                "pattern": {
+                                    "kind": "constructor",
+                                    "name": "Ok",
+                                    "fields": [
+                                        {
+                                            "kind": "binding",
+                                            "name": "val"
+                                        }
+                                    ]
+                                },
+                                "body": [
+                                    {
+                                        "kind": "ident",
+                                        "id": "i-val1",
+                                        "name": "val"
+                                    }
+                                ]
+                            },
+                            {
+                                "kind": "arm",
+                                "id": "arm-err1",
+                                "pattern": {
+                                    "kind": "constructor",
+                                    "name": "Err",
+                                    "fields": [
+                                        {
+                                            "kind": "binding",
+                                            "name": "e"
+                                        }
+                                    ]
+                                },
+                                "body": [
+                                    {
+                                        "kind": "ident",
+                                        "id": "i-e1",
+                                        "name": "e"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-r2",
+                    "name": "r2",
+                    "type": {
+                        "kind": "result",
+                        "ok": {
+                            "kind": "basic",
+                            "name": "Int"
+                        },
+                        "err": {
+                            "kind": "basic",
+                            "name": "Int"
+                        }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "c-div2",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "i-div2",
+                            "name": "safeDivide"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "l-10b",
+                                "value": 10
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "l-0b",
+                                "value": 0
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-v2",
+                    "name": "v2",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "c-unwrap",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "i-unwrapOkOr",
+                            "name": "unwrapOkOr"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "i-r2",
+                                "name": "r2"
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "l-def",
+                                "value": -999
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "binop",
+                    "id": "b-add",
+                    "op": "+",
+                    "left": {
+                        "kind": "ident",
+                        "id": "i-v1f",
+                        "name": "v1"
+                    },
+                    "right": {
+                        "kind": "ident",
+                        "id": "i-v2f",
+                        "name": "v2"
+                    }
+                }
+            ]
+        }
+    ]
+}

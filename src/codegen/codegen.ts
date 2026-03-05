@@ -204,6 +204,17 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
             });
         }
 
+        // Register built-in Result enum layout: Ok (tag 0), Err (tag 1)
+        // Guard lets user-defined Result enums override the built-in.
+        if (!enumLayouts.has("Result")) {
+            enumLayouts.set("Result", {
+                variants: [
+                    { name: "Ok", tag: 0, fields: [{ name: "value", offset: 8, wasmType: binaryen.i32 }], totalSize: 16 },
+                    { name: "Err", tag: 1, fields: [{ name: "error", offset: 8, wasmType: binaryen.i32 }], totalSize: 16 },
+                ],
+            });
+        }
+
         // Initialize bump allocator heap pointer
         // Ensure heap starts at an 8-byte aligned offset after the string table, min 8
         const heapStart = Math.max(8, Math.ceil(strings.totalBytes / 8) * 8);
@@ -427,7 +438,7 @@ function compileFunction(
         name: p.name,
         edictType: p.type,
         wasmType: edictTypeToWasm(p.type),
-        edictTypeName: p.type.kind === "named" ? p.type.name : undefined,
+        edictTypeName: p.type.kind === "named" ? p.type.name : p.type.kind === "option" ? "Option" : p.type.kind === "result" ? "Result" : undefined,
     }));
 
     // Closure convention: all user functions have __env:i32 as first WASM param.
@@ -839,6 +850,10 @@ function compileLet(
     let edictTypeName: string | undefined;
     if (expr.type && expr.type.kind === "named") {
         edictTypeName = expr.type.name;
+    } else if (expr.type && expr.type.kind === "option") {
+        edictTypeName = "Option";
+    } else if (expr.type && expr.type.kind === "result") {
+        edictTypeName = "Result";
     } else if (expr.value.kind === "record_expr") {
         edictTypeName = expr.value.name;
     } else if (expr.value.kind === "enum_constructor") {
@@ -895,6 +910,10 @@ function compileMatch(
         // but let's be pragmatic if it's annotated
     } else if ("type" in expr.target && expr.target.type && expr.target.type.kind === "named") {
         targetEdictTypeName = expr.target.type.name;
+    } else if ("type" in expr.target && expr.target.type && expr.target.type.kind === "option") {
+        targetEdictTypeName = "Option";
+    } else if ("type" in expr.target && expr.target.type && expr.target.type.kind === "result") {
+        targetEdictTypeName = "Result";
     }
 
     // Infer the target and result types

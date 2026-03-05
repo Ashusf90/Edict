@@ -37,10 +37,21 @@ export class TypeEnv {
     /**
      * Resolve a named type alias to its underlying definition.
      * If the type is `Named("Foo")` and Foo is a TypeDef, returns the definition type.
+     * Built-in enums Option and Result resolve to their concrete type kinds
+     * so that Named("Option") matches { kind: "option" } and Named("Result") matches { kind: "result" }.
      * Otherwise returns the type as-is.
      */
     resolveAlias(type: TypeExpr): TypeExpr {
         if (type.kind !== "named") return type;
+
+        // Built-in enum aliases — resolve Named to concrete type kinds
+        if (type.name === "Option") {
+            return { kind: "option", inner: { kind: "basic", name: "Int" } };
+        }
+        if (type.name === "Result") {
+            return { kind: "result", ok: { kind: "basic", name: "Int" }, err: { kind: "basic", name: "Int" } };
+        }
+
         const def = this.lookupTypeDef(type.name);
         if (!def) return type; // unknown — treated as opaque
         if (def.kind === "type") {

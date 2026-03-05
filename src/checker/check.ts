@@ -30,6 +30,7 @@ import { findCandidates } from "../resolver/levenshtein.js";
 import { TypeEnv } from "./type-env.js";
 import { typesEqual, isUnknown, resolveType } from "./types-equal.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
+import { OPTION_ENUM_DEF, RESULT_ENUM_DEF } from "../builtins/builtin-enums.js";
 import { UNKNOWN_TYPE, INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOL_TYPE } from "../ast/type-constants.js";
 
 /**
@@ -44,21 +45,10 @@ export function typeCheck(module: EdictModule): StructuredError[] {
         rootEnv.bind(name, builtin.type);
     }
 
-    // Register built-in Option enum type definition
-    // so enum_constructor with enumName:"Option" and match patterns work through typeCheck.
-    rootEnv.registerTypeDef("Option", {
-        kind: "enum",
-        id: "__builtin_option",
-        name: "Option",
-        variants: [
-            { kind: "variant", id: "__builtin_option_none", name: "None", fields: [] },
-            {
-                kind: "variant", id: "__builtin_option_some", name: "Some", fields: [
-                    { kind: "field", id: "__builtin_option_some_value", name: "value", type: INT_TYPE },
-                ]
-            },
-        ],
-    });
+    // Register built-in enum type definitions (Option, Result)
+    // so enum_constructor and match patterns work through typeCheck.
+    rootEnv.registerTypeDef("Option", OPTION_ENUM_DEF);
+    rootEnv.registerTypeDef("Result", RESULT_ENUM_DEF);
 
     // Register type definitions (records, enums, type aliases)
     for (const def of module.definitions) {
