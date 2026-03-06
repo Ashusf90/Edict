@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.5.0](https://github.com/Sowiedu/Edict/compare/v1.4.0...v1.5.0) (2026-03-06)
+
+
+### Features
+
+* add crypto hashing builtins — sha256, md5, hmac ([#25](https://github.com/Sowiedu/Edict/issues/25)) ([ebaa61b](https://github.com/Sowiedu/Edict/commit/ebaa61be0d3be6c5559f4ed9867b6d0be56c91f1))
+* add date/time builtins (now, formatDate, parseDate, diffMs) ([d7ee5c9](https://github.com/Sowiedu/Edict/commit/d7ee5c9e186416c22c48b13c3970c125fa3f10bd))
+* add Int64 type support (WASM i64 / JS BigInt) ([2e5e757](https://github.com/Sowiedu/Edict/commit/2e5e7570745b4ae191e8c175c33338fbf8fb3989))
+* add regex builtins (regexTest, regexMatch, regexReplace) ([5db4c68](https://github.com/Sowiedu/Edict/commit/5db4c684291a254aa41d47c3e632b2a4e1a381c1))
+* compact AST format — 25-60% token reduction for agents ([6a78a97](https://github.com/Sowiedu/Edict/commit/6a78a97f03fe8ad80010dadb96d18336a9aedf74)), closes [#11](https://github.com/Sowiedu/Edict/issues/11)
+* document AST patch protocol as JSON Schema + fix all TSC errors ([a079d41](https://github.com/Sowiedu/Edict/commit/a079d413a7460eff1047ff2f5842ff419ae5e3d6)), closes [#13](https://github.com/Sowiedu/Edict/issues/13)
+* implement array_find and array_sort HOF builtins ([d951cef](https://github.com/Sowiedu/Edict/commit/d951cefad7e683f8571191cde551e76d00ee9e15))
+* implement HTTP client builtins (httpGet, httpPost, httpPut, httpDelete) ([4e99383](https://github.com/Sowiedu/Edict/commit/4e9938319c72a496b5d530dbcd6a7a653e3dc8fc)), closes [#20](https://github.com/Sowiedu/Edict/issues/20)
+* implement IO builtins — readFile, writeFile, env, args, exit ([#19](https://github.com/Sowiedu/Edict/issues/19)) ([7796bc1](https://github.com/Sowiedu/Edict/commit/7796bc13b7baca6be56952bf737951b616dcf6ed))
+* implement JSON and Random builtins ([#21](https://github.com/Sowiedu/Edict/issues/21), [#23](https://github.com/Sowiedu/Edict/issues/23)) ([3033483](https://github.com/Sowiedu/Edict/commit/303348353f210aa75a7abaf7e515bb2d731d5e20))
+* implement Result runtime support ([0b6aaa2](https://github.com/Sowiedu/Edict/commit/0b6aaa268b56749c4b4720670f0356e87590ff8e))
+* lambda parameter type inference from call-site context ([#29](https://github.com/Sowiedu/Edict/issues/29)) ([e8e61d8](https://github.com/Sowiedu/Edict/commit/e8e61d82ce6db279fadd1774c992e71fb99672dc))
+* let binding type inference — backfill inferred types onto AST ([3ab738e](https://github.com/Sowiedu/Edict/commit/3ab738e313f3aeef50774990cc68d26207a523ad))
+* make FunctionDef.returnType optional with inference from body ([#29](https://github.com/Sowiedu/Edict/issues/29)) ([084db6c](https://github.com/Sowiedu/Edict/commit/084db6cfccde8c7784019a36597b68dd33570de1))
+
+
+### Bug Fixes
+
+* **codegen:** heap bounds checking + string length propagation ([#82](https://github.com/Sowiedu/Edict/issues/82)) ([310423e](https://github.com/Sowiedu/Edict/commit/310423e29b91df32490d19219bab8f7d96480537))
+
 ## [1.4.0](https://github.com/Sowiedu/Edict/compare/v1.3.0...v1.4.0) (2026-03-05)
 
 
