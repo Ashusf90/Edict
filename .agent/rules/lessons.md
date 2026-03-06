@@ -70,4 +70,9 @@ if (url.endsWith(".ts")) {
 - **Why**: A green build is the baseline. Dismissing errors as "not mine" leaves broken windows. The user expects a clean project state after every session.
 - **Pattern**: After running tests, also run `npx tsc --noEmit`. If errors exist, fix them before reporting completion.
 
-
+## 11. String Length Propagation Requires Companion Locals
+- **Context**: String values in WASM are `(ptr: i32, len: i32)` pairs, but stored as single i32 (pointer). Length lives in `__str_ret_len` global — a single shared register.
+- **Problem**: `__str_ret_len` is clobbered by every string-returning host call. If a String variable is stored from one call and used later, `__str_ret_len` holds the wrong value.
+- **Fix pattern**: For each String-typed `let` binding, create a companion local `__str_len_{name}` that captures `__str_ret_len` at binding time. When the variable is used as a String argument (in `compileCall`, `compileStringInterp`), read the companion local instead of the global.
+- **Remaining gap**: Function parameters of type String have no companion local — the length is never passed by the caller. Filed as issue #95.
+- **Files involved**: `compile-scalars.ts` (let binding), `compile-calls.ts` (call arg expansion), `compile-data.ts` (string interp).

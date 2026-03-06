@@ -51,9 +51,20 @@ export function compileCall(
                             const interned = strings.intern(arg.value);
                             wasmArgs.push(mod.i32.const(interned.offset));
                             wasmArgs.push(mod.i32.const(interned.length));
+                        } else if (arg.kind === "ident") {
+                            // String variable — use companion __str_len_ local if available,
+                            // otherwise fall back to __str_ret_len (stale, but best effort)
+                            const ptrExpr = compileExpr(arg, cc, ctx);
+                            wasmArgs.push(ptrExpr);
+                            const lenLocal = ctx.getLocal(`__str_len_${arg.name}`);
+                            if (lenLocal) {
+                                wasmArgs.push(mod.local.get(lenLocal.index, binaryen.i32));
+                            } else {
+                                wasmArgs.push(mod.global.get("__str_ret_len", binaryen.i32));
+                            }
                         } else {
-                            // Non-literal string arg — compile to get ptr,
-                            // read __str_ret_len for the length
+                            // Non-literal, non-ident string expr (e.g. direct call result)
+                            // __str_ret_len is fresh from the just-evaluated expression
                             const ptrExpr = compileExpr(arg, cc, ctx);
                             wasmArgs.push(ptrExpr);
                             wasmArgs.push(mod.global.get("__str_ret_len", binaryen.i32));

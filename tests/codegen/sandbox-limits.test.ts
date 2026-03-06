@@ -207,4 +207,78 @@ describe("Sandbox Limits", () => {
             expect(result.exitCode).toBe(0);
         }, 10_000);
     });
+
+    describe("OOM Detection", () => {
+        /**
+         * Calls string_repeat("A", 100000) — allocates a 100KB string in one host call.
+         * With maxMemoryPages: 1 (64KB), this reliably exceeds the heap.
+         */
+        const OOM_PROGRAM_AST = {
+            kind: "module",
+            id: "mod-oom",
+            name: "oom",
+            imports: [],
+            definitions: [{
+                kind: "fn",
+                id: "fn-main",
+                name: "main",
+                params: [],
+                effects: ["io"],
+                returnType: { kind: "basic", name: "Int" },
+                contracts: [],
+                body: [{
+                    kind: "let",
+                    id: "let-big",
+                    name: "big",
+                    type: { kind: "basic", name: "String" },
+                    value: {
+                        kind: "call",
+                        id: "c-repeat",
+                        fn: { kind: "ident", id: "i-repeat", name: "string_repeat" },
+                        args: [
+                            { kind: "literal", id: "l-a", value: "A" },
+                            { kind: "literal", id: "l-count", value: 100000 },
+                        ],
+                    },
+                }, {
+                    kind: "literal",
+                    id: "l-ret-0",
+                    value: 0,
+                }],
+            }],
+        };
+
+        async function compileAstWithPages(ast: unknown, maxMemoryPages: number): Promise<Uint8Array> {
+            const checkResult = await check(ast);
+            if (!checkResult.ok || !checkResult.module) {
+                throw new Error(`Check failed: ${JSON.stringify(checkResult.errors)}`);
+            }
+            const compileResult = compile(checkResult.module, { maxMemoryPages });
+            if (!compileResult.ok) {
+                throw new Error(`Compile failed: ${compileResult.errors.join(", ")}`);
+            }
+            return compileResult.wasm;
+        }
+
+        it("detects heap exhaustion via runDirect and returns structured OOM error", async () => {
+            const wasm = await compileAstWithPages(OOM_PROGRAM_AST, 1);
+
+            const result = await runDirect(wasm, "main");
+
+            expect(result.exitCode).toBe(1);
+            expect(result.error).toBe("execution_oom");
+            expect(result.limitInfo).toBeDefined();
+            expect(result.limitInfo?.maxMemoryMb).toBeDefined();
+        });
+
+        it("normal program does not trigger OOM", async () => {
+            const wasm = await compileAst(HELLO_WORLD_AST);
+
+            const result = await runDirect(wasm, "main");
+
+            expect(result.exitCode).toBe(0);
+            expect(result.error).toBeUndefined();
+            expect(result.output).toBe("Hello, World!");
+        });
+    });
 });

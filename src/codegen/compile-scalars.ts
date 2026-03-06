@@ -227,16 +227,25 @@ export function compileLet(
     const value = compileExpr(expr.value, cc, ctx);
     const localSet = mod.local.set(index, value);
 
-    // For String-type let bindings from literals, also set __str_ret_len
-    // so downstream string builtins can read the correct length.
-    // For calls to string-returning builtins, __str_ret_len is already set by the host.
+    // For String-type let bindings, save __str_ret_len into a companion local
+    // so the correct length is available when the variable is later used as an argument.
     const isStringType = expr.type?.kind === "basic" && expr.type.name === "String";
-    if (isStringType && expr.value.kind === "literal" && typeof expr.value.value === "string") {
-        const interned = strings.intern(expr.value.value);
-        return mod.block(null, [
-            localSet,
-            mod.global.set("__str_ret_len", mod.i32.const(interned.length)),
-        ], binaryen.none);
+    if (isStringType) {
+        const lenIndex = ctx.addLocal(`__str_len_${expr.name}`, binaryen.i32);
+        if (expr.value.kind === "literal" && typeof expr.value.value === "string") {
+            // String literal — length known at compile time
+            const interned = strings.intern(expr.value.value);
+            return mod.block(null, [
+                localSet,
+                mod.local.set(lenIndex, mod.i32.const(interned.length)),
+            ], binaryen.none);
+        } else {
+            // Non-literal (host call result, etc.) — capture __str_ret_len
+            return mod.block(null, [
+                localSet,
+                mod.local.set(lenIndex, mod.global.get("__str_ret_len", binaryen.i32)),
+            ], binaryen.none);
+        }
     }
 
     return localSet;

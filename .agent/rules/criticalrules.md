@@ -104,3 +104,14 @@ The compiler is infrastructure built by engineers. The language is a product con
 - **Structured everything** — errors, results, diagnostics: typed JSON objects, never prose
 - **MCP is the sole interface** — no CLI, no API, no library — MCP tools only
 - **Schema = spec = docs** — the JSON Schema is both the validation rule and the documentation
+
+---
+
+## Process Rules
+
+These are non-negotiable workflow constraints. Violating them is as serious as violating the hard boundaries above.
+
+| Rule | Why |
+|---|---|
+| **Run `/review` at least twice on every implementation plan before presenting to the user** | Catches gaps, violations, and stale references. A plan that hasn't been self-reviewed is not ready. No exceptions. |
+| **Never call `notify_user` with an implementation plan that hasn't been `/review`'d** | The `/review` workflow is the quality gate. Skipping it ships unvetted plans. |

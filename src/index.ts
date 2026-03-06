@@ -186,6 +186,12 @@ export type {
 export { StringTable } from "./codegen/string-table.js";
 export { BUILTIN_FUNCTIONS, isBuiltin, getBuiltin } from "./builtins/builtins.js";
 
+// Host adapter system
+export type { EdictHostAdapter } from "./codegen/host-adapter.js";
+export { NodeHostAdapter } from "./codegen/node-host-adapter.js";
+export { BrowserHostAdapter } from "./codegen/browser-host-adapter.js";
+export { EdictOomError } from "./codegen/host-functions.js";
+
 // Error catalog
 export { buildErrorCatalog } from "./errors/error-catalog.js";
 export type { ErrorCatalog, ErrorCatalogEntry } from "./errors/error-catalog.js";

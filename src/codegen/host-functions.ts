@@ -5,12 +5,11 @@
 // The runner calls `createHostImports()` and passes the result as the
 // import object to `WebAssembly.instantiate()`.
 //
-// Groups: print, string ops, math, type conversions, arrays, Option, Result,
-//         JSON, random, date/time, regex, crypto.
+// Platform-agnostic groups (string, math, array, etc.) use Web Standard APIs.
+// Platform-specific groups (crypto, HTTP, IO) delegate to an EdictHostAdapter.
 
-import { createHash, createHmac } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve as pathResolve } from "node:path";
+import type { EdictHostAdapter } from "./host-adapter.js";
+import { NodeHostAdapter } from "./node-host-adapter.js";
 
 // =============================================================================
 // Shared runtime state — passed between host functions via closure
@@ -33,6 +32,13 @@ interface WasmInstance {
     };
 }
 
+/** Typed error thrown when a host-side heap allocation exceeds WASM memory bounds. */
+export class EdictOomError extends Error {
+    constructor(public heapUsed: number, public heapLimit: number) {
+        super("edict_oom: heap exhausted");
+    }
+}
+
 // =============================================================================
 // Memory helpers
 // =============================================================================
@@ -42,20 +48,34 @@ function getMemoryBuffer(state: RuntimeState): ArrayBuffer {
 }
 
 /**
+ * Centralized heap allocator with bounds checking.
+ * Allocates `size` bytes (8-byte aligned) from the bump allocator,
+ * throwing EdictOomError if the allocation would exceed WASM memory.
+ */
+function allocateHeap(state: RuntimeState, size: number): number {
+    const getHeapPtr = state.instance!.exports.__get_heap_ptr as () => number;
+    const setHeapPtr = state.instance!.exports.__set_heap_ptr as (v: number) => void;
+    const ptr = getHeapPtr();
+    const aligned = Math.ceil(size / 8) * 8;
+    const newPtr = ptr + aligned;
+    const memorySize = getMemoryBuffer(state).byteLength;
+    if (newPtr > memorySize) {
+        throw new EdictOomError(ptr, memorySize);
+    }
+    setHeapPtr(newPtr);
+    return ptr;
+}
+
+/**
  * Write a string result into WASM memory at __heap_ptr,
  * advance __heap_ptr (8-byte aligned), set __str_ret_len, and return ptr.
  */
 function writeStringResult(state: RuntimeState, str: string, encoder: TextEncoder): number {
     const encoded = encoder.encode(str);
-    const memoryBuffer = getMemoryBuffer(state);
-    const getHeapPtr = state.instance!.exports.__get_heap_ptr as () => number;
-    const setHeapPtr = state.instance!.exports.__set_heap_ptr as (v: number) => void;
-    const setStrRetLen = state.instance!.exports.__set_str_ret_len as (v: number) => void;
-
-    const resultPtr = getHeapPtr();
-    const dest = new Uint8Array(memoryBuffer, resultPtr, encoded.length);
+    const resultPtr = allocateHeap(state, encoded.length);
+    const dest = new Uint8Array(getMemoryBuffer(state), resultPtr, encoded.length);
     dest.set(encoded);
-    setHeapPtr(resultPtr + Math.ceil(encoded.length / 8) * 8);
+    const setStrRetLen = state.instance!.exports.__set_str_ret_len as (v: number) => void;
     setStrRetLen(encoded.length);
     return resultPtr;
 }
@@ -65,18 +85,13 @@ function writeStringResult(state: RuntimeState, str: string, encoder: TextEncode
  * Advances __heap_ptr (8-byte aligned) and returns the new array pointer.
  */
 function writeArrayResult(state: RuntimeState, elements: number[]): number {
-    const memoryBuffer = getMemoryBuffer(state);
-    const getHeapPtr = state.instance!.exports.__get_heap_ptr as () => number;
-    const setHeapPtr = state.instance!.exports.__set_heap_ptr as (v: number) => void;
-
     const totalSize = 4 + elements.length * 4; // header + elements
-    const resultPtr = getHeapPtr();
-    const view = new DataView(memoryBuffer);
+    const resultPtr = allocateHeap(state, totalSize);
+    const view = new DataView(getMemoryBuffer(state));
     view.setInt32(resultPtr, elements.length, true); // write length
     for (let i = 0; i < elements.length; i++) {
         view.setInt32(resultPtr + 4 + i * 4, elements[i]!, true);
     }
-    setHeapPtr(resultPtr + Math.ceil(totalSize / 8) * 8);
     return resultPtr;
 }
 
@@ -86,15 +101,10 @@ function writeArrayResult(state: RuntimeState, elements: number[]): number {
  * Returns the pointer to the Result pair.
  */
 function writeResultValue(state: RuntimeState, tag: number, value: number): number {
-    const memoryBuffer = getMemoryBuffer(state);
-    const getHeapPtr = state.instance!.exports.__get_heap_ptr as () => number;
-    const setHeapPtr = state.instance!.exports.__set_heap_ptr as (v: number) => void;
-
-    const ptr = getHeapPtr();
-    const view = new DataView(memoryBuffer);
+    const ptr = allocateHeap(state, 16);
+    const view = new DataView(getMemoryBuffer(state));
     view.setInt32(ptr, tag, true);      // tag at offset 0
     view.setInt32(ptr + 8, value, true); // value at offset 8 (matches EnumVariantLayout)
-    setHeapPtr(ptr + 16);               // 16 bytes total
     return ptr;
 }
 
@@ -567,22 +577,20 @@ function createRegexImports(state: RuntimeState): Record<string, Function> {
 }
 
 // =============================================================================
-// Crypto hashing builtins — sha256, md5, hmac
+// Crypto hashing builtins — delegates to adapter
 // =============================================================================
 
-function createCryptoImports(state: RuntimeState): Record<string, Function> {
+function createCryptoImports(state: RuntimeState, adapter: EdictHostAdapter): Record<string, Function> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
     return {
         sha256: (ptr: number, len: number): number => {
             const str = decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
-            const hex = createHash("sha256").update(str).digest("hex");
-            return writeStringResult(state, hex, encoder);
+            return writeStringResult(state, adapter.sha256(str), encoder);
         },
         md5: (ptr: number, len: number): number => {
             const str = decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
-            const hex = createHash("md5").update(str).digest("hex");
-            return writeStringResult(state, hex, encoder);
+            return writeStringResult(state, adapter.md5(str), encoder);
         },
         hmac: (
             algoPtr: number, algoLen: number,
@@ -593,79 +601,16 @@ function createCryptoImports(state: RuntimeState): Record<string, Function> {
             const algo = decoder.decode(new Uint8Array(buf, algoPtr, algoLen));
             const key = decoder.decode(new Uint8Array(buf, keyPtr, keyLen));
             const data = decoder.decode(new Uint8Array(buf, dataPtr, dataLen));
-            try {
-                const hex = createHmac(algo, key).update(data).digest("hex");
-                return writeStringResult(state, hex, encoder);
-            } catch {
-                return writeStringResult(state, "", encoder); // invalid algorithm → empty string
-            }
+            return writeStringResult(state, adapter.hmac(algo, key, data), encoder);
         },
     };
 }
 
 // =============================================================================
-// HTTP client builtins — httpGet, httpPost, httpPut, httpDelete
-// Sync-over-async: execFileSync spawns a child Node process that runs fetch.
-// Data passed via env vars to avoid injection/escaping issues.
+// HTTP client builtins — delegates to adapter
 // =============================================================================
 
-import { execFileSync } from "node:child_process";
-
-/** Max response body size (1 MB) — prevents WASM memory overflow. */
-const HTTP_MAX_RESPONSE_BYTES = 1_048_576;
-
-/**
- * Perform a synchronous HTTP request by spawning a child Node process.
- * Returns `{ok, data}` — ok=true for 2xx responses, ok=false for errors.
- */
-function syncFetch(url: string, method: string, body?: string): { ok: boolean; data: string } {
-    const script = `
-        (async () => {
-            try {
-                const url = process.env.__EDICT_URL;
-                const method = process.env.__EDICT_METHOD;
-                const body = process.env.__EDICT_BODY;
-                const opts = { method };
-                if (body !== undefined && body !== "") {
-                    opts.headers = {"Content-Type": "application/json"};
-                    opts.body = body;
-                }
-                const res = await fetch(url, opts);
-                let text = await res.text();
-                if (text.length > ${HTTP_MAX_RESPONSE_BYTES}) text = text.slice(0, ${HTTP_MAX_RESPONSE_BYTES});
-                if (!res.ok) {
-                    process.stdout.write(JSON.stringify({ok: false, data: res.status + " " + text}));
-                } else {
-                    process.stdout.write(JSON.stringify({ok: true, data: text}));
-                }
-            } catch (e) {
-                process.stdout.write(JSON.stringify({ok: false, data: e.message || String(e)}));
-            }
-        })();
-    `;
-
-    const env: Record<string, string> = {
-        ...process.env as Record<string, string>,
-        __EDICT_URL: url,
-        __EDICT_METHOD: method,
-    };
-    if (body !== undefined) {
-        env.__EDICT_BODY = body;
-    }
-
-    try {
-        const stdout = execFileSync(process.execPath, ["-e", script], {
-            timeout: 10_000,
-            env,
-            maxBuffer: HTTP_MAX_RESPONSE_BYTES + 1024, // room for JSON framing
-        });
-        return JSON.parse(stdout.toString("utf-8"));
-    } catch {
-        return { ok: false, data: "Request timed out or process error" };
-    }
-}
-
-function createHttpImports(state: RuntimeState): Record<string, Function> {
+function createHttpImports(state: RuntimeState, adapter: EdictHostAdapter): Record<string, Function> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -680,40 +625,24 @@ function createHttpImports(state: RuntimeState): Record<string, Function> {
 
     return {
         httpGet: (urlPtr: number, urlLen: number): number => {
-            return makeResult(syncFetch(readStr(urlPtr, urlLen), "GET"));
+            return makeResult(adapter.fetch(readStr(urlPtr, urlLen), "GET"));
         },
         httpPost: (urlPtr: number, urlLen: number, bodyPtr: number, bodyLen: number): number => {
-            return makeResult(syncFetch(readStr(urlPtr, urlLen), "POST", readStr(bodyPtr, bodyLen)));
+            return makeResult(adapter.fetch(readStr(urlPtr, urlLen), "POST", readStr(bodyPtr, bodyLen)));
         },
         httpPut: (urlPtr: number, urlLen: number, bodyPtr: number, bodyLen: number): number => {
-            return makeResult(syncFetch(readStr(urlPtr, urlLen), "PUT", readStr(bodyPtr, bodyLen)));
+            return makeResult(adapter.fetch(readStr(urlPtr, urlLen), "PUT", readStr(bodyPtr, bodyLen)));
         },
         httpDelete: (urlPtr: number, urlLen: number): number => {
-            return makeResult(syncFetch(readStr(urlPtr, urlLen), "DELETE"));
+            return makeResult(adapter.fetch(readStr(urlPtr, urlLen), "DELETE"));
         },
     };
 }
 // =============================================================================
-// IO builtins — readFile, writeFile, env, args, exit
-// Filesystem ops are sandboxed to state.sandboxDir (if set).
+// IO builtins — delegates to adapter
 // =============================================================================
 
-/** Max file size (1 MB) — prevents WASM memory overflow. */
-const IO_MAX_FILE_BYTES = 1_048_576;
-
-/**
- * Validate that a resolved path is inside the sandbox directory.
- * Returns the resolved absolute path on success, or an error string.
- */
-function validateSandboxPath(rawPath: string, sandboxDir: string): { ok: true; path: string } | { ok: false; error: string } {
-    const resolved = pathResolve(sandboxDir, rawPath);
-    if (!resolved.startsWith(sandboxDir)) {
-        return { ok: false, error: `path_outside_sandbox: ${rawPath}` };
-    }
-    return { ok: true, path: resolved };
-}
-
-function createIOImports(state: RuntimeState): Record<string, Function> {
+function createIOImports(state: RuntimeState, adapter: EdictHostAdapter): Record<string, Function> {
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -723,66 +652,39 @@ function createIOImports(state: RuntimeState): Record<string, Function> {
 
     return {
         readFile: (pathPtr: number, pathLen: number): number => {
-            if (!state.sandboxDir) {
-                const errPtr = writeStringResult(state, "filesystem_not_configured", encoder);
-                return writeResultValue(state, 1, errPtr);
-            }
-            const rawPath = readStr(pathPtr, pathLen);
-            const validation = validateSandboxPath(rawPath, state.sandboxDir);
-            if (!validation.ok) {
-                const errPtr = writeStringResult(state, validation.error, encoder);
-                return writeResultValue(state, 1, errPtr);
-            }
-            try {
-                let content = readFileSync(validation.path, "utf-8");
-                if (content.length > IO_MAX_FILE_BYTES) {
-                    content = content.slice(0, IO_MAX_FILE_BYTES);
-                }
-                const strPtr = writeStringResult(state, content, encoder);
+            const result = adapter.readFile(readStr(pathPtr, pathLen));
+            if (result.ok) {
+                const strPtr = writeStringResult(state, result.data, encoder);
                 return writeResultValue(state, 0, strPtr);
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : String(e);
-                const errPtr = writeStringResult(state, msg, encoder);
+            } else {
+                const errPtr = writeStringResult(state, result.error, encoder);
                 return writeResultValue(state, 1, errPtr);
             }
         },
 
         writeFile: (pathPtr: number, pathLen: number, contentPtr: number, contentLen: number): number => {
-            if (!state.sandboxDir) {
-                const errPtr = writeStringResult(state, "filesystem_not_configured", encoder);
-                return writeResultValue(state, 1, errPtr);
-            }
-            const rawPath = readStr(pathPtr, pathLen);
-            const validation = validateSandboxPath(rawPath, state.sandboxDir);
-            if (!validation.ok) {
-                const errPtr = writeStringResult(state, validation.error, encoder);
-                return writeResultValue(state, 1, errPtr);
-            }
-            try {
-                const content = readStr(contentPtr, contentLen);
-                writeFileSync(validation.path, content, "utf-8");
+            const result = adapter.writeFile(readStr(pathPtr, pathLen), readStr(contentPtr, contentLen));
+            if (result.ok) {
                 const okPtr = writeStringResult(state, "ok", encoder);
                 return writeResultValue(state, 0, okPtr);
-            } catch (e) {
-                const msg = e instanceof Error ? e.message : String(e);
-                const errPtr = writeStringResult(state, msg, encoder);
+            } else {
+                const errPtr = writeStringResult(state, result.error, encoder);
                 return writeResultValue(state, 1, errPtr);
             }
         },
 
         env: (namePtr: number, nameLen: number): number => {
             const name = readStr(namePtr, nameLen);
-            const value = process.env[name] ?? "";
-            return writeStringResult(state, value, encoder);
+            return writeStringResult(state, adapter.env(name), encoder);
         },
 
         args: (): number => {
-            const argsJson = JSON.stringify(process.argv.slice(2));
+            const argsJson = JSON.stringify(adapter.args());
             return writeStringResult(state, argsJson, encoder);
         },
 
         exit: (code: number): number => {
-            throw new Error(`edict_exit:${code}`);
+            adapter.exit(code);
         },
     };
 }
@@ -797,10 +699,13 @@ function createIOImports(state: RuntimeState): Record<string, Function> {
  * @param state — mutable runtime state shared across all host functions.
  *                `state.instance` must be set after `WebAssembly.instantiate()`
  *                but before calling any exported WASM function.
+ * @param adapter — optional platform-specific adapter. Defaults to NodeHostAdapter.
  */
 export function createHostImports(
     state: RuntimeState,
+    adapter?: EdictHostAdapter,
 ): Record<string, Record<string, unknown>> {
+    const hostAdapter = adapter ?? new NodeHostAdapter(state.sandboxDir);
     return {
         host: {
             ...createCoreImports(state),
@@ -815,9 +720,9 @@ export function createHostImports(
             ...createRandomImports(state),
             ...createDateTimeImports(state),
             ...createRegexImports(state),
-            ...createCryptoImports(state),
-            ...createHttpImports(state),
-            ...createIOImports(state),
+            ...createCryptoImports(state, hostAdapter),
+            ...createHttpImports(state, hostAdapter),
+            ...createIOImports(state, hostAdapter),
         },
     };
 }

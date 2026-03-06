@@ -307,6 +307,15 @@ export function compileStringInterp(
             const interned = strings.intern(part.value);
             return [mod.i32.const(interned.offset), mod.i32.const(interned.length)];
         }
+        if (part.kind === "ident") {
+            // String variable — use companion __str_len_ local if available
+            const ptrExpr = compileExpr(part, cc, ctx);
+            const lenLocal = ctx.getLocal(`__str_len_${part.name}`);
+            if (lenLocal) {
+                return [ptrExpr, mod.local.get(lenLocal.index, binaryen.i32)];
+            }
+            return [ptrExpr, mod.global.get("__str_ret_len", binaryen.i32)];
+        }
         const ptrExpr = compileExpr(part, cc, ctx);
         return [ptrExpr, mod.global.get("__str_ret_len", binaryen.i32)];
     }

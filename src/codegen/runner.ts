@@ -9,7 +9,8 @@
 //   runDirect() → synchronous execution (used by worker and tests)
 
 import { Worker } from "node:worker_threads";
-import { createHostImports, type RuntimeState } from "./host-functions.js";
+import { createHostImports, type RuntimeState, EdictOomError } from "./host-functions.js";
+import type { EdictHostAdapter } from "./host-adapter.js";
 
 /* eslint-disable @typescript-eslint/no-namespace */
 // Minimal WebAssembly type declarations for Node.js runtime
@@ -41,6 +42,8 @@ export interface RunLimits {
     maxMemoryMb?: number;
     /** Sandbox directory for file IO builtins. If unset, readFile/writeFile return Err. */
     sandboxDir?: string;
+    /** Optional host adapter for platform-specific operations. Defaults to NodeHostAdapter. */
+    adapter?: EdictHostAdapter;
 }
 
 export interface RunResult {
@@ -194,7 +197,7 @@ export async function runDirect(
     limits: RunLimits = {},
 ): Promise<RunResult> {
     const state: RuntimeState = { outputParts: [], instance: null, sandboxDir: limits.sandboxDir };
-    const importObject = createHostImports(state);
+    const importObject = createHostImports(state, limits.adapter);
 
     const { instance } = await WebAssembly.instantiate(wasm, importObject);
     state.instance = instance;
@@ -216,6 +219,15 @@ export async function runDirect(
 
         returnValue = mainFn();
     } catch (e) {
+        // Heap bounds check failed — structured OOM error
+        if (e instanceof EdictOomError) {
+            return {
+                output: state.outputParts.join(""),
+                exitCode: 1,
+                error: "execution_oom",
+                limitInfo: { maxMemoryMb: Math.round(e.heapLimit / 1048576) },
+            };
+        }
         const msg = e instanceof Error ? e.message : String(e);
         // Handle edict_exit:N — clean process exit, not an error
         const exitMatch = msg.match(/^edict_exit:(\d+)$/);
