@@ -48,3 +48,20 @@ if (url.endsWith(".ts")) {
 - **Problem**: `runDirect()` runs WASM in-process on the main event loop. `execFileSync` blocks the event loop, so a local mock HTTP server on the same event loop can never respond → deadlock / ETIMEDOUT.
 - **Solution**: Tests for host functions using `execFileSync` must use `run()` (worker thread), not `runDirect()`. The worker gets its own event loop, leaving the main thread free to serve HTTP.
 - **Pattern**: Any host function that spawns blocking child processes needs worker-thread execution for testing.
+
+## 8. Implementation Plans Require Double Self-Review
+- **Rule**: Before presenting any implementation plan to the user via `notify_user`, run the `/review` workflow on it **at least twice**.
+- **Why**: A single review pass catches obvious gaps but misses subtler issues — stale file references, missing edge cases, verification steps that aren't copy-paste runnable. The second pass catches what the first pass's fixes introduced or exposed.
+- **Process**:
+  1. Draft the implementation plan.
+  2. Run `/review` → apply all fixes inline.
+  3. Run `/review` again on the updated plan → apply any remaining fixes.
+  4. Only then call `notify_user` to present it.
+- **Pattern**: If the second review pass finds significant issues (not just minor wording), run a third pass. The plan is ready when a review pass returns no findings.
+
+## 9. Object.prototype Pollution in Lookup Maps
+- **Problem**: A `Record<string, string>` created with `= {}` inherits from `Object.prototype`. Looking up `map["constructor"]` returns the `Object` constructor function, not `undefined`.
+- **Context**: Compact AST `KIND_MAP` used `KIND_MAP[value] ?? value` to expand kind values. When a full-format AST had `"kind": "constructor"` (for `ConstructorPattern`), the lookup returned the `Object` constructor function instead of falling through.
+- **Fix**: Always use `Object.hasOwn(map, key)` before reading from lookup maps, or use `Object.create(null)` to create prototype-free objects.
+- **Pattern**: Any `Record<string, T>` used as a lookup table needs prototype-safe access. Dangerous keys: `constructor`, `toString`, `valueOf`, `hasOwnProperty`, `__proto__`.
+

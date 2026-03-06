@@ -39,7 +39,7 @@ export function createEdictServer(): McpServer {
         "edict_schema",
         "Return the JSON Schema defining valid Edict AST programs. Use format 'minimal' for reduced token cost (strips descriptions).",
         {
-            format: z.enum(["full", "minimal"]).optional().default("full").describe("Schema format: 'full' (default, with descriptions) or 'minimal' (stripped for token efficiency)"),
+            format: z.enum(["full", "minimal", "compact"]).optional().default("full").describe("Schema format: 'full' (default, with descriptions), 'minimal' (stripped for token efficiency), or 'compact' (compact key/kind mapping reference)"),
         },
         async ({ format }) => {
             const result = handleSchema(format);

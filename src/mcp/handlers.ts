@@ -20,6 +20,7 @@ import { buildErrorCatalog, type ErrorCatalog } from "../errors/error-catalog.js
 import { stripDescriptions } from "./minimal-schema.js";
 import { lint } from "../lint/lint.js";
 import type { LintWarning } from "../lint/warnings.js";
+import { expandCompact, compactSchemaReference } from "../compact/expand.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -66,7 +67,7 @@ function loadExamples(): { name: string; ast: unknown }[] {
 
 export interface SchemaResult {
     schema: unknown;
-    format: "full" | "minimal";
+    format: "full" | "minimal" | "compact";
     tokenEstimate: number;
 }
 
@@ -111,7 +112,12 @@ export interface VersionResult {
 // Handlers
 // =============================================================================
 
-export function handleSchema(format: "full" | "minimal" = "full"): SchemaResult {
+export function handleSchema(format: "full" | "minimal" | "compact" = "full"): SchemaResult {
+    if (format === "compact") {
+        const ref = compactSchemaReference();
+        const text = JSON.stringify(ref);
+        return { schema: ref, format: "compact", tokenEstimate: Math.ceil(text.length / 4) };
+    }
     const raw = loadSchema();
     if (format === "minimal") {
         if (!cachedMinimalSchema) {
@@ -131,7 +137,8 @@ export function handleExamples(): ExamplesResult {
 }
 
 export function handleValidate(ast: unknown): ValidateResult {
-    const result = validate(ast);
+    const expanded = expandCompact(ast);
+    const result = validate(expanded);
     if (result.ok) {
         return { ok: true };
     }
@@ -139,7 +146,8 @@ export function handleValidate(ast: unknown): ValidateResult {
 }
 
 export async function handleCheck(ast: unknown): Promise<CheckResult> {
-    const result = await check(ast);
+    const expanded = expandCompact(ast);
+    const result = await check(expanded);
     if (result.ok) {
         return { ok: true };
     }
@@ -147,8 +155,9 @@ export async function handleCheck(ast: unknown): Promise<CheckResult> {
 }
 
 export async function handleCompile(ast: unknown): Promise<CompileResult> {
-    // Full pipeline: check first, then compile
-    const checkResult = await check(ast);
+    // Full pipeline: expand compact format, then check, then compile
+    const expanded = expandCompact(ast);
+    const checkResult = await check(expanded);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -186,8 +195,15 @@ export async function handlePatch(
     patches: AstPatch[],
     returnAst: boolean = false,
 ): Promise<PatchResult> {
+    // Step 0: Expand compact format on base AST and patch values
+    const expandedBase = expandCompact(baseAst);
+    const expandedPatches = patches.map((p) => ({
+        ...p,
+        value: p.value !== undefined ? expandCompact(p.value) : p.value,
+    }));
+
     // Step 1: Apply patches
-    const patchResult = applyPatches(baseAst, patches);
+    const patchResult = applyPatches(expandedBase, expandedPatches);
     if (!patchResult.ok) {
         return { ok: false, errors: patchResult.errors };
     }
@@ -223,7 +239,7 @@ export function handleVersion(): VersionResult {
             effects: true,
             unitTypes: false,
             multiModule: false,
-            compactAst: false,
+            compactAst: true,
         },
         limits: {
             z3TimeoutMs: 5000,
@@ -241,12 +257,13 @@ export interface LintResult {
 }
 
 export function handleLint(ast: unknown): LintResult {
-    const validation = validate(ast);
+    const expanded = expandCompact(ast);
+    const validation = validate(expanded);
     if (!validation.ok) {
         return { ok: false, errors: validation.errors };
     }
 
-    const module = ast as import("../ast/nodes.js").EdictModule;
+    const module = expanded as import("../ast/nodes.js").EdictModule;
     const warnings = lint(module);
     return { ok: true, warnings };
 }

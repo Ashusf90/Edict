@@ -180,6 +180,9 @@ export { BUILTIN_FUNCTIONS, isBuiltin, getBuiltin } from "./builtins/builtins.js
 export { buildErrorCatalog } from "./errors/error-catalog.js";
 export type { ErrorCatalog, ErrorCatalogEntry } from "./errors/error-catalog.js";
 
+// Compact AST format
+export { expandCompact, isCompactAst, compactSchemaReference } from "./compact/expand.js";
+
 // Lint
 export { lint } from "./lint/lint.js";
 export type { LintWarning } from "./lint/lint.js";
