@@ -114,6 +114,35 @@ Error constructors live in `src/errors/structured-errors.ts`. Each constructor i
 
 ---
 
+## Host Adapter System
+
+The host function layer uses a pluggable adapter pattern (`EdictHostAdapter`) to separate platform-specific operations from the WASM↔Host bridge.
+
+**Architecture:**
+```
+createHostImports(state, adapter?)
+  │
+  ├── 12 platform-agnostic groups (Web Standard APIs — always shared)
+  │   core, string, math, type-conversion, array, option, result,
+  │   json, random, int64, datetime, regex
+  │
+  └── 3 platform-specific groups (delegated to adapter)
+      crypto, HTTP, IO
+```
+
+**Available Adapters:**
+- `NodeHostAdapter` — default, uses `node:crypto`, `node:fs`, `node:child_process`
+- `BrowserHostAdapter` — stub with meaningful errors for unavailable operations
+
+**How to implement a custom adapter:**
+1. Create a class implementing `EdictHostAdapter` (from `src/codegen/host-adapter.ts`)
+2. Implement all 10 methods: `sha256`, `md5`, `hmac`, `fetch`, `readFile`, `writeFile`, `env`, `args`, `exit`
+3. Pass it via `RunLimits.adapter` or directly to `createHostImports(state, adapter)`
+
+**Key files:** `src/codegen/host-adapter.ts`, `src/codegen/node-host-adapter.ts`, `src/codegen/browser-host-adapter.ts`, `src/codegen/host-functions.ts`
+
+---
+
 ## Key Conventions
 
 - **Node IDs**: Every AST node has a unique `id` string. Convention: `{kind}-{name}-{counter}` (e.g., `fn-main-001`, `param-n-001`)
