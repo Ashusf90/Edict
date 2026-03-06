@@ -557,6 +557,35 @@ export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map([
             wasmImport: ["host", "regexReplace"],
         },
     ],
+    // =========================================================================
+    // Crypto hashing builtins — pure, deterministic hash computation
+    // =========================================================================
+    [
+        "sha256",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE], effects: ["pure"], returnType: STRING_TYPE },
+            wasmImport: ["host", "sha256"],
+        },
+    ],
+    [
+        "md5",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE], effects: ["pure"], returnType: STRING_TYPE },
+            wasmImport: ["host", "md5"],
+        },
+    ],
+    [
+        "hmac",
+        {
+            type: {
+                kind: "fn_type",
+                params: [STRING_TYPE, STRING_TYPE, STRING_TYPE],
+                effects: ["pure"],
+                returnType: STRING_TYPE,
+            },
+            wasmImport: ["host", "hmac"],
+        },
+    ],
 ]);
 
 /**

@@ -5,7 +5,10 @@
 // The runner calls `createHostImports()` and passes the result as the
 // import object to `WebAssembly.instantiate()`.
 //
-// Groups: print, string ops, math, type conversions, arrays, Option, Result.
+// Groups: print, string ops, math, type conversions, arrays, Option, Result,
+//         JSON, random, date/time, regex, crypto.
+
+import { createHash, createHmac } from "node:crypto";
 
 // =============================================================================
 // Shared runtime state — passed between host functions via closure
@@ -560,6 +563,43 @@ function createRegexImports(state: RuntimeState): Record<string, Function> {
 }
 
 // =============================================================================
+// Crypto hashing builtins — sha256, md5, hmac
+// =============================================================================
+
+function createCryptoImports(state: RuntimeState): Record<string, Function> {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    return {
+        sha256: (ptr: number, len: number): number => {
+            const str = decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
+            const hex = createHash("sha256").update(str).digest("hex");
+            return writeStringResult(state, hex, encoder);
+        },
+        md5: (ptr: number, len: number): number => {
+            const str = decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
+            const hex = createHash("md5").update(str).digest("hex");
+            return writeStringResult(state, hex, encoder);
+        },
+        hmac: (
+            algoPtr: number, algoLen: number,
+            keyPtr: number, keyLen: number,
+            dataPtr: number, dataLen: number,
+        ): number => {
+            const buf = getMemoryBuffer(state);
+            const algo = decoder.decode(new Uint8Array(buf, algoPtr, algoLen));
+            const key = decoder.decode(new Uint8Array(buf, keyPtr, keyLen));
+            const data = decoder.decode(new Uint8Array(buf, dataPtr, dataLen));
+            try {
+                const hex = createHmac(algo, key).update(data).digest("hex");
+                return writeStringResult(state, hex, encoder);
+            } catch {
+                return writeStringResult(state, "", encoder); // invalid algorithm → empty string
+            }
+        },
+    };
+}
+
+// =============================================================================
 // Factory — combines all groups into one import object
 // =============================================================================
 
@@ -587,6 +627,7 @@ export function createHostImports(
             ...createRandomImports(state),
             ...createDateTimeImports(state),
             ...createRegexImports(state),
+            ...createCryptoImports(state),
         },
     };
 }
