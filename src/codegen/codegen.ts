@@ -240,9 +240,22 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
         for (const def of module.definitions) {
             if (def.kind === "fn") {
                 // Closure convention: all user functions have __env:i32 as first WASM param
+                // String params are expanded to (ptr: i32, len: i32) pairs at the WASM level
+                const edictParamTypes: ("String" | "other")[] = ["other"]; // __env
+                const wasmParamTypes: binaryen.Type[] = [binaryen.i32]; // __env
+                for (const p of def.params) {
+                    if (p.type!.kind === "basic" && p.type!.name === "String") {
+                        wasmParamTypes.push(binaryen.i32, binaryen.i32); // ptr, len
+                        edictParamTypes.push("String");
+                    } else {
+                        wasmParamTypes.push(edictTypeToWasm(p.type!));
+                        edictParamTypes.push("other");
+                    }
+                }
                 fnSigs.set(def.name, {
                     returnType: def.returnType ? edictTypeToWasm(def.returnType) : binaryen.i32,
-                    paramTypes: [binaryen.i32, ...def.params.map((p) => edictTypeToWasm(p.type!))],
+                    paramTypes: wasmParamTypes,
+                    edictParamTypes,
                 });
             }
         }
@@ -447,10 +460,19 @@ function compileFunction(
     // Closure convention: all user functions have __env:i32 as first WASM param.
     // The __env param is ignored for non-lambda functions but ensures uniform
     // call_indirect signatures when functions are used as values.
-    const allParams = [
+    // String params are widened to (ptr: i32, len: i32) pairs — the companion
+    // __str_len_{name} becomes a real WASM param so existing lookups find it.
+    const allParams: { name: string; wasmType: binaryen.Type; edictTypeName: string | undefined }[] = [
         { name: "__env", wasmType: binaryen.i32 as binaryen.Type, edictTypeName: undefined },
-        ...params.map((p) => ({ name: p.name, wasmType: p.wasmType, edictTypeName: p.edictTypeName })),
     ];
+    for (const p of params) {
+        if (p.edictType.kind === "basic" && p.edictType.name === "String") {
+            allParams.push({ name: p.name, wasmType: binaryen.i32, edictTypeName: undefined });
+            allParams.push({ name: `__str_len_${p.name}`, wasmType: binaryen.i32, edictTypeName: undefined });
+        } else {
+            allParams.push({ name: p.name, wasmType: p.wasmType, edictTypeName: p.edictTypeName });
+        }
+    }
 
     const ctx = new FunctionContext(allParams);
 

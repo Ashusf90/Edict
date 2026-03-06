@@ -12,6 +12,65 @@ import {
 } from "./types.js";
 import { collectFreeVariables, allocClosurePair } from "./closures.js";
 import { compileExpr, inferExprWasmType } from "./codegen.js";
+import { StringTable } from "./string-table.js";
+
+// =============================================================================
+// String argument expansion helpers
+// =============================================================================
+
+/**
+ * Expand a String-typed argument into [ptr, len] WASM expressions.
+ * Handles literals (compile-time known), idents (companion __str_len_ local),
+ * and generic expressions (falls back to __str_ret_len global).
+ */
+function expandStringArg(
+    arg: Expression,
+    cc: CompilationContext,
+    ctx: FunctionContext,
+    strings: StringTable,
+): [binaryen.ExpressionRef, binaryen.ExpressionRef] {
+    const { mod } = cc;
+    if (arg.kind === "literal" && typeof arg.value === "string") {
+        const interned = strings.intern(arg.value);
+        return [mod.i32.const(interned.offset), mod.i32.const(interned.length)];
+    }
+    if (arg.kind === "ident") {
+        const ptrExpr = compileExpr(arg, cc, ctx);
+        const lenLocal = ctx.getLocal(`__str_len_${arg.name}`);
+        if (lenLocal) {
+            return [ptrExpr, mod.local.get(lenLocal.index, binaryen.i32)];
+        }
+        return [ptrExpr, mod.global.get("__str_ret_len", binaryen.i32)];
+    }
+    // Generic expression (call result, etc.) — __str_ret_len is fresh
+    const ptrExpr = compileExpr(arg, cc, ctx);
+    return [ptrExpr, mod.global.get("__str_ret_len", binaryen.i32)];
+}
+
+/**
+ * Check if an expression produces a String value.
+ * Used by the indirect call path to decide whether to expand args.
+ */
+function isStringExpression(
+    expr: Expression,
+    _cc: CompilationContext,
+    ctx: FunctionContext,
+): boolean {
+    if (expr.kind === "literal" && typeof expr.value === "string") return true;
+    if (expr.kind === "string_interp") return true;
+    if (expr.kind === "ident") {
+        const local = ctx.getLocal(expr.name);
+        if (local?.edictTypeName === "String") return true;
+        // Check if companion __str_len_ exists (String value)
+        if (ctx.getLocal(`__str_len_${expr.name}`)) return true;
+    }
+    if (expr.kind === "call" && expr.fn.kind === "ident") {
+        // Check builtins return type
+        const builtin = BUILTIN_FUNCTIONS.get(expr.fn.name);
+        if (builtin?.type.returnType.kind === "basic" && builtin.type.returnType.name === "String") return true;
+    }
+    return false;
+}
 
 export function compileCall(
     expr: Expression & { kind: "call" },
@@ -85,12 +144,45 @@ export function compileCall(
         // User-defined functions have __env as first WASM param; builtins and imports do not.
         // fnTableIndices contains exactly the user-defined functions.
         const isUserFn = cc.fnTableIndices.has(fnName);
+        const sig = fnSigs.get(fnName);
+        const returnType = sig ? sig.returnType : binaryen.i32;
+
+        // For user functions with String params, expand them to (ptr, len) pairs
+        if (isUserFn && sig?.edictParamTypes) {
+            const wasmArgs: binaryen.ExpressionRef[] = [mod.i32.const(0)]; // __env
+
+            for (let i = 0; i < expr.args.length; i++) {
+                const arg = expr.args[i]!;
+                // edictParamTypes[0] is __env, so Edict param i → edictParamTypes[i+1]
+                const isStringParam = sig.edictParamTypes[i + 1] === "String";
+
+                if (isStringParam) {
+                    wasmArgs.push(...expandStringArg(arg, cc, ctx, strings));
+                } else {
+                    const compiled = compileExpr(arg, cc, ctx);
+                    // Coerce i32→f64 if function expects f64 but arg infers to i32
+                    if (sig.paramTypes) {
+                        // Map Edict arg index to WASM param index (account for __env + String expansion)
+                        const wasmIdx = wasmArgs.length;
+                        if (sig.paramTypes[wasmIdx] === binaryen.f64) {
+                            const argType = inferExprWasmType(arg, cc, ctx);
+                            if (argType === binaryen.i32) {
+                                wasmArgs.push(mod.f64.convert_s.i32(compiled));
+                                continue;
+                            }
+                        }
+                    }
+                    wasmArgs.push(compiled);
+                }
+            }
+
+            return mod.call(fnName, wasmArgs, returnType);
+        }
+
+        // Non-user function (builtins without String params, imports)
         const args = expr.args.map((a, i) => {
             const compiled = compileExpr(a, cc, ctx);
             // Coerce i32→f64 if function expects f64 but arg infers to i32
-            const sig = fnSigs.get(fnName);
-            // For user functions, paramTypes[0] is __env, so Edict arg i maps to paramTypes[i+1]
-            // For builtins, paramTypes maps directly (no __env)
             const paramIdx = isUserFn ? i + 1 : i;
             if (sig?.paramTypes && sig.paramTypes[paramIdx] === binaryen.f64) {
                 const argType = inferExprWasmType(a, cc, ctx);
@@ -100,9 +192,6 @@ export function compileCall(
             }
             return compiled;
         });
-        // Look up signature for correct return type
-        const sig = fnSigs.get(fnName);
-        const returnType = sig ? sig.returnType : binaryen.i32;
         // Prepend dummy __env = 0 only for user-defined functions (not builtins)
         const callArgs = isUserFn ? [mod.i32.const(0), ...args] : args;
         return mod.call(fnName, callArgs, returnType);
@@ -115,16 +204,27 @@ export function compileCall(
     // We need to decompose the closure pair, so store it in a temp local
     const closurePtrLocal = ctx.addLocal(`__call_closure_${expr.id}`, binaryen.i32);
 
-    // Compile arguments
-    const args = expr.args.map(a =>
-        compileExpr(a, cc, ctx),
-    );
+    // Compile arguments — expand String args to (ptr, len) pairs
+    const wasmArgs: binaryen.ExpressionRef[] = [];
+    const wasmArgTypes: binaryen.Type[] = [];
+    for (const a of expr.args) {
+        const argType = inferExprWasmType(a, cc, ctx);
+        // Check if this argument is a String type (i32 that's actually a String)
+        const isStringArg = isStringExpression(a, cc, ctx);
+        if (isStringArg) {
+            const [ptr, len] = expandStringArg(a, cc, ctx, strings);
+            wasmArgs.push(ptr, len);
+            wasmArgTypes.push(binaryen.i32, binaryen.i32);
+        } else {
+            wasmArgs.push(compileExpr(a, cc, ctx));
+            wasmArgTypes.push(argType);
+        }
+    }
 
     // Determine the WASM type signature for call_indirect:
-    // - params: __env (i32) + inferred from compiled argument types
+    // - params: __env (i32) + widened argument types
     // - result: infer from the overall call expression type
-    const argWasmTypes = expr.args.map(a => inferExprWasmType(a, cc, ctx));
-    const allParamTypes = [binaryen.i32, ...argWasmTypes]; // __env + user args
+    const allParamTypes = [binaryen.i32, ...wasmArgTypes]; // __env + user args
     const paramType = binaryen.createType(allParamTypes);
     const resultType = inferExprWasmType(expr as Expression, cc, ctx);
 
@@ -136,7 +236,7 @@ export function compileCall(
         // Store closure pointer in temp
         mod.local.set(closurePtrLocal, closurePtr),
         // call_indirect with env_ptr prepended to args
-        mod.call_indirect("__fn_table", tableIdx, [envPtr, ...args], paramType, resultType),
+        mod.call_indirect("__fn_table", tableIdx, [envPtr, ...wasmArgs], paramType, resultType),
     ], resultType);
 }
 
@@ -151,6 +251,7 @@ export function compileLambdaExpr(
 
     const params = expr.params.map((p) => ({
         name: p.name,
+        edictType: p.type!,
         wasmType: edictTypeToWasm(p.type!),
     }));
 
@@ -161,6 +262,7 @@ export function compileLambdaExpr(
     );
 
     // Resolve WASM types for free variables from the enclosing context
+    // For String free vars, also capture the companion __str_len_ local
     const captures: { name: string; wasmType: binaryen.Type; offset: number }[] = [];
     let envOffset = 0;
     for (const [name] of freeVars) {
@@ -168,13 +270,30 @@ export function compileLambdaExpr(
         const wasmType = local ? local.type : binaryen.i32;
         captures.push({ name, wasmType, offset: envOffset });
         envOffset += 8; // 8-byte slots (supports both i32 and f64)
+        // If this is a String variable, also capture its companion length
+        const lenLocal = ctx.getLocal(`__str_len_${name}`);
+        if (lenLocal) {
+            captures.push({ name: `__str_len_${name}`, wasmType: binaryen.i32, offset: envOffset });
+            envOffset += 8;
+        }
     }
 
     // Build lambda context with __env as first param + lambda's own params
-    const allLambdaParams = [
+    // String params are widened to (ptr, len) pairs
+    const allLambdaParams: { name: string; wasmType: binaryen.Type }[] = [
         { name: "__env", wasmType: binaryen.i32 as binaryen.Type },
-        ...params.map(p => ({ name: p.name, wasmType: p.wasmType })),
     ];
+    const edictParamTypes: ("String" | "other")[] = ["other"]; // __env
+    for (const p of params) {
+        if (p.edictType.kind === "basic" && p.edictType.name === "String") {
+            allLambdaParams.push({ name: p.name, wasmType: binaryen.i32 });
+            allLambdaParams.push({ name: `__str_len_${p.name}`, wasmType: binaryen.i32 });
+            edictParamTypes.push("String");
+        } else {
+            allLambdaParams.push({ name: p.name, wasmType: p.wasmType });
+            edictParamTypes.push("other");
+        }
+    }
 
     const lambdaCtx = new FunctionContext(allLambdaParams);
 
@@ -233,7 +352,7 @@ export function compileLambdaExpr(
     }
 
     mod.addFunction(lambdaName, paramType, returnType, lambdaCtx.varTypes, body);
-    fnSigs.set(lambdaName, { returnType, paramTypes: allParamTypes });
+    fnSigs.set(lambdaName, { returnType, paramTypes: allParamTypes, edictParamTypes });
 
     // Register lambda in the function table for indirect calls
     // The table is built after all functions are compiled
