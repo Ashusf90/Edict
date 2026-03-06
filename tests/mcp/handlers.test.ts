@@ -56,10 +56,10 @@ describe("handleSchema", () => {
 // =============================================================================
 
 describe("handleExamples", () => {
-    it("returns 17 example programs", () => {
+    it("returns 18 example programs", () => {
         const result = handleExamples();
-        expect(result.count).toBe(17);
-        expect(result.examples).toHaveLength(17);
+        expect(result.count).toBe(18);
+        expect(result.examples).toHaveLength(18);
     });
 
     it("each example has a name and a valid AST object", () => {

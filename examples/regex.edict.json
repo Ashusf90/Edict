@@ -1,0 +1,141 @@
+{
+    "kind": "module",
+    "id": "mod-regex-001",
+    "name": "regex_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-email-001",
+                    "name": "email",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "literal",
+                        "id": "lit-email-001",
+                        "value": "user@example.com"
+                    }
+                },
+                {
+                    "kind": "if",
+                    "id": "if-001",
+                    "condition": {
+                        "kind": "call",
+                        "id": "call-test-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "id-test-001",
+                            "name": "regexTest"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-pat-001",
+                                "value": "^[a-z]+@[a-z]+\\.[a-z]+$"
+                            },
+                            {
+                                "kind": "ident",
+                                "id": "id-email-001",
+                                "name": "email"
+                            }
+                        ]
+                    },
+                    "then": [
+                        {
+                            "kind": "call",
+                            "id": "call-print-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "id-print-001",
+                                "name": "print"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-valid-001",
+                                    "value": "Valid email"
+                                }
+                            ]
+                        }
+                    ],
+                    "else": [
+                        {
+                            "kind": "call",
+                            "id": "call-print-002",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "id-print-002",
+                                "name": "print"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-invalid-001",
+                                    "value": "Invalid email"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-003",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "id-print-003",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-replace-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "id-replace-001",
+                                "name": "regexReplace"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-input-001",
+                                    "value": "SSN: 123-45-6789"
+                                },
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-pat-002",
+                                    "value": "\\d"
+                                },
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-repl-001",
+                                    "value": "*"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}

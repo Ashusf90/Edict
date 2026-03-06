@@ -513,6 +513,53 @@ function createDateTimeImports(state: RuntimeState): Record<string, Function> {
 }
 
 // =============================================================================
+// Regex builtins — regexTest, regexMatch, regexReplace
+// =============================================================================
+
+function createRegexImports(state: RuntimeState): Record<string, Function> {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    return {
+        regexTest: (patPtr: number, patLen: number, inputPtr: number, inputLen: number): number => {
+            const buf = getMemoryBuffer(state);
+            const pattern = decoder.decode(new Uint8Array(buf, patPtr, patLen));
+            const input = decoder.decode(new Uint8Array(buf, inputPtr, inputLen));
+            try {
+                return new RegExp(pattern).test(input) ? 1 : 0;
+            } catch {
+                return 0; // invalid regex → false
+            }
+        },
+        regexMatch: (patPtr: number, patLen: number, inputPtr: number, inputLen: number): number => {
+            const buf = getMemoryBuffer(state);
+            const pattern = decoder.decode(new Uint8Array(buf, patPtr, patLen));
+            const input = decoder.decode(new Uint8Array(buf, inputPtr, inputLen));
+            try {
+                const m = input.match(new RegExp(pattern));
+                return writeStringResult(state, m ? m[0]! : "", encoder);
+            } catch {
+                return writeStringResult(state, "", encoder); // invalid regex → empty string
+            }
+        },
+        regexReplace: (
+            inputPtr: number, inputLen: number,
+            patPtr: number, patLen: number,
+            replPtr: number, replLen: number,
+        ): number => {
+            const buf = getMemoryBuffer(state);
+            const input = decoder.decode(new Uint8Array(buf, inputPtr, inputLen));
+            const pattern = decoder.decode(new Uint8Array(buf, patPtr, patLen));
+            const replacement = decoder.decode(new Uint8Array(buf, replPtr, replLen));
+            try {
+                return writeStringResult(state, input.replace(new RegExp(pattern, "g"), replacement), encoder);
+            } catch {
+                return writeStringResult(state, input, encoder); // invalid regex → unchanged
+            }
+        },
+    };
+}
+
+// =============================================================================
 // Factory — combines all groups into one import object
 // =============================================================================
 
@@ -539,6 +586,7 @@ export function createHostImports(
             ...createJsonImports(state),
             ...createRandomImports(state),
             ...createDateTimeImports(state),
+            ...createRegexImports(state),
         },
     };
 }

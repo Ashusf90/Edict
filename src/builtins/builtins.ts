@@ -528,6 +528,35 @@ export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map([
             wasmImport: ["host", "diffMs"],
         },
     ],
+    // =========================================================================
+    // Regex builtins — pattern matching, extraction, and replacement
+    // =========================================================================
+    [
+        "regexTest",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE, STRING_TYPE], effects: ["pure"], returnType: BOOL_TYPE },
+            wasmImport: ["host", "regexTest"],
+        },
+    ],
+    [
+        "regexMatch",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE, STRING_TYPE], effects: ["pure"], returnType: STRING_TYPE },
+            wasmImport: ["host", "regexMatch"],
+        },
+    ],
+    [
+        "regexReplace",
+        {
+            type: {
+                kind: "fn_type",
+                params: [STRING_TYPE, STRING_TYPE, STRING_TYPE],
+                effects: ["pure"],
+                returnType: STRING_TYPE,
+            },
+            wasmImport: ["host", "regexReplace"],
+        },
+    ],
 ]);
 
 /**
