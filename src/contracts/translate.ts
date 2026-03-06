@@ -49,8 +49,8 @@ export function createParamVariables(
     const { ctx } = tctx;
 
     for (const p of params) {
-        if (p.type.kind === "basic") {
-            switch (p.type.name) {
+        if (p.type!.kind === "basic") {
+            switch (p.type!.name) {
                 case "Int":
                     tctx.variables.set(p.name, ctx.Int.const(p.name));
                     break;

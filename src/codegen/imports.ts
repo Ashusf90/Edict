@@ -126,7 +126,7 @@ function inferTypeFromExpr(
     }
     if (expr.kind === "ident") {
         const param = enclosingFn.params.find(p => p.name === expr.name);
-        if (param) return edictTypeToWasm(param.type);
+        if (param) return edictTypeToWasm(param.type!);
         return binaryen.i32;
     }
     if (expr.kind === "binop") {

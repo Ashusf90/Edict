@@ -47,7 +47,8 @@
   "author": "Sowiedu",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "prepare": "git config core.hooksPath .githooks",
+    "build": "npm run generate-schema && tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

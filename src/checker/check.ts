@@ -102,7 +102,7 @@ function registerValueDef(def: Definition, env: TypeEnv): void {
         case "fn": {
             const fnType: FunctionType = {
                 kind: "fn_type",
-                params: def.params.map((p) => p.type),
+                params: def.params.map((p) => p.type ?? UNKNOWN_TYPE),
                 effects: [...def.effects],
                 returnType: def.returnType ?? UNKNOWN_TYPE,
             };
@@ -128,7 +128,7 @@ function checkFunction(
 
     // Bind params
     for (const param of fn.params) {
-        fnEnv.bind(param.name, param.type);
+        fnEnv.bind(param.name, param.type!);
     }
 
     // Infer body type first (needed when returnType is omitted)
@@ -381,8 +381,14 @@ function inferCall(
     // Check arg types (up to the minimum of args/params)
     const checkCount = Math.min(expr.args.length, resolved.params.length);
     for (let i = 0; i < checkCount; i++) {
-        const argType = inferExpr(expr.args[i]!, env, errors);
-        checkExpectedType(argType, resolved.params[i]!, expr.args[i]!.id, env, errors);
+        const arg = expr.args[i]!;
+        const expectedParamType = resolved.params[i]!;
+        // If arg is a lambda and expected param is fn_type, propagate param types
+        const resolvedExpected = resolveType(expectedParamType, env);
+        const argType = (arg.kind === "lambda" && resolvedExpected.kind === "fn_type")
+            ? inferLambdaWithContext(arg, resolvedExpected as FunctionType, env, errors)
+            : inferExpr(arg, env, errors);
+        checkExpectedType(argType, expectedParamType, arg.id, env, errors);
     }
 
     // Infer remaining surplus args
@@ -748,12 +754,49 @@ function inferLambda(
 ): TypeExpr {
     const lamEnv = env.child();
     for (const param of expr.params) {
-        lamEnv.bind(param.name, param.type);
+        lamEnv.bind(param.name, param.type ?? UNKNOWN_TYPE);
     }
     const bodyType = inferExprList(expr.body, lamEnv, errors);
     return {
         kind: "fn_type",
-        params: expr.params.map((p) => p.type),
+        params: expr.params.map((p) => p.type ?? UNKNOWN_TYPE),
+        effects: [],
+        returnType: bodyType,
+    } satisfies FunctionType;
+}
+
+/**
+ * Infer lambda type with expected fn_type context from a call site.
+ * Propagates param types from the expected signature to untyped lambda params.
+ */
+function inferLambdaWithContext(
+    expr: Expression & { kind: "lambda" },
+    expectedType: FunctionType,
+    env: TypeEnv,
+    errors: StructuredError[],
+): TypeExpr {
+    const lamEnv = env.child();
+
+    for (let i = 0; i < expr.params.length; i++) {
+        const param = expr.params[i]!;
+        if (param.type) {
+            // Explicit type — use it
+            lamEnv.bind(param.name, param.type);
+        } else if (i < expectedType.params.length) {
+            // Infer from expected fn_type
+            const inferred = expectedType.params[i]!;
+            // Backfill onto AST so downstream stages (codegen, effects) see it
+            (param as { type?: TypeExpr }).type = inferred;
+            lamEnv.bind(param.name, inferred);
+        } else {
+            lamEnv.bind(param.name, UNKNOWN_TYPE);
+        }
+    }
+
+    const bodyType = inferExprList(expr.body, lamEnv, errors);
+    return {
+        kind: "fn_type",
+        params: expr.params.map((p) => p.type ?? UNKNOWN_TYPE),
         effects: [],
         returnType: bodyType,
     } satisfies FunctionType;

@@ -558,6 +558,47 @@ function validateParam(
     }
 }
 
+/**
+ * Like validateParam but `type` is optional (for lambda param type inference).
+ */
+function validateLambdaParam(
+    node: unknown,
+    path: string,
+    errors: StructuredError[],
+    idTracker: IdTracker,
+): void {
+    if (!isObject(node)) {
+        errors.push(invalidFieldType(path, null, path, "object", typeof node));
+        return;
+    }
+
+    const kind = node["kind"];
+    if (kind !== "param") {
+        errors.push(unknownNodeKind(path, String(kind ?? "undefined"), ["param"]));
+        return;
+    }
+
+    trackId(node, path, errors, idTracker);
+    requireString(node, "name", path, errors);
+
+    // type is optional — validate if present
+    if (node["type"] !== undefined && node["type"] !== null) {
+        if (!isObject(node["type"])) {
+            errors.push(
+                invalidFieldType(
+                    path,
+                    getNodeId(node),
+                    "type",
+                    "object",
+                    typeof node["type"],
+                ),
+            );
+        } else {
+            validateTypeExpr(node["type"], `${path}.type`, errors, idTracker);
+        }
+    }
+}
+
 function validateContract(
     node: unknown,
     path: string,
@@ -1324,7 +1365,7 @@ function validateLambdaExpr(
     const params = requireArray(node, "params", path, errors);
     if (params) {
         for (let i = 0; i < params.length; i++) {
-            validateParam(params[i], `${path}.params[${i}]`, errors, idTracker);
+            validateLambdaParam(params[i], `${path}.params[${i}]`, errors, idTracker);
         }
     }
 

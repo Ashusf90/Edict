@@ -242,7 +242,7 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
                 // Closure convention: all user functions have __env:i32 as first WASM param
                 fnSigs.set(def.name, {
                     returnType: def.returnType ? edictTypeToWasm(def.returnType) : binaryen.i32,
-                    paramTypes: [binaryen.i32, ...def.params.map((p) => edictTypeToWasm(p.type))],
+                    paramTypes: [binaryen.i32, ...def.params.map((p) => edictTypeToWasm(p.type!))],
                 });
             }
         }
@@ -439,9 +439,9 @@ function compileFunction(
     const { mod } = cc;
     const params = fn.params.map((p) => ({
         name: p.name,
-        edictType: p.type,
-        wasmType: edictTypeToWasm(p.type),
-        edictTypeName: p.type.kind === "named" ? p.type.name : p.type.kind === "option" ? "Option" : p.type.kind === "result" ? "Result" : undefined,
+        edictType: p.type!,
+        wasmType: edictTypeToWasm(p.type!),
+        edictTypeName: p.type!.kind === "named" ? p.type!.name : p.type!.kind === "option" ? "Option" : p.type!.kind === "result" ? "Result" : undefined,
     }));
 
     // Closure convention: all user functions have __env:i32 as first WASM param.

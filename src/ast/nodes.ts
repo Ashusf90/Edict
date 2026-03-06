@@ -150,7 +150,7 @@ export interface Param {
     kind: "param";
     id: string;
     name: string;
-    type: TypeExpr;
+    type?: TypeExpr;
 }
 
 /**

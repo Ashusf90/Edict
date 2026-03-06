@@ -140,7 +140,7 @@ export function compileLambdaExpr(
 
     const params = expr.params.map((p) => ({
         name: p.name,
-        wasmType: edictTypeToWasm(p.type),
+        wasmType: edictTypeToWasm(p.type!),
     }));
 
     // Detect free variables (captures from enclosing scope)

@@ -119,7 +119,7 @@ function defToSymbolInfo(def: Definition): SymbolInfo {
                 nodeId: def.id,
                 type: {
                     kind: "fn_type",
-                    params: def.params.map((p) => p.type),
+                    params: def.params.map((p) => p.type ?? UNKNOWN_TYPE),
                     effects: [...def.effects],
                     returnType: def.returnType ?? UNKNOWN_TYPE,
                 } satisfies FunctionType,
@@ -148,14 +148,14 @@ function resolveFunctionDef(
             name: param.name,
             kind: "param",
             nodeId: param.id,
-            type: param.type,
+            type: param.type!,
         });
         if (err) errors.push(err);
     }
 
     // Resolve param types
     for (const param of fn.params) {
-        resolveTypeExpr(param.type, parentScope, errors);
+        resolveTypeExpr(param.type!, parentScope, errors);
     }
 
     // Resolve return type (if explicit)
@@ -415,12 +415,12 @@ function resolveExpression(
         case "lambda": {
             const lamScope = scope.child();
             for (const param of expr.params) {
-                resolveTypeExpr(param.type, scope, errors);
+                if (param.type) resolveTypeExpr(param.type, scope, errors);
                 const err = lamScope.define(param.name, {
                     name: param.name,
                     kind: "param",
                     nodeId: param.id,
-                    type: param.type,
+                    type: param.type ?? UNKNOWN_TYPE,
                 });
                 if (err) errors.push(err);
             }
