@@ -335,10 +335,21 @@ function validateFunctionDef(
         validateEffectsArray(effects, path, getNodeId(node), errors);
     }
 
-    // Return type
-    const retType = requireObject(node, "returnType", path, errors);
-    if (retType) {
-        validateTypeExpr(retType, `${path}.returnType`, errors, idTracker);
+    // Return type (optional — inferred from body if omitted)
+    if (node["returnType"] !== undefined && node["returnType"] !== null) {
+        if (!isObject(node["returnType"])) {
+            errors.push(
+                invalidFieldType(
+                    path,
+                    getNodeId(node),
+                    "returnType",
+                    "object",
+                    typeof node["returnType"],
+                ),
+            );
+        } else {
+            validateTypeExpr(node["returnType"], `${path}.returnType`, errors, idTracker);
+        }
     }
 
     // Contracts

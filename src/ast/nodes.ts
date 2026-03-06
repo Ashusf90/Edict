@@ -72,7 +72,7 @@ export interface FunctionDef {
     name: string;
     params: Param[];
     effects: Effect[];
-    returnType: TypeExpr;
+    returnType?: TypeExpr;
     contracts: Contract[];
     body: Expression[];
 }

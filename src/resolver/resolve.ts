@@ -24,6 +24,7 @@ import { Scope, type SymbolInfo } from "./scope.js";
 import type { FunctionType } from "../ast/types.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
 import { BUILTIN_ENUMS } from "../builtins/builtin-enums.js";
+import { UNKNOWN_TYPE } from "../ast/type-constants.js";
 
 /**
  * Entry point: resolve all names in a validated Edict module.
@@ -120,7 +121,7 @@ function defToSymbolInfo(def: Definition): SymbolInfo {
                     kind: "fn_type",
                     params: def.params.map((p) => p.type),
                     effects: [...def.effects],
-                    returnType: def.returnType,
+                    returnType: def.returnType ?? UNKNOWN_TYPE,
                 } satisfies FunctionType,
                 definition: def,
             };
@@ -157,8 +158,8 @@ function resolveFunctionDef(
         resolveTypeExpr(param.type, parentScope, errors);
     }
 
-    // Resolve return type
-    resolveTypeExpr(fn.returnType, parentScope, errors);
+    // Resolve return type (if explicit)
+    if (fn.returnType) resolveTypeExpr(fn.returnType, parentScope, errors);
 
     // Resolve contracts
     for (const contract of fn.contracts) {
@@ -182,7 +183,7 @@ function resolveContract(
             name: "result",
             kind: "result",
             nodeId: null,
-            type: fn.returnType,
+            type: fn.returnType ?? UNKNOWN_TYPE,
         });
         resolveExpression(contract.condition, postScope, errors);
     } else {

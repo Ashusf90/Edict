@@ -104,7 +104,7 @@ function registerValueDef(def: Definition, env: TypeEnv): void {
                 kind: "fn_type",
                 params: def.params.map((p) => p.type),
                 effects: [...def.effects],
-                returnType: def.returnType,
+                returnType: def.returnType ?? UNKNOWN_TYPE,
             };
             env.bind(def.name, fnType);
             break;
@@ -131,11 +131,23 @@ function checkFunction(
         fnEnv.bind(param.name, param.type);
     }
 
-    // Check contracts
+    // Infer body type first (needed when returnType is omitted)
+    const bodyType = inferExprList(fn.body, fnEnv, errors);
+
+    // Determine effective return type: explicit annotation or inferred from body
+    const hadExplicitReturnType = !!fn.returnType;
+    const effectiveReturnType = fn.returnType ?? bodyType;
+
+    // Backfill returnType on the AST node for downstream stages (codegen, effects)
+    if (!fn.returnType) {
+        (fn as { returnType?: TypeExpr }).returnType = effectiveReturnType;
+    }
+
+    // Check contracts (postconditions bind `result` to the effective return type)
     for (const contract of fn.contracts) {
         if (contract.kind === "post") {
             const postEnv = fnEnv.child();
-            postEnv.bind("result", fn.returnType);
+            postEnv.bind("result", effectiveReturnType);
             const condType = inferExpr(contract.condition, postEnv, errors);
             checkExpectedType(condType, BOOL_TYPE, contract.id, fnEnv, errors);
         } else {
@@ -144,12 +156,9 @@ function checkFunction(
         }
     }
 
-    // Infer body type
-    const bodyType = inferExprList(fn.body, fnEnv, errors);
-
-    // Check return type
-    if (bodyType && !isUnknown(bodyType) && !isUnknown(resolveType(fn.returnType, fnEnv))) {
-        checkExpectedType(bodyType, fn.returnType, fn.id, fnEnv, errors);
+    // If returnType was explicit, check body against it
+    if (hadExplicitReturnType && bodyType && !isUnknown(bodyType) && !isUnknown(resolveType(fn.returnType!, fnEnv))) {
+        checkExpectedType(bodyType, fn.returnType!, fn.id, fnEnv, errors);
     }
 }
 

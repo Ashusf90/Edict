@@ -107,7 +107,36 @@
           }
         },
         "returnType": {
-          "$ref": "#/definitions/TypeExpr"
+          "description": "Union of all type expressions in Edict.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/BasicType"
+            },
+            {
+              "$ref": "#/definitions/ArrayType"
+            },
+            {
+              "$ref": "#/definitions/OptionType"
+            },
+            {
+              "$ref": "#/definitions/ResultType"
+            },
+            {
+              "$ref": "#/definitions/UnitType"
+            },
+            {
+              "$ref": "#/definitions/RefinedType"
+            },
+            {
+              "$ref": "#/definitions/FunctionType"
+            },
+            {
+              "$ref": "#/definitions/NamedType"
+            },
+            {
+              "$ref": "#/definitions/TupleType"
+            }
+          ]
         },
         "contracts": {
           "type": "array",
@@ -129,8 +158,7 @@
         "id",
         "kind",
         "name",
-        "params",
-        "returnType"
+        "params"
       ]
     },
     "Param": {

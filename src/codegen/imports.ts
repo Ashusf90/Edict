@@ -87,7 +87,7 @@ function inferFromExpr(
         const lastExprInBody = enclosingFn.body.length > 0
             ? enclosingFn.body[enclosingFn.body.length - 1]
             : null;
-        const returnType = isExprOrContains(lastExprInBody, expr)
+        const returnType = isExprOrContains(lastExprInBody, expr) && enclosingFn.returnType
             ? edictTypeToWasm(enclosingFn.returnType)
             : binaryen.i32;
         sigs.set(name, { paramTypes, returnType });

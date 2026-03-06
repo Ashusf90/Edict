@@ -241,7 +241,7 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
             if (def.kind === "fn") {
                 // Closure convention: all user functions have __env:i32 as first WASM param
                 fnSigs.set(def.name, {
-                    returnType: edictTypeToWasm(def.returnType),
+                    returnType: def.returnType ? edictTypeToWasm(def.returnType) : binaryen.i32,
                     paramTypes: [binaryen.i32, ...def.params.map((p) => edictTypeToWasm(p.type))],
                 });
             }
@@ -454,7 +454,11 @@ function compileFunction(
 
     const ctx = new FunctionContext(allParams);
 
-    const returnType = edictTypeToWasm(fn.returnType);
+    const returnType = fn.returnType
+        ? edictTypeToWasm(fn.returnType)
+        : (fn.body.length > 0
+            ? inferExprWasmType(fn.body[fn.body.length - 1]!, cc, ctx)
+            : binaryen.i32);
     const paramTypes = allParams.map((p) => p.wasmType);
     const paramType =
         paramTypes.length > 0
