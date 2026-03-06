@@ -9,7 +9,8 @@
 //   runDirect() → synchronous execution (used by worker and tests)
 
 import { Worker } from "node:worker_threads";
-import { createHostImports, type RuntimeState, EdictOomError } from "./host-functions.js";
+import { createHostImports } from "../builtins/registry.js";
+import { type RuntimeState, EdictOomError } from "../builtins/host-helpers.js";
 import type { EdictHostAdapter } from "./host-adapter.js";
 
 /* eslint-disable @typescript-eslint/no-namespace */

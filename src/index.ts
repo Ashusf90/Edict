@@ -191,7 +191,7 @@ export { BUILTIN_FUNCTIONS, isBuiltin, getBuiltin } from "./builtins/builtins.js
 export type { EdictHostAdapter } from "./codegen/host-adapter.js";
 export { NodeHostAdapter } from "./codegen/node-host-adapter.js";
 export { BrowserHostAdapter } from "./codegen/browser-host-adapter.js";
-export { EdictOomError } from "./codegen/host-functions.js";
+export { EdictOomError } from "./builtins/host-helpers.js";
 
 // Error catalog
 export { buildErrorCatalog } from "./errors/error-catalog.js";

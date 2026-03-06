@@ -16,7 +16,7 @@ import { StringTable } from "./string-table.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
 import { type StructuredError, wasmValidationError } from "../errors/structured-errors.js";
 import { collectStrings } from "./collect-strings.js";
-import { generateArrayMap, generateArrayFilter, generateArrayReduce, generateArrayFind, generateArraySort } from "./hof-generators.js";
+import { generateWasmBuiltins } from "../builtins/registry.js";
 import {
     type CompilationContext,
     type CompileResult,
@@ -358,18 +358,8 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
             }
         }
 
-        // =====================================================================
-        // Generate WASM-native HOF array builtins
-        // These need call_indirect to invoke closure arguments, so they
-        // must be generated as internal WASM functions (not host imports).
-        // Array layout in memory: [length:i32][elem0:i32][elem1:i32]...
-        // Closure pair layout: [table_index:i32][env_ptr:i32]
-        // =====================================================================
-        generateArrayMap(mod);
-        generateArrayFilter(mod);
-        generateArrayReduce(mod);
-        generateArrayFind(mod);
-        generateArraySort(mod);
+        // Generate WASM-native HOF builtins from the unified registry
+        generateWasmBuiltins(mod);
 
         // Build function table for indirect calls (call_indirect)
         // This must happen after all functions (including lambdas) are compiled
