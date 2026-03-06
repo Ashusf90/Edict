@@ -647,6 +647,44 @@ export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map([
             wasmImport: ["host", "httpDelete"],
         },
     ],
+    // =========================================================================
+    // IO builtins — filesystem, environment, process control
+    // =========================================================================
+    [
+        "readFile",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+            wasmImport: ["host", "readFile"],
+        },
+    ],
+    [
+        "writeFile",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE, STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+            wasmImport: ["host", "writeFile"],
+        },
+    ],
+    [
+        "env",
+        {
+            type: { kind: "fn_type", params: [STRING_TYPE], effects: ["reads"], returnType: STRING_TYPE },
+            wasmImport: ["host", "env"],
+        },
+    ],
+    [
+        "args",
+        {
+            type: { kind: "fn_type", params: [], effects: ["reads"], returnType: STRING_TYPE },
+            wasmImport: ["host", "args"],
+        },
+    ],
+    [
+        "exit",
+        {
+            type: { kind: "fn_type", params: [INT_TYPE], effects: ["io"], returnType: INT_TYPE },
+            wasmImport: ["host", "exit"],
+        },
+    ],
 ]);
 
 /**

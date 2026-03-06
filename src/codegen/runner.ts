@@ -39,6 +39,8 @@ export interface RunLimits {
     timeoutMs?: number;
     /** Max WASM memory in MB (compile-time, default: 1) */
     maxMemoryMb?: number;
+    /** Sandbox directory for file IO builtins. If unset, readFile/writeFile return Err. */
+    sandboxDir?: string;
 }
 
 export interface RunResult {
@@ -96,7 +98,7 @@ export async function run(
             try {
                 const runner = await import(url);
                 const wasmBytes = new Uint8Array(workerData.wasm);
-                const result = await runner.runDirect(wasmBytes, workerData.entryFn);
+                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir });
                 parentPort.postMessage({ type: "result", data: result });
             } catch (e) {
                 parentPort.postMessage({
@@ -112,6 +114,7 @@ export async function run(
                 wasm: Buffer.from(wasm),
                 entryFn,
                 runnerModuleUrl,
+                sandboxDir: limits.sandboxDir,
             },
             // Register tsx ESM loader so the worker can import .ts files (vitest/dev)
             execArgv: ["--import", "tsx"],
@@ -183,12 +186,14 @@ export async function run(
  *
  * @param wasm - The WASM binary (Uint8Array from codegen)
  * @param entryFn - Name of the function to call (default: "main")
+ * @param limits - Optional execution limits (sandboxDir for file IO)
  */
 export async function runDirect(
     wasm: Uint8Array,
     entryFn: string = "main",
+    limits: RunLimits = {},
 ): Promise<RunResult> {
-    const state: RuntimeState = { outputParts: [], instance: null };
+    const state: RuntimeState = { outputParts: [], instance: null, sandboxDir: limits.sandboxDir };
     const importObject = createHostImports(state);
 
     const { instance } = await WebAssembly.instantiate(wasm, importObject);
@@ -211,10 +216,15 @@ export async function runDirect(
 
         returnValue = mainFn();
     } catch (e) {
-        state.outputParts.push(
-            `Runtime error: ${e instanceof Error ? e.message : String(e)}`,
-        );
-        exitCode = 1;
+        const msg = e instanceof Error ? e.message : String(e);
+        // Handle edict_exit:N — clean process exit, not an error
+        const exitMatch = msg.match(/^edict_exit:(\d+)$/);
+        if (exitMatch) {
+            exitCode = parseInt(exitMatch[1]!, 10);
+        } else {
+            state.outputParts.push(`Runtime error: ${msg}`);
+            exitCode = 1;
+        }
     }
 
     return {

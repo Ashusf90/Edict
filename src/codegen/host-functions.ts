@@ -9,6 +9,8 @@
 //         JSON, random, date/time, regex, crypto.
 
 import { createHash, createHmac } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve as pathResolve } from "node:path";
 
 // =============================================================================
 // Shared runtime state — passed between host functions via closure
@@ -20,6 +22,8 @@ export interface RuntimeState {
     outputParts: string[];
     /** Late-bound WASM instance — set after instantiation. */
     instance: WasmInstance | null;
+    /** Optional sandbox directory for file IO. If unset, readFile/writeFile return Err. */
+    sandboxDir?: string;
 }
 
 interface WasmInstance {
@@ -690,6 +694,100 @@ function createHttpImports(state: RuntimeState): Record<string, Function> {
     };
 }
 // =============================================================================
+// IO builtins — readFile, writeFile, env, args, exit
+// Filesystem ops are sandboxed to state.sandboxDir (if set).
+// =============================================================================
+
+/** Max file size (1 MB) — prevents WASM memory overflow. */
+const IO_MAX_FILE_BYTES = 1_048_576;
+
+/**
+ * Validate that a resolved path is inside the sandbox directory.
+ * Returns the resolved absolute path on success, or an error string.
+ */
+function validateSandboxPath(rawPath: string, sandboxDir: string): { ok: true; path: string } | { ok: false; error: string } {
+    const resolved = pathResolve(sandboxDir, rawPath);
+    if (!resolved.startsWith(sandboxDir)) {
+        return { ok: false, error: `path_outside_sandbox: ${rawPath}` };
+    }
+    return { ok: true, path: resolved };
+}
+
+function createIOImports(state: RuntimeState): Record<string, Function> {
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    function readStr(ptr: number, len: number): string {
+        return decoder.decode(new Uint8Array(getMemoryBuffer(state), ptr, len));
+    }
+
+    return {
+        readFile: (pathPtr: number, pathLen: number): number => {
+            if (!state.sandboxDir) {
+                const errPtr = writeStringResult(state, "filesystem_not_configured", encoder);
+                return writeResultValue(state, 1, errPtr);
+            }
+            const rawPath = readStr(pathPtr, pathLen);
+            const validation = validateSandboxPath(rawPath, state.sandboxDir);
+            if (!validation.ok) {
+                const errPtr = writeStringResult(state, validation.error, encoder);
+                return writeResultValue(state, 1, errPtr);
+            }
+            try {
+                let content = readFileSync(validation.path, "utf-8");
+                if (content.length > IO_MAX_FILE_BYTES) {
+                    content = content.slice(0, IO_MAX_FILE_BYTES);
+                }
+                const strPtr = writeStringResult(state, content, encoder);
+                return writeResultValue(state, 0, strPtr);
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                const errPtr = writeStringResult(state, msg, encoder);
+                return writeResultValue(state, 1, errPtr);
+            }
+        },
+
+        writeFile: (pathPtr: number, pathLen: number, contentPtr: number, contentLen: number): number => {
+            if (!state.sandboxDir) {
+                const errPtr = writeStringResult(state, "filesystem_not_configured", encoder);
+                return writeResultValue(state, 1, errPtr);
+            }
+            const rawPath = readStr(pathPtr, pathLen);
+            const validation = validateSandboxPath(rawPath, state.sandboxDir);
+            if (!validation.ok) {
+                const errPtr = writeStringResult(state, validation.error, encoder);
+                return writeResultValue(state, 1, errPtr);
+            }
+            try {
+                const content = readStr(contentPtr, contentLen);
+                writeFileSync(validation.path, content, "utf-8");
+                const okPtr = writeStringResult(state, "ok", encoder);
+                return writeResultValue(state, 0, okPtr);
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                const errPtr = writeStringResult(state, msg, encoder);
+                return writeResultValue(state, 1, errPtr);
+            }
+        },
+
+        env: (namePtr: number, nameLen: number): number => {
+            const name = readStr(namePtr, nameLen);
+            const value = process.env[name] ?? "";
+            return writeStringResult(state, value, encoder);
+        },
+
+        args: (): number => {
+            const argsJson = JSON.stringify(process.argv.slice(2));
+            return writeStringResult(state, argsJson, encoder);
+        },
+
+        exit: (code: number): number => {
+            throw new Error(`edict_exit:${code}`);
+        },
+    };
+}
+
+// =============================================================================
 // Factory — combines all groups into one import object
 // =============================================================================
 
@@ -719,6 +817,7 @@ export function createHostImports(
             ...createRegexImports(state),
             ...createCryptoImports(state),
             ...createHttpImports(state),
+            ...createIOImports(state),
         },
     };
 }
