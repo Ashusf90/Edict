@@ -54,7 +54,7 @@
           }
         },
         "types": {
-          "$ref": "#/definitions/Record<string,TypeExpr>"
+          "$ref": "#/definitions/Record%3Cstring%2CTypeExpr%3E"
         }
       },
       "required": [
