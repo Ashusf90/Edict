@@ -36,7 +36,7 @@
     },
     {
       "name": "edict_examples",
-      "description": "Return 18 example programs as JSON ASTs."
+      "description": "Return 19 example programs as JSON ASTs."
     },
     {
       "name": "edict_validate",
