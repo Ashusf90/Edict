@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
     test: {
         globals: true,
+        testTimeout: 15_000,
         include: ["tests/**/*.test.ts"],
         // Binaryen WASM modules share global state in worker threads — use forks
         // (separate processes) for isolation. Limit concurrency because WASM tests

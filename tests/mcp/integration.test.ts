@@ -314,7 +314,7 @@ describe("MCP integration — tools", () => {
         // Run with custom limits
         const { parsed: run } = await callTool("edict_run", {
             wasmBase64: compiled.wasm,
-            limits: { timeoutMs: 5000 },
+            limits: { timeoutMs: 15_000 },
         });
         expect(run.exitCode).toBe(0);
     });

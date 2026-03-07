@@ -164,7 +164,7 @@ export function createEdictServer(): McpServer {
         {
             wasmBase64: z.string().describe("The base64 encoded WebAssembly module to execute"),
             limits: z.object({
-                timeoutMs: z.number().optional().describe("Max execution time in milliseconds (default: 5000, min: 100)"),
+                timeoutMs: z.number().optional().describe("Max execution time in milliseconds (default: 15000, min: 100)"),
                 maxMemoryMb: z.number().optional().describe("Max WASM memory in MB (compile-time limit, default: 1)"),
             }).optional().describe("Optional execution sandbox limits"),
         },

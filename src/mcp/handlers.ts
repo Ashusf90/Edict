@@ -260,7 +260,7 @@ export function handleVersion(): VersionResult {
         limits: {
             z3TimeoutMs: 5000,
             maxModules: 1,
-            executionTimeoutMs: 5000,
+            executionTimeoutMs: 15_000,
             maxMemoryMb: 1,
         },
     };

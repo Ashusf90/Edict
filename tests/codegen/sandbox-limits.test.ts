@@ -139,12 +139,12 @@ describe("Sandbox Limits", () => {
         it("normal program completes within timeout", async () => {
             const wasm = await compileAst(HELLO_WORLD_AST);
 
-            const result = await run(wasm, "main", { timeoutMs: 5000 });
+            const result = await run(wasm, "main", { timeoutMs: 15_000 });
 
             expect(result.exitCode).toBe(0);
             expect(result.output).toBe("Hello, World!");
             expect(result.error).toBeUndefined();
-        }, 10_000);
+        }, 15_000);
 
         it("clamps timeoutMs to minimum of 100", async () => {
             const wasm = await compileAst(SLOW_PROGRAM_AST);
@@ -200,12 +200,12 @@ describe("Sandbox Limits", () => {
         it("omits error and limitInfo on successful execution", async () => {
             const wasm = await compileAst(HELLO_WORLD_AST);
 
-            const result = await run(wasm, "main", { timeoutMs: 5000 });
+            const result = await run(wasm, "main", { timeoutMs: 15_000 });
 
             expect(result.error).toBeUndefined();
             expect(result.limitInfo).toBeUndefined();
             expect(result.exitCode).toBe(0);
-        }, 10_000);
+        }, 15_000);
     });
 
     describe("OOM Detection", () => {

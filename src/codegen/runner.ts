@@ -37,7 +37,7 @@ declare namespace WebAssembly {
 
 /** Configuration for execution sandbox limits */
 export interface RunLimits {
-    /** Max execution time in ms (default: 5000, min: 100) */
+    /** Max execution time in ms (default: 15_000, min: 100) */
     timeoutMs?: number;
     /** Max WASM memory in MB (compile-time, default: 1) */
     maxMemoryMb?: number;
@@ -75,7 +75,7 @@ export async function run(
     entryFn: string = "main",
     limits: RunLimits = {},
 ): Promise<RunResult> {
-    const timeoutMs = Math.max(100, limits.timeoutMs ?? 5000);
+    const timeoutMs = Math.max(100, limits.timeoutMs ?? 15_000);
 
     return new Promise<RunResult>((resolvePromise) => {
         // import.meta.url is the URL of this module (runner.ts in dev, runner.js in prod).
