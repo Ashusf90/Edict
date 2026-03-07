@@ -5,5 +5,11 @@ npm run generate-schema
 # If the schema file changed, stage it
 git diff --quiet -- schema/edict.schema.json || git add schema/edict.schema.json
 
+# Update doc stats (test count, example count) and stage if changed
+bash scripts/update-doc-stats.sh
+for f in README.md CONTRIBUTING.md AGENTS.md ROADMAP.md FEATURE_SPEC.md; do
+  git diff --quiet -- "$f" 2>/dev/null || git add "$f"
+done
+
 # Fast type check (catches most issues without a full build)
 npm run typecheck || exit 1

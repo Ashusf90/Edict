@@ -149,7 +149,7 @@ createHostImports(state, adapter?)
 ## Key Conventions
 
 - **Node IDs**: Every AST node has a unique `id` string. Convention: `{kind}-{name}-{counter}` (e.g., `fn-main-001`, `param-n-001`)
-- **Testing**: vitest, run with `npm test`. 24 test files across 9 directories in `tests/`
+- **Testing**: vitest, run with `npm test`. Test files live in `tests/` across subdirectories per pipeline stage
 - **No human-facing output**: structured data only. No `console.log` in library code
 - **TypeScript strict mode**: all code is strictly typed
 - **Exports**: everything public goes through `src/index.ts`
