@@ -14,7 +14,7 @@ Edict is a programming language designed **exclusively for AI agents**. Programs
 | Feature Spec | [`FEATURE_SPEC.md`](FEATURE_SPEC.md) | Full language specification |
 | Roadmap | [`ROADMAP.md`](ROADMAP.md) | Development plan and priorities |
 | JSON Schema | [`schema/edict.schema.json`](schema/edict.schema.json) | AST schema (the spec for writing programs) |
-| Examples | [`examples/`](examples/) | 19 example programs — see [`README`](examples/README.md) for difficulty tiers |
+| Examples | [`examples/`](examples/) | 20 example programs — see [`README`](examples/README.md) for difficulty tiers |
 | Contributing | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, coding standards, PR workflow |
 | Changelog | [`CHANGELOG.md`](CHANGELOG.md) | Version history |
 
@@ -68,8 +68,8 @@ src/
 ├── mcp/           # MCP server (tools + resources)
 └── errors/        # Structured error types
 
-tests/             # 1194 tests across 69 files
-examples/          # 19 example programs (⭐→⭐⭐⭐ difficulty in README)
+tests/             # 1219 tests across 70 files
+examples/          # 20 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```
 

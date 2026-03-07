@@ -483,7 +483,7 @@ describe("type checker — invalid programs", () => {
             }],
         }));
         expect(errors.length).toBeGreaterThan(0);
-        expect(errors.some(e => e.error === "type_mismatch")).toBe(true);
+        expect(errors.some(e => e.error === "unit_mismatch")).toBe(true);
     });
 
     it("rejects return type mismatch", () => {

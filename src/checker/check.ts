@@ -17,6 +17,7 @@ import type { TypeExpr, FunctionType } from "../ast/types.js";
 import type { StructuredError } from "../errors/structured-errors.js";
 import {
     typeMismatch,
+    unitMismatch,
     arityMismatch,
     notAFunction,
     unknownField,
@@ -326,7 +327,7 @@ function inferBinop(
     // Comparison operators: ==, !=, <, >, <=, >=
     if (op === "==" || op === "!=" || op === "<" || op === ">" || op === "<=" || op === ">=") {
         if (!typesEqual(leftType, rightType, env)) {
-            errors.push(typeMismatch(expr.id, leftType, rightType));
+            emitNumericMismatch(expr.id, leftType, rightType, errors);
         }
         return BOOL_TYPE;
     }
@@ -337,7 +338,7 @@ function inferBinop(
         if (isString(leftType) && isString(rightType)) return STRING_TYPE;
         if (isNumeric(leftType, env) && isNumeric(rightType, env)) {
             if (!typesEqual(leftType, rightType, env)) {
-                errors.push(typeMismatch(expr.id, leftType, rightType));
+                emitNumericMismatch(expr.id, leftType, rightType, errors);
                 return UNKNOWN_TYPE;
             }
             return leftType;
@@ -349,7 +350,7 @@ function inferBinop(
     // -, *, /, % — numeric only
     if (isNumeric(leftType, env) && isNumeric(rightType, env)) {
         if (!typesEqual(leftType, rightType, env)) {
-            errors.push(typeMismatch(expr.id, leftType, rightType));
+            emitNumericMismatch(expr.id, leftType, rightType, errors);
             return UNKNOWN_TYPE;
         }
         return leftType;
@@ -357,6 +358,23 @@ function inferBinop(
 
     errors.push(typeMismatch(expr.id, UNKNOWN_TYPE, leftType)); // Expected numeric
     return UNKNOWN_TYPE;
+}
+
+/**
+ * Emit a unit_mismatch error when both types are unit_type with different units/bases,
+ * or fall back to a generic type_mismatch otherwise.
+ */
+function emitNumericMismatch(
+    nodeId: string,
+    leftType: TypeExpr,
+    rightType: TypeExpr,
+    errors: StructuredError[],
+): void {
+    if (leftType.kind === "unit_type" && rightType.kind === "unit_type") {
+        errors.push(unitMismatch(nodeId, leftType.unit, rightType.unit, leftType.base, rightType.base));
+    } else {
+        errors.push(typeMismatch(nodeId, leftType, rightType));
+    }
 }
 
 function inferUnop(

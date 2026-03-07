@@ -39,6 +39,7 @@ export type StructuredError =
     | UnknownVariantError
     // Phase 2 — type checking errors
     | TypeMismatchError
+    | UnitMismatchError
     | ArityMismatchError
     | NotAFunctionError
     | UnknownFieldError
@@ -179,6 +180,15 @@ export interface TypeMismatchError {
     expected: TypeExpr;
     actual: TypeExpr;
     suggestion?: FixSuggestion;
+}
+
+export interface UnitMismatchError {
+    error: "unit_mismatch";
+    nodeId: string | null;
+    expectedUnit: string;
+    actualUnit: string;
+    expectedBase: "Int" | "Float";
+    actualBase: "Int" | "Float";
 }
 
 export interface ArityMismatchError {
@@ -357,6 +367,16 @@ export function typeMismatch(
     const err: TypeMismatchError = { error: "type_mismatch", nodeId, expected, actual };
     if (suggestion) err.suggestion = suggestion;
     return err;
+}
+
+export function unitMismatch(
+    nodeId: string | null,
+    expectedUnit: string,
+    actualUnit: string,
+    expectedBase: "Int" | "Float",
+    actualBase: "Int" | "Float",
+): UnitMismatchError {
+    return { error: "unit_mismatch", nodeId, expectedUnit, actualUnit, expectedBase, actualBase };
 }
 
 export function arityMismatch(

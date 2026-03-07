@@ -33,7 +33,8 @@ export function edictTypeToWasm(type: TypeExpr): binaryen.Type {
         return binaryen.i32; // heap pointer to tagged union
     }
     if (type.kind === "unit_type") {
-        return binaryen.none;
+        // Unit types erase to their underlying base type at runtime — zero cost
+        return type.base === "Float" ? binaryen.f64 : binaryen.i32;
     }
     // Fallback for anything else
     return binaryen.i32;

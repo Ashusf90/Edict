@@ -253,7 +253,7 @@ export function handleVersion(): VersionResult {
         features: {
             contracts: true,
             effects: true,
-            unitTypes: false,
+            unitTypes: true,
             multiModule: false,
             compactAst: true,
         },

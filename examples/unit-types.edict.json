@@ -1,0 +1,90 @@
+{
+  "kind": "module",
+  "id": "mod-unit-types-001",
+  "name": "unit_types_demo",
+  "imports": [],
+  "definitions": [
+    {
+      "kind": "fn",
+      "id": "fn-add-prices-001",
+      "name": "add_prices",
+      "params": [
+        { "kind": "param", "id": "param-a-001", "name": "a", "type": { "kind": "unit_type", "base": "Int", "unit": "usd" } },
+        { "kind": "param", "id": "param-b-001", "name": "b", "type": { "kind": "unit_type", "base": "Int", "unit": "usd" } }
+      ],
+      "returnType": { "kind": "unit_type", "base": "Int", "unit": "usd" },
+      "effects": ["pure"],
+      "contracts": [],
+      "body": [
+        {
+          "kind": "binop",
+          "id": "binop-add-001",
+          "op": "+",
+          "left": { "kind": "ident", "id": "id-a-001", "name": "a" },
+          "right": { "kind": "ident", "id": "id-b-001", "name": "b" }
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-temp-diff-001",
+      "name": "temp_difference",
+      "params": [
+        { "kind": "param", "id": "param-t1-001", "name": "t1", "type": { "kind": "unit_type", "base": "Float", "unit": "celsius" } },
+        { "kind": "param", "id": "param-t2-001", "name": "t2", "type": { "kind": "unit_type", "base": "Float", "unit": "celsius" } }
+      ],
+      "returnType": { "kind": "unit_type", "base": "Float", "unit": "celsius" },
+      "effects": ["pure"],
+      "contracts": [],
+      "body": [
+        {
+          "kind": "binop",
+          "id": "binop-sub-001",
+          "op": "-",
+          "left": { "kind": "ident", "id": "id-t1-001", "name": "t1" },
+          "right": { "kind": "ident", "id": "id-t2-001", "name": "t2" }
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-is-cheaper-001",
+      "name": "is_cheaper",
+      "params": [
+        { "kind": "param", "id": "param-x-001", "name": "x", "type": { "kind": "unit_type", "base": "Int", "unit": "usd" } },
+        { "kind": "param", "id": "param-y-001", "name": "y", "type": { "kind": "unit_type", "base": "Int", "unit": "usd" } }
+      ],
+      "returnType": { "kind": "basic", "name": "Bool" },
+      "effects": ["pure"],
+      "contracts": [],
+      "body": [
+        {
+          "kind": "binop",
+          "id": "binop-lt-001",
+          "op": "<",
+          "left": { "kind": "ident", "id": "id-x-001", "name": "x" },
+          "right": { "kind": "ident", "id": "id-y-001", "name": "y" }
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-negate-001",
+      "name": "negate_price",
+      "params": [
+        { "kind": "param", "id": "param-p-001", "name": "p", "type": { "kind": "unit_type", "base": "Int", "unit": "usd" } }
+      ],
+      "returnType": { "kind": "unit_type", "base": "Int", "unit": "usd" },
+      "effects": ["pure"],
+      "contracts": [],
+      "body": [
+        {
+          "kind": "unop",
+          "id": "unop-neg-001",
+          "op": "-",
+          "operand": { "kind": "ident", "id": "id-p-001", "name": "p" }
+        }
+      ]
+    }
+  ]
+}

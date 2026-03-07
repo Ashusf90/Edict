@@ -410,7 +410,7 @@ function compileFunction(
             ? edictTypeToWasm(cc.typeInfo.inferredReturnTypes.get(fn.id)!)
             : (fn.body.length > 0
                 ? inferExprWasmType(fn.body[fn.body.length - 1]!, cc, ctx)
-                : binaryen.i32));
+                : binaryen.none));
     const paramTypes = allParams.map((p) => p.wasmType);
     const paramType =
         paramTypes.length > 0

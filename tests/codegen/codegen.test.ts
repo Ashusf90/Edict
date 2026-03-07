@@ -251,9 +251,9 @@ describe("compile — success cases", () => {
 });
 
 describe("compile — edge cases", () => {
-    it("compiles function with no body as nop", () => {
+    it("compiles function with empty body as nop", () => {
         const mod = mkModule([
-            mkFn("main", [], { returnType: { kind: "unit_type" } }),
+            mkFn("main", [], { returnType: undefined }),
         ]);
         const result = compile(mod, { emitWat: true });
 
