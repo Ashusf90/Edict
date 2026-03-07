@@ -4,3 +4,6 @@ npm run generate-schema
 
 # If the schema file changed, stage it
 git diff --quiet -- schema/edict.schema.json || git add schema/edict.schema.json
+
+# Fast type check (catches most issues without a full build)
+npm run typecheck || exit 1

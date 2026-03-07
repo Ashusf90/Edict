@@ -93,3 +93,8 @@ if (url.endsWith(".ts")) {
 - **Root cause**: The String param expansion code path was guarded by `isUserFn && sig?.edictParamTypes`. Typed imports are not in `fnTableIndices`. 
 - **Fix**: Added a second expansion path for `!isUserFn && sig?.edictParamTypes` (without `__env` prefix since imports don't use the closure convention). Also register `edictParamTypes` in `fnSigs` for typed imports in `codegen.ts`.
 - **Pattern**: When adding new function-like entities (typed imports, builtins, etc.), ensure `edictParamTypes` is registered in `fnSigs` AND that the call compilation path handles String expansion for them. The `__env` convention only applies to user funcs and lambdas.
+
+## 15. Global Workflows Location
+- **Location**: Global workflows live in `~/.gemini/antigravity/global_workflows/`, NOT per-project `.agent/workflows/`.
+- **Distinction**: Per-project workflows go in `<project>/.agent/workflows/`. Global workflows (available across all projects) go in the global directory.
+- **Pattern**: When creating a workflow the user wants across all projects, save it to the global directory. Don't duplicate across per-project dirs.

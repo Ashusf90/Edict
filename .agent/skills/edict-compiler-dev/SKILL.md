@@ -116,6 +116,9 @@ Error constructors live in `src/errors/structured-errors.ts`. Each constructor i
 
 ## Host Adapter System
 
+> **WASM sandboxing with explicit host bridging is a deliberate security feature, not a limitation.**
+> Agent-generated code runs in an isolated WASM VM with zero ambient authority. Filesystem, network, and crypto access are only available through host-provided adapters. This is defense-in-depth: the effect system declares capabilities at compile time, the `EdictHostAdapter` controls what's actually available at runtime, and `RunLimits` enforces timeout/memory/sandbox constraints.
+
 The host function layer uses a pluggable adapter pattern (`EdictHostAdapter`) to separate platform-specific operations from the WASM↔Host bridge.
 
 **Architecture:**

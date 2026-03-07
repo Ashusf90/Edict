@@ -179,6 +179,17 @@ Available built-in functions (no need to import):
 - `array_push(Array<T>, T) -> Array<T>` — effect: `pure`
 - `array_get(Array<T>, Int) -> T` — effect: `pure`
 
+## Execution & Security
+
+Programs compile to **WebAssembly** and run in a sandboxed VM with no ambient authority. This is by design — agent-generated code needs stronger isolation than human-reviewed code.
+
+- The WASM sandbox **cannot** access filesystem, network, or OS unless the host explicitly provides those capabilities
+- **Effects are security declarations**: when you declare `effects: ["io"]`, you're telling the host "this program needs IO access." The host can refuse to run programs that request unwanted effects
+- Host capabilities (file IO, HTTP, crypto) are provided via a pluggable `EdictHostAdapter` — the host controls what's available
+- Runtime limits (`timeoutMs`, `maxMemoryMb`, `sandboxDir`) prevent runaway execution and constrain file access
+
+This means your effect annotations aren't just for passing the compiler — they're the capability contract between your program and the host.
+
 ## Reference
 
 For the complete AST schema, call the `edict_schema` MCP tool or read `schema/edict-schema.json`.

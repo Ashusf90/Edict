@@ -52,6 +52,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "validate-examples": "tsx scripts/validate-examples.ts",
+    "ci:local": "npm run typecheck && npm run build && npm test && npm run validate-examples",
     "generate-schema": "tsx scripts/generate-schema.ts",
     "mcp": "tsx src/mcp/server.ts"
   },
