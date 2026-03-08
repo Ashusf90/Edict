@@ -1,0 +1,331 @@
+{
+    "kind": "module",
+    "id": "mod-arrays-001",
+    "name": "arrays",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-demo-basics-001",
+            "name": "demoBasics",
+            "params": [],
+            "effects": ["pure"],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-arr-001",
+                    "name": "arr",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "array",
+                        "id": "arr-init-001",
+                        "elements": [
+                            { "kind": "literal", "id": "lit-10-001", "value": 10 },
+                            { "kind": "literal", "id": "lit-20-001", "value": 20 },
+                            { "kind": "literal", "id": "lit-30-001", "value": 30 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-len-001",
+                    "name": "len",
+                    "type": { "kind": "basic", "name": "Int" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-len-001",
+                        "fn": { "kind": "ident", "id": "ident-arrlen-001", "name": "array_length" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-001", "name": "arr" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-first-001",
+                    "name": "first",
+                    "type": { "kind": "basic", "name": "Int" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-get-001",
+                        "fn": { "kind": "ident", "id": "ident-arrget-001", "name": "array_get" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-002", "name": "arr" },
+                            { "kind": "literal", "id": "lit-0-001", "value": 0 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-updated-001",
+                    "name": "updated",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-set-001",
+                        "fn": { "kind": "ident", "id": "ident-arrset-001", "name": "array_set" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-003", "name": "arr" },
+                            { "kind": "literal", "id": "lit-1-001", "value": 1 },
+                            { "kind": "literal", "id": "lit-99-001", "value": 99 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "binop",
+                    "id": "binop-add-001",
+                    "op": "+",
+                    "left": { "kind": "ident", "id": "ident-len-001", "name": "len" },
+                    "right": { "kind": "ident", "id": "ident-first-001", "name": "first" }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-demo-mutate-001",
+            "name": "demoMutate",
+            "params": [],
+            "effects": ["pure"],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-arr2-001",
+                    "name": "arr",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "array",
+                        "id": "arr-init-002",
+                        "elements": [
+                            { "kind": "literal", "id": "lit-1-002", "value": 1 },
+                            { "kind": "literal", "id": "lit-2-001", "value": 2 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-pushed-001",
+                    "name": "pushed",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-push-001",
+                        "fn": { "kind": "ident", "id": "ident-push-001", "name": "array_push" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-004", "name": "arr" },
+                            { "kind": "literal", "id": "lit-3-001", "value": 3 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-popped-001",
+                    "name": "popped",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-pop-001",
+                        "fn": { "kind": "ident", "id": "ident-pop-001", "name": "array_pop" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-pushed-001", "name": "pushed" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-other-001",
+                    "name": "other",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "array",
+                        "id": "arr-init-003",
+                        "elements": [
+                            { "kind": "literal", "id": "lit-4-001", "value": 4 },
+                            { "kind": "literal", "id": "lit-5-001", "value": 5 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-combined-001",
+                    "name": "combined",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-concat-001",
+                        "fn": { "kind": "ident", "id": "ident-concat-001", "name": "array_concat" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-popped-001", "name": "popped" },
+                            { "kind": "ident", "id": "ident-other-001", "name": "other" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-len-002",
+                    "fn": { "kind": "ident", "id": "ident-arrlen-002", "name": "array_length" },
+                    "args": [
+                        { "kind": "ident", "id": "ident-combined-001", "name": "combined" }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-demo-query-001",
+            "name": "demoQuery",
+            "params": [],
+            "effects": ["pure"],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-arr3-001",
+                    "name": "arr",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "array",
+                        "id": "arr-init-004",
+                        "elements": [
+                            { "kind": "literal", "id": "lit-5-002", "value": 5 },
+                            { "kind": "literal", "id": "lit-10-002", "value": 10 },
+                            { "kind": "literal", "id": "lit-15-001", "value": 15 },
+                            { "kind": "literal", "id": "lit-20-002", "value": 20 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-sliced-001",
+                    "name": "sliced",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-slice-001",
+                        "fn": { "kind": "ident", "id": "ident-slice-001", "name": "array_slice" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-005", "name": "arr" },
+                            { "kind": "literal", "id": "lit-1-003", "value": 1 },
+                            { "kind": "literal", "id": "lit-3-002", "value": 3 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-has10-001",
+                    "name": "has10",
+                    "type": { "kind": "basic", "name": "Bool" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-contains-001",
+                        "fn": { "kind": "ident", "id": "ident-contains-001", "name": "array_contains" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-006", "name": "arr" },
+                            { "kind": "literal", "id": "lit-10-003", "value": 10 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-empty-001",
+                    "name": "isEmpty",
+                    "type": { "kind": "basic", "name": "Bool" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-isempty-001",
+                        "fn": { "kind": "ident", "id": "ident-isempty-001", "name": "array_isEmpty" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-007", "name": "arr" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-reversed-001",
+                    "name": "reversed",
+                    "type": {
+                        "kind": "array",
+                        "element": { "kind": "basic", "name": "Int" }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-reverse-001",
+                        "fn": { "kind": "ident", "id": "ident-reverse-001", "name": "array_reverse" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-arr-008", "name": "arr" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-get-002",
+                    "fn": { "kind": "ident", "id": "ident-arrget-002", "name": "array_get" },
+                    "args": [
+                        { "kind": "ident", "id": "ident-reversed-001", "name": "reversed" },
+                        { "kind": "literal", "id": "lit-0-002", "value": 0 }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": ["pure"],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "call",
+                    "id": "call-basics-001",
+                    "fn": { "kind": "ident", "id": "ident-basics-001", "name": "demoBasics" },
+                    "args": []
+                }
+            ]
+        }
+    ]
+}

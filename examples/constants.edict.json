@@ -1,0 +1,217 @@
+{
+    "kind": "module",
+    "id": "mod-constants-001",
+    "name": "constants",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "const",
+            "id": "const-maxRetries-001",
+            "name": "MAX_RETRIES",
+            "type": { "kind": "basic", "name": "Int" },
+            "value": { "kind": "literal", "id": "lit-maxRetries-001", "value": 5 }
+        },
+        {
+            "kind": "const",
+            "id": "const-minScore-001",
+            "name": "MIN_SCORE",
+            "type": { "kind": "basic", "name": "Int" },
+            "value": { "kind": "literal", "id": "lit-minScore-001", "value": 60 }
+        },
+        {
+            "kind": "const",
+            "id": "const-maxScore-001",
+            "name": "MAX_SCORE",
+            "type": { "kind": "basic", "name": "Int" },
+            "value": { "kind": "literal", "id": "lit-maxScore-001", "value": 100 }
+        },
+        {
+            "kind": "fn",
+            "id": "fn-classify-001",
+            "name": "classify",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-score-001",
+                    "name": "score",
+                    "type": { "kind": "basic", "name": "Int" }
+                }
+            ],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-inRange-001",
+                    "name": "inRange",
+                    "type": { "kind": "basic", "name": "Bool" },
+                    "value": {
+                        "kind": "binop",
+                        "id": "binop-and-001",
+                        "op": "and",
+                        "left": {
+                            "kind": "binop",
+                            "id": "binop-geMin-001",
+                            "op": ">=",
+                            "left": { "kind": "ident", "id": "ident-score-001", "name": "score" },
+                            "right": { "kind": "ident", "id": "ident-minScore-001", "name": "MIN_SCORE" }
+                        },
+                        "right": {
+                            "kind": "binop",
+                            "id": "binop-leMax-001",
+                            "op": "<=",
+                            "left": { "kind": "ident", "id": "ident-score-002", "name": "score" },
+                            "right": { "kind": "ident", "id": "ident-maxScore-001", "name": "MAX_SCORE" }
+                        }
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-isTop-001",
+                    "name": "isTop",
+                    "type": { "kind": "basic", "name": "Bool" },
+                    "value": {
+                        "kind": "binop",
+                        "id": "binop-or-001",
+                        "op": "or",
+                        "left": {
+                            "kind": "binop",
+                            "id": "binop-eq100-001",
+                            "op": "==",
+                            "left": { "kind": "ident", "id": "ident-score-003", "name": "score" },
+                            "right": { "kind": "ident", "id": "ident-maxScore-002", "name": "MAX_SCORE" }
+                        },
+                        "right": {
+                            "kind": "binop",
+                            "id": "binop-gt90-001",
+                            "op": ">",
+                            "left": { "kind": "ident", "id": "ident-score-004", "name": "score" },
+                            "right": { "kind": "literal", "id": "lit-90-001", "value": 90 }
+                        }
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-notFailing-001",
+                    "name": "notFailing",
+                    "type": { "kind": "basic", "name": "Bool" },
+                    "value": {
+                        "kind": "unop",
+                        "id": "unop-not-001",
+                        "op": "not",
+                        "operand": {
+                            "kind": "binop",
+                            "id": "binop-lt60-001",
+                            "op": "<",
+                            "left": { "kind": "ident", "id": "ident-score-005", "name": "score" },
+                            "right": { "kind": "ident", "id": "ident-minScore-002", "name": "MIN_SCORE" }
+                        }
+                    }
+                },
+                {
+                    "kind": "match",
+                    "id": "match-retries-001",
+                    "target": { "kind": "ident", "id": "ident-maxRetries-001", "name": "MAX_RETRIES" },
+                    "arms": [
+                        {
+                            "kind": "arm",
+                            "id": "arm-zero-001",
+                            "pattern": {
+                                "kind": "literal_pattern",
+                                "value": 0
+                            },
+                            "body": [
+                                { "kind": "literal", "id": "lit-neg1-001", "value": -1 }
+                            ]
+                        },
+                        {
+                            "kind": "arm",
+                            "id": "arm-one-001",
+                            "pattern": {
+                                "kind": "literal_pattern",
+                                "value": 1
+                            },
+                            "body": [
+                                { "kind": "literal", "id": "lit-one-001", "value": 1 }
+                            ]
+                        },
+                        {
+                            "kind": "arm",
+                            "id": "arm-default-001",
+                            "pattern": { "kind": "wildcard" },
+                            "body": [
+                                {
+                                    "kind": "block",
+                                    "id": "block-compute-001",
+                                    "body": [
+                                        {
+                                            "kind": "let",
+                                            "id": "let-base-001",
+                                            "name": "base",
+                                            "type": { "kind": "basic", "name": "Int" },
+                                            "value": {
+                                                "kind": "if",
+                                                "id": "if-inRange-001",
+                                                "condition": { "kind": "ident", "id": "ident-inRange-001", "name": "inRange" },
+                                                "then": [
+                                                    { "kind": "ident", "id": "ident-score-006", "name": "score" }
+                                                ],
+                                                "else": [
+                                                    { "kind": "literal", "id": "lit-zero-001", "value": 0 }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "kind": "let",
+                                            "id": "let-bonus-001",
+                                            "name": "bonus",
+                                            "type": { "kind": "basic", "name": "Int" },
+                                            "value": {
+                                                "kind": "if",
+                                                "id": "if-isTop-001",
+                                                "condition": { "kind": "ident", "id": "ident-isTop-001", "name": "isTop" },
+                                                "then": [
+                                                    { "kind": "literal", "id": "lit-10-001", "value": 10 }
+                                                ],
+                                                "else": [
+                                                    { "kind": "literal", "id": "lit-zero-002", "value": 0 }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "kind": "binop",
+                                            "id": "binop-result-001",
+                                            "op": "+",
+                                            "left": { "kind": "ident", "id": "ident-base-001", "name": "base" },
+                                            "right": { "kind": "ident", "id": "ident-bonus-001", "name": "bonus" }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "call",
+                    "id": "call-classify-001",
+                    "fn": { "kind": "ident", "id": "ident-classify-001", "name": "classify" },
+                    "args": [
+                        { "kind": "literal", "id": "lit-85-001", "value": 85 }
+                    ]
+                }
+            ]
+        }
+    ]
+}

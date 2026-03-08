@@ -9,6 +9,7 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 |---------|----------|-------------|
 | [hello](hello.edict.json) | `call`, `literal`, `io` effect | Minimal "Hello, World!" — the simplest valid program |
 | [arithmetic](arithmetic.edict.json) | `fn`, `param`, `binop`, `unop`, `call` | Basic functions, binary/unary operators, function calls |
+| [math](math.edict.json) | `abs`, `min`, `max`, `pow`, `sqrt`, `floor`, `ceil`, `round` | Math builtins with mixed Int/Float types and type conversion |
 | [types](types.edict.json) | `type`, `unit_type`, `refined`, `tuple` | Type aliases, unit types, refinement types, tuples |
 | [effects](effects.edict.json) | `pure`, `io`, `reads`, `writes`, `fails` | Effect declarations across pure and side-effecting functions |
 
@@ -21,8 +22,12 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [contracts](contracts.edict.json) | `pre`, `post`, `implies` | Preconditions, postconditions, and logical implication |
 | [closures](closures.edict.json) | `lambda`, `fn_type`, closure capture | Returning lambdas that capture outer scope variables |
 | [dash-replace](dash-replace.edict.json) | `let`, `if`, `call`, string builtins | Iterative string processing with character replacement |
-| [records](records.edict.json) | `record`, `access`, `record_update` | Record definitions, field access, functional record updates |
+| [records](records.edict.json) | `record`, `record_expr`, `access` | Record definitions, field access, record construction |
 | [enums](enums.edict.json) | `enum`, `match`, `variant`, pattern matching | Sum types with constructor patterns and wildcard arms |
+| [option](option.edict.json) | `Option`, `enum_constructor`, `isSome`, `isNone`, `unwrapOr` | Option type construction, pattern matching, and utility builtins |
+| [unit-types](unit-types.edict.json) | `unit_type`, semantic units | Semantic unit types preventing cross-unit arithmetic errors |
+| [arrays](arrays.edict.json) | `array`, `array_length`, `array_get`, `array_push`, `array_concat` | Array builtins: create, query, mutate, slice, reverse |
+| [constants](constants.edict.json) | `const`, `block`, `literal_pattern`, `and`, `or`, `not` | Constants, block expressions, literal pattern matching, boolean ops |
 | [json](json.edict.json) | `enum`, `match`, nested `enum_constructor` | JSON-like data model using recursive enum variants |
 
 ## ⭐⭐⭐ Advanced
@@ -38,9 +43,10 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 
 ## Recommended Learning Path
 
-1. **Start here:** `hello` → `arithmetic` → `types` → `effects`
-2. **Core language:** `modules` → `fibonacci` → `contracts` → `records` → `enums`
-3. **Functional patterns:** `closures` → `higher-order-functions` → `json`
-4. **Error handling:** `result_error_handling`
-5. **String & regex:** `dash-replace` → `string-processing` → `regex`
-6. **Advanced:** `mutual-recursion` → `complete`
+1. **Start here:** `hello` → `arithmetic` → `math` → `types` → `effects`
+2. **Core language:** `modules` → `fibonacci` → `contracts` → `constants` → `records` → `enums`
+3. **Data structures:** `arrays` → `option` → `unit-types`
+4. **Functional patterns:** `closures` → `higher-order-functions` → `json`
+5. **Error handling:** `result_error_handling`
+6. **String & regex:** `dash-replace` → `string-processing` → `regex`
+7. **Advanced:** `mutual-recursion` → `complete`

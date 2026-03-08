@@ -1,0 +1,276 @@
+{
+    "kind": "module",
+    "id": "mod-math-001",
+    "name": "math_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-clamp-001",
+            "name": "clamp",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-val-001",
+                    "name": "val",
+                    "type": { "kind": "basic", "name": "Int" }
+                },
+                {
+                    "kind": "param",
+                    "id": "param-lo-001",
+                    "name": "lo",
+                    "type": { "kind": "basic", "name": "Int" }
+                },
+                {
+                    "kind": "param",
+                    "id": "param-hi-001",
+                    "name": "hi",
+                    "type": { "kind": "basic", "name": "Int" }
+                }
+            ],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "call",
+                    "id": "call-min-001",
+                    "fn": { "kind": "ident", "id": "ident-min-001", "name": "min" },
+                    "args": [
+                        { "kind": "ident", "id": "ident-hi-001", "name": "hi" },
+                        {
+                            "kind": "call",
+                            "id": "call-max-001",
+                            "fn": { "kind": "ident", "id": "ident-max-001", "name": "max" },
+                            "args": [
+                                { "kind": "ident", "id": "ident-lo-001", "name": "lo" },
+                                { "kind": "ident", "id": "ident-val-001", "name": "val" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-dist-001",
+            "name": "distance",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-a-001",
+                    "name": "a",
+                    "type": { "kind": "basic", "name": "Int" }
+                },
+                {
+                    "kind": "param",
+                    "id": "param-b-001",
+                    "name": "b",
+                    "type": { "kind": "basic", "name": "Int" }
+                }
+            ],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "call",
+                    "id": "call-abs-001",
+                    "fn": { "kind": "ident", "id": "ident-abs-001", "name": "abs" },
+                    "args": [
+                        {
+                            "kind": "binop",
+                            "id": "binop-sub-001",
+                            "op": "-",
+                            "left": { "kind": "ident", "id": "ident-a-001", "name": "a" },
+                            "right": { "kind": "ident", "id": "ident-b-001", "name": "b" }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-squareArea-001",
+            "name": "squareArea",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-side-001",
+                    "name": "side",
+                    "type": { "kind": "basic", "name": "Int" }
+                }
+            ],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "call",
+                    "id": "call-pow-001",
+                    "fn": { "kind": "ident", "id": "ident-pow-001", "name": "pow" },
+                    "args": [
+                        { "kind": "ident", "id": "ident-side-001", "name": "side" },
+                        { "kind": "literal", "id": "lit-2-001", "value": 2 }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-roundSqrt-001",
+            "name": "roundSqrt",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-x-001",
+                    "name": "x",
+                    "type": { "kind": "basic", "name": "Int" }
+                }
+            ],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-asFloat-001",
+                    "name": "asFloat",
+                    "type": { "kind": "basic", "name": "Float" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-itof-001",
+                        "fn": { "kind": "ident", "id": "ident-itof-001", "name": "intToFloat" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-x-001", "name": "x" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-root-001",
+                    "name": "root",
+                    "type": { "kind": "basic", "name": "Float" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-sqrt-001",
+                        "fn": { "kind": "ident", "id": "ident-sqrt-001", "name": "sqrt" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-asFloat-001", "name": "asFloat" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-round-001",
+                    "fn": { "kind": "ident", "id": "ident-round-001", "name": "round" },
+                    "args": [
+                        { "kind": "ident", "id": "ident-root-001", "name": "root" }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-floorCeil-001",
+            "name": "floorCeilDiff",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-f-001",
+                    "name": "f",
+                    "type": { "kind": "basic", "name": "Float" }
+                }
+            ],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-lo-001",
+                    "name": "lo",
+                    "type": { "kind": "basic", "name": "Int" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-floor-001",
+                        "fn": { "kind": "ident", "id": "ident-floor-001", "name": "floor" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-f-001", "name": "f" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-hi-001",
+                    "name": "hi",
+                    "type": { "kind": "basic", "name": "Int" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-ceil-001",
+                        "fn": { "kind": "ident", "id": "ident-ceil-001", "name": "ceil" },
+                        "args": [
+                            { "kind": "ident", "id": "ident-f-002", "name": "f" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "binop",
+                    "id": "binop-diff-001",
+                    "op": "-",
+                    "left": { "kind": "ident", "id": "ident-hi-002", "name": "hi" },
+                    "right": { "kind": "ident", "id": "ident-lo-002", "name": "lo" }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": ["pure"],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-c-001",
+                    "name": "c",
+                    "type": { "kind": "basic", "name": "Int" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-clamp-001",
+                        "fn": { "kind": "ident", "id": "ident-clamp-001", "name": "clamp" },
+                        "args": [
+                            { "kind": "literal", "id": "lit-15-001", "value": 15 },
+                            { "kind": "literal", "id": "lit-0-001", "value": 0 },
+                            { "kind": "literal", "id": "lit-10-001", "value": 10 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-d-001",
+                    "name": "d",
+                    "type": { "kind": "basic", "name": "Int" },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-dist-001",
+                        "fn": { "kind": "ident", "id": "ident-dist-001", "name": "distance" },
+                        "args": [
+                            { "kind": "literal", "id": "lit-3-001", "value": 3 },
+                            { "kind": "literal", "id": "lit-7-001", "value": 7 }
+                        ]
+                    }
+                },
+                {
+                    "kind": "binop",
+                    "id": "binop-result-001",
+                    "op": "+",
+                    "left": { "kind": "ident", "id": "ident-c-001", "name": "c" },
+                    "right": { "kind": "ident", "id": "ident-d-001", "name": "d" }
+                }
+            ]
+        }
+    ]
+}

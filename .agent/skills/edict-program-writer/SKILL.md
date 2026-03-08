@@ -193,4 +193,4 @@ This means your effect annotations aren't just for passing the compiler — they
 ## Reference
 
 For the complete AST schema, call the `edict_schema` MCP tool or read `schema/edict-schema.json`.
-For example programs covering all features, see the `examples/` directory (11 programs).
+For example programs covering all features, see the `examples/` directory (24 programs).
