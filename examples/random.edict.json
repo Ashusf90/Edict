@@ -1,0 +1,369 @@
+{
+    "kind": "module",
+    "id": "mod-random-001",
+    "name": "random_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io",
+                "reads"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-dice-001",
+                    "name": "diceRoll",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-randint-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-randint-001",
+                            "name": "randomInt"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-min-001",
+                                "value": 1
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-max-001",
+                                "value": 6
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-001",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-001",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-001",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-001",
+                                    "value": "Dice roll: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-itostr-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-itostr-001",
+                                        "name": "intToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-dice-001",
+                                            "name": "diceRoll"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-coin-001",
+                    "name": "coinFlip",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-randint-002",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-randint-002",
+                            "name": "randomInt"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-min-002",
+                                "value": 0
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-max-002",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "if",
+                    "id": "if-coin-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "binop-eq-001",
+                        "op": "==",
+                        "left": {
+                            "kind": "ident",
+                            "id": "ident-coin-001",
+                            "name": "coinFlip"
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "lit-one-001",
+                            "value": 1
+                        }
+                    },
+                    "then": [
+                        {
+                            "kind": "call",
+                            "id": "call-print-002",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-print-002",
+                                "name": "print"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-heads-001",
+                                    "value": "Coin: heads"
+                                }
+                            ]
+                        }
+                    ],
+                    "else": [
+                        {
+                            "kind": "call",
+                            "id": "call-print-003",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-print-003",
+                                "name": "print"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-tails-001",
+                                    "value": "Coin: tails"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-pct-001",
+                    "name": "probability",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Float"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-randfloat-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-randfloat-001",
+                            "name": "randomFloat"
+                        },
+                        "args": []
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-004",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-004",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-002",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-002",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-002",
+                                    "value": "Random float: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-ftostr-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-ftostr-001",
+                                        "name": "floatToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-pct-001",
+                                            "name": "probability"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-uuid-001",
+                    "name": "uuid",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-uuid-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-uuid-001",
+                            "name": "randomUuid"
+                        },
+                        "args": []
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-005",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-005",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-003",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-003",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-003",
+                                    "value": "UUID: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-uuid-002",
+                                    "name": "uuid"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-len-001",
+                    "name": "uuidLen",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-strlen-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-strlen-001",
+                            "name": "string_length"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-uuid-003",
+                                "name": "uuid"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-006",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-006",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-004",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-004",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-004",
+                                    "value": "UUID length: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-itostr-002",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-itostr-002",
+                                        "name": "intToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-len-001",
+                                            "name": "uuidLen"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}

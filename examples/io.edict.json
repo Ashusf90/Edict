@@ -1,0 +1,443 @@
+{
+    "kind": "module",
+    "id": "mod-io-001",
+    "name": "io_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io",
+                "reads"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-content-001",
+                    "name": "content",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "literal",
+                        "id": "lit-content-001",
+                        "value": "Hello from Edict file I/O"
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-write-001",
+                    "name": "writeResult",
+                    "type": {
+                        "kind": "result",
+                        "ok": {
+                            "kind": "basic",
+                            "name": "String"
+                        },
+                        "err": {
+                            "kind": "basic",
+                            "name": "String"
+                        }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-write-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-write-001",
+                            "name": "writeFile"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-path-001",
+                                "value": "output.txt"
+                            },
+                            {
+                                "kind": "ident",
+                                "id": "ident-content-001",
+                                "name": "content"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "match",
+                    "id": "match-write-001",
+                    "target": {
+                        "kind": "ident",
+                        "id": "ident-write-001b",
+                        "name": "writeResult"
+                    },
+                    "arms": [
+                        {
+                            "kind": "arm",
+                            "id": "arm-ok-001",
+                            "pattern": {
+                                "kind": "constructor",
+                                "id": "cpat-ok-001",
+                                "name": "Ok",
+                                "fields": [
+                                    {
+                                        "kind": "binding",
+                                        "id": "bpat-val-001",
+                                        "name": "val"
+                                    }
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "kind": "call",
+                                    "id": "call-print-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-print-001",
+                                        "name": "print"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "call",
+                                            "id": "call-concat-001",
+                                            "fn": {
+                                                "kind": "ident",
+                                                "id": "ident-concat-001",
+                                                "name": "string_concat"
+                                            },
+                                            "args": [
+                                                {
+                                                    "kind": "literal",
+                                                    "id": "lit-label-001",
+                                                    "value": "Write succeeded: "
+                                                },
+                                                {
+                                                    "kind": "ident",
+                                                    "id": "ident-val-001",
+                                                    "name": "val"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "kind": "arm",
+                            "id": "arm-err-001",
+                            "pattern": {
+                                "kind": "constructor",
+                                "id": "cpat-err-001",
+                                "name": "Err",
+                                "fields": [
+                                    {
+                                        "kind": "binding",
+                                        "id": "bpat-err-001",
+                                        "name": "errMsg"
+                                    }
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "kind": "call",
+                                    "id": "call-print-002",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-print-002",
+                                        "name": "print"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "call",
+                                            "id": "call-concat-002",
+                                            "fn": {
+                                                "kind": "ident",
+                                                "id": "ident-concat-002",
+                                                "name": "string_concat"
+                                            },
+                                            "args": [
+                                                {
+                                                    "kind": "literal",
+                                                    "id": "lit-label-002",
+                                                    "value": "Write failed: "
+                                                },
+                                                {
+                                                    "kind": "ident",
+                                                    "id": "ident-err-001",
+                                                    "name": "errMsg"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-read-001",
+                    "name": "readResult",
+                    "type": {
+                        "kind": "result",
+                        "ok": {
+                            "kind": "basic",
+                            "name": "String"
+                        },
+                        "err": {
+                            "kind": "basic",
+                            "name": "String"
+                        }
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-read-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-read-001",
+                            "name": "readFile"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-path-002",
+                                "value": "output.txt"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "match",
+                    "id": "match-read-001",
+                    "target": {
+                        "kind": "ident",
+                        "id": "ident-read-001b",
+                        "name": "readResult"
+                    },
+                    "arms": [
+                        {
+                            "kind": "arm",
+                            "id": "arm-ok-002",
+                            "pattern": {
+                                "kind": "constructor",
+                                "id": "cpat-ok-002",
+                                "name": "Ok",
+                                "fields": [
+                                    {
+                                        "kind": "binding",
+                                        "id": "bpat-data-001",
+                                        "name": "data"
+                                    }
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "kind": "call",
+                                    "id": "call-print-003",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-print-003",
+                                        "name": "print"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "call",
+                                            "id": "call-concat-003",
+                                            "fn": {
+                                                "kind": "ident",
+                                                "id": "ident-concat-003",
+                                                "name": "string_concat"
+                                            },
+                                            "args": [
+                                                {
+                                                    "kind": "literal",
+                                                    "id": "lit-label-003",
+                                                    "value": "Read back: "
+                                                },
+                                                {
+                                                    "kind": "ident",
+                                                    "id": "ident-data-001",
+                                                    "name": "data"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "kind": "arm",
+                            "id": "arm-err-002",
+                            "pattern": {
+                                "kind": "constructor",
+                                "id": "cpat-err-002",
+                                "name": "Err",
+                                "fields": [
+                                    {
+                                        "kind": "binding",
+                                        "id": "bpat-err-002",
+                                        "name": "errMsg2"
+                                    }
+                                ]
+                            },
+                            "body": [
+                                {
+                                    "kind": "call",
+                                    "id": "call-print-004",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-print-004",
+                                        "name": "print"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "call",
+                                            "id": "call-concat-004",
+                                            "fn": {
+                                                "kind": "ident",
+                                                "id": "ident-concat-004",
+                                                "name": "string_concat"
+                                            },
+                                            "args": [
+                                                {
+                                                    "kind": "literal",
+                                                    "id": "lit-label-004",
+                                                    "value": "Read failed: "
+                                                },
+                                                {
+                                                    "kind": "ident",
+                                                    "id": "ident-err2-001",
+                                                    "name": "errMsg2"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-home-001",
+                    "name": "homeDir",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-env-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-env-001",
+                            "name": "env"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-envvar-001",
+                                "value": "HOME"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-005",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-005",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-005",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-005",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-005",
+                                    "value": "HOME: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-home-001",
+                                    "name": "homeDir"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-args-001",
+                    "name": "programArgs",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-args-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-args-001",
+                            "name": "args"
+                        },
+                        "args": []
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-006",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-006",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-006",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-006",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-006",
+                                    "value": "Args: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-args-002",
+                                    "name": "programArgs"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}

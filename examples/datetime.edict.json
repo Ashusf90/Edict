@@ -1,0 +1,277 @@
+{
+    "kind": "module",
+    "id": "mod-datetime-001",
+    "name": "datetime_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io",
+                "reads",
+                "fails"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-ts-001",
+                    "name": "timestamp",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-now-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-now-001",
+                            "name": "now"
+                        },
+                        "args": []
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-formatted-001",
+                    "name": "formatted",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-format-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-format-001",
+                            "name": "formatDate"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-ts-001",
+                                "name": "timestamp"
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-fmt-001",
+                                "value": "YYYY-MM-DD"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-001",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-001",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-001",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-001",
+                                    "value": "Today: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-formatted-001",
+                                    "name": "formatted"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-parsed-001",
+                    "name": "parsedMs",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-parse-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-parse-001",
+                            "name": "parseDate"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-date-001",
+                                "value": "2025-01-15T10:30:00Z"
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-fmt-002",
+                                "value": "ISO"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-diff-001",
+                    "name": "elapsed",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-diff-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-diff-001",
+                            "name": "diffMs"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-ts-002",
+                                "name": "timestamp"
+                            },
+                            {
+                                "kind": "ident",
+                                "id": "ident-parsed-001",
+                                "name": "parsedMs"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-002",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-002",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-002",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-002",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-002",
+                                    "value": "Elapsed ms: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-tostr-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-tostr-001",
+                                        "name": "int64ToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-elapsed-001",
+                                            "name": "elapsed"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-fmtparsed-001",
+                    "name": "parsedFormatted",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-format-002",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-format-002",
+                            "name": "formatDate"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-parsed-002",
+                                "name": "parsedMs"
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-fmt-003",
+                                "value": "YYYY-MM-DD HH:mm:ss"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-003",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-003",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-003",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-003",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-003",
+                                    "value": "Parsed date: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-fmtparsed-001",
+                                    "name": "parsedFormatted"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}

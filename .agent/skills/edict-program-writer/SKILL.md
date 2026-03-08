@@ -170,8 +170,8 @@ Every error is a JSON object with an `error` discriminator and `nodeId` pointing
 
 Available built-in functions (no need to import):
 - `print(String) -> Int` — effect: `io`
-- `int_to_string(Int) -> String` — effect: `pure`
-- `float_to_string(Float) -> String` — effect: `pure`
+- `intToString(Int) -> String` — effect: `pure`
+- `floatToString(Float) -> String` — effect: `pure`
 - `string_length(String) -> Int` — effect: `pure`
 - `string_concat(String, String) -> String` — effect: `pure`
 - `string_replace(String, String, String) -> String` — effect: `pure`
@@ -193,4 +193,4 @@ This means your effect annotations aren't just for passing the compiler — they
 ## Reference
 
 For the complete AST schema, call the `edict_schema` MCP tool or read `schema/edict-schema.json`.
-For example programs covering all features, see the `examples/` directory (24 programs).
+For example programs covering all features, see the `examples/` directory (28 programs).

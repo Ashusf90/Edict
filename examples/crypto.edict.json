@@ -1,0 +1,304 @@
+{
+    "kind": "module",
+    "id": "mod-crypto-001",
+    "name": "crypto_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-msg-001",
+                    "name": "message",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "literal",
+                        "id": "lit-msg-001",
+                        "value": "hello edict"
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-hash-001",
+                    "name": "sha256Hash",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-sha256-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-sha256-001",
+                            "name": "sha256"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-msg-001",
+                                "name": "message"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-001",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-001",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-001",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-001",
+                                    "value": "SHA-256: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-hash-001",
+                                    "name": "sha256Hash"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-md5-001",
+                    "name": "md5Hash",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-md5-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-md5-001",
+                            "name": "md5"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-msg-002",
+                                "name": "message"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-002",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-002",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-002",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-002",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-002",
+                                    "value": "MD5: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-md5hash-001",
+                                    "name": "md5Hash"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-hmac-001",
+                    "name": "hmacResult",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-hmac-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-hmac-001",
+                            "name": "hmac"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-algo-001",
+                                "value": "sha256"
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-key-001",
+                                "value": "secret-key"
+                            },
+                            {
+                                "kind": "ident",
+                                "id": "ident-msg-003",
+                                "name": "message"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-003",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-003",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-003",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-003",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-003",
+                                    "value": "HMAC: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-hmacres-001",
+                                    "name": "hmacResult"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-verify-001",
+                    "name": "verifyHash",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-sha256-002",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-sha256-002",
+                            "name": "sha256"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-msg-004",
+                                "name": "message"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "if",
+                    "id": "if-verify-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "binop-eq-001",
+                        "op": "==",
+                        "left": {
+                            "kind": "ident",
+                            "id": "ident-hash-002",
+                            "name": "sha256Hash"
+                        },
+                        "right": {
+                            "kind": "ident",
+                            "id": "ident-verify-001",
+                            "name": "verifyHash"
+                        }
+                    },
+                    "then": [
+                        {
+                            "kind": "call",
+                            "id": "call-print-004",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-print-004",
+                                "name": "print"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-ok-001",
+                                    "value": "Hash verification: match"
+                                }
+                            ]
+                        }
+                    ],
+                    "else": [
+                        {
+                            "kind": "call",
+                            "id": "call-print-005",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-print-005",
+                                "name": "print"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-fail-001",
+                                    "value": "Hash verification: mismatch"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}

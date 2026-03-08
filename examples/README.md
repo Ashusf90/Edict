@@ -28,6 +28,8 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [unit-types](unit-types.edict.json) | `unit_type`, semantic units | Semantic unit types preventing cross-unit arithmetic errors |
 | [arrays](arrays.edict.json) | `array`, `array_length`, `array_get`, `array_push`, `array_concat` | Array builtins: create, query, mutate, slice, reverse |
 | [constants](constants.edict.json) | `const`, `block`, `literal_pattern`, `and`, `or`, `not` | Constants, block expressions, literal pattern matching, boolean ops |
+| [crypto](crypto.edict.json) | `sha256`, `md5`, `hmac` | Cryptographic hashing and HMAC authentication |
+| [int64](int64.edict.json) | `intToInt64`, `int64ToInt`, `int64ToFloat`, `int64ToString` | 64-bit integer conversions and arithmetic |
 | [json](json.edict.json) | `enum`, `match`, nested `enum_constructor` | JSON-like data model using recursive enum variants |
 
 ## ⭐⭐⭐ Advanced
@@ -38,6 +40,9 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [result_error_handling](result_error_handling.edict.json) | `Result`, `enum_constructor`, `match`, `unwrapOkOr` | `Result<Ok,Err>` type for error handling with match and unwrap |
 | [mutual-recursion](mutual-recursion.edict.json) | mutual recursion, `pre` contracts, `if` | Two functions (`isEven`/`isOdd`) calling each other recursively |
 | [regex](regex.edict.json) | `regex_match`, `regex_replace`, string builtins | Regular expression matching and replacement |
+| [datetime](datetime.edict.json) | `now`, `formatDate`, `parseDate`, `diffMs` | Date/time operations: timestamps, formatting, parsing, duration |
+| [random](random.edict.json) | `randomInt`, `randomFloat`, `randomUuid` | Random number generation: dice rolls, floats, UUIDs |
+| [io](io.edict.json) | `readFile`, `writeFile`, `env`, `args`, `Result` matching | File I/O with Result error handling, environment access |
 | [string-processing](string-processing.edict.json) | multiple string builtins, `let` chains, `if` | Comprehensive string manipulation pipeline |
 | [complete](complete.edict.json) | all features combined | Kitchen-sink example: records, enums, contracts, lambdas, HOFs, imports |
 

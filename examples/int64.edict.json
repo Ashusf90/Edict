@@ -1,0 +1,395 @@
+{
+    "kind": "module",
+    "id": "mod-int64-001",
+    "name": "int64_demo",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-add64-001",
+            "name": "add64",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-a-001",
+                    "name": "a",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    }
+                },
+                {
+                    "kind": "param",
+                    "id": "param-b-001",
+                    "name": "b",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    }
+                }
+            ],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int64"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "binop",
+                    "id": "binop-add-001",
+                    "op": "+",
+                    "left": {
+                        "kind": "ident",
+                        "id": "ident-a-001",
+                        "name": "a"
+                    },
+                    "right": {
+                        "kind": "ident",
+                        "id": "ident-b-001",
+                        "name": "b"
+                    }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-big-001",
+                    "name": "bigVal",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-convert-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-convert-001",
+                            "name": "intToInt64"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-val-001",
+                                "value": 1000000
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-big2-001",
+                    "name": "bigVal2",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-convert-002",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-convert-002",
+                            "name": "intToInt64"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-val-002",
+                                "value": 2000000
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-sum-001",
+                    "name": "sum",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int64"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-add-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-add-001",
+                            "name": "add64"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-big-001",
+                                "name": "bigVal"
+                            },
+                            {
+                                "kind": "ident",
+                                "id": "ident-big2-001",
+                                "name": "bigVal2"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-001",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-001",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-001",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-001",
+                                    "value": "Sum: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-tostr-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-tostr-001",
+                                        "name": "int64ToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-sum-001",
+                                            "name": "sum"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-back-001",
+                    "name": "backToInt",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-toint-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-toint-001",
+                            "name": "int64ToInt"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-big-002",
+                                "name": "bigVal"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-002",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-002",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-002",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-002",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-002",
+                                    "value": "Back to Int: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-itostr-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-itostr-001",
+                                        "name": "intToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-back-001",
+                                            "name": "backToInt"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-float-001",
+                    "name": "asFloat",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Float"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-tofloat-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-tofloat-001",
+                            "name": "int64ToFloat"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-sum-002",
+                                "name": "sum"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-003",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-003",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-003",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-003",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-003",
+                                    "value": "As Float: "
+                                },
+                                {
+                                    "kind": "call",
+                                    "id": "call-ftostr-001",
+                                    "fn": {
+                                        "kind": "ident",
+                                        "id": "ident-ftostr-001",
+                                        "name": "floatToString"
+                                    },
+                                    "args": [
+                                        {
+                                            "kind": "ident",
+                                            "id": "ident-float-001",
+                                            "name": "asFloat"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "let",
+                    "id": "let-str-001",
+                    "name": "asString",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-tostr-002",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-tostr-002",
+                            "name": "int64ToString"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-sum-003",
+                                "name": "sum"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-004",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-004",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "call",
+                            "id": "call-concat-004",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-concat-004",
+                                "name": "string_concat"
+                            },
+                            "args": [
+                                {
+                                    "kind": "literal",
+                                    "id": "lit-label-004",
+                                    "value": "As String: "
+                                },
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-str-001",
+                                    "name": "asString"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}
