@@ -467,6 +467,27 @@
                     ]
                 }
             ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-main",
+                    "value": 0
+                }
+            ]
         }
     ]
 }

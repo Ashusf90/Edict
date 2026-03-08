@@ -145,7 +145,7 @@
                             "value": {
                                 "kind": "literal",
                                 "id": "lit-x0-001",
-                                "value": 0.0,
+                                "value": 0,
                                 "type": {
                                     "kind": "basic",
                                     "name": "Float"
@@ -158,7 +158,7 @@
                             "value": {
                                 "kind": "literal",
                                 "id": "lit-y0-001",
-                                "value": 0.0,
+                                "value": 0,
                                 "type": {
                                     "kind": "basic",
                                     "name": "Float"
@@ -166,6 +166,63 @@
                             }
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-p-main",
+                    "name": "p",
+                    "value": {
+                        "kind": "call",
+                        "id": "call-origin-main",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "id-origin-main",
+                            "name": "origin"
+                        },
+                        "args": []
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-d-main",
+                    "name": "d",
+                    "value": {
+                        "kind": "call",
+                        "id": "call-dist-main",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "id-dist-main",
+                            "name": "distance"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "id-p-main",
+                                "name": "p"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-main",
+                    "value": 0
                 }
             ]
         }

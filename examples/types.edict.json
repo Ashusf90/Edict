@@ -121,6 +121,53 @@
                     ]
                 }
             ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-pair-main",
+                    "name": "pair",
+                    "value": {
+                        "kind": "call",
+                        "id": "call-makePair-main",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "id-makePair-main",
+                            "name": "makePair"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-1-main",
+                                "value": 1
+                            },
+                            {
+                                "kind": "literal",
+                                "id": "lit-2-main",
+                                "value": 2
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-ret-main",
+                    "value": 0
+                }
+            ]
         }
     ]
 }
