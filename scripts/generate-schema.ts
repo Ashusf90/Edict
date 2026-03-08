@@ -42,11 +42,22 @@ if (!schema) {
     process.exit(1);
 }
 
+// Generate EdictFragment schema
+const fragmentSchema = TJS.generateSchema(program, "EdictFragment", settings);
+
+if (!fragmentSchema) {
+    console.error("❌ Failed to generate schema for EdictFragment");
+    process.exit(1);
+}
+
 // Write output
 const outputDir = resolve(projectRoot, "schema");
 mkdirSync(outputDir, { recursive: true });
 
 const outputPath = resolve(outputDir, "edict.schema.json");
 writeFileSync(outputPath, JSON.stringify(schema, null, 2) + "\n");
-
 console.log(`✅ Schema written to ${outputPath}`);
+
+const fragmentOutputPath = resolve(outputDir, "edict-fragment.schema.json");
+writeFileSync(fragmentOutputPath, JSON.stringify(fragmentSchema, null, 2) + "\n");
+console.log(`✅ Fragment schema written to ${fragmentOutputPath}`);

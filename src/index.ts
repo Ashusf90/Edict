@@ -3,7 +3,7 @@
 // =============================================================================
 
 // Phase 1 — Validation
-export { validate } from "./validator/validate.js";
+export { validate, validateFragmentAst } from "./validator/validate.js";
 export type {
     ValidationResult,
     ValidationSuccess,
@@ -42,6 +42,7 @@ export type { CheckResult } from "./check.js";
 // AST node types
 export type {
     EdictModule,
+    EdictFragment,
     Import,
     Definition,
     FunctionDef,
@@ -136,6 +137,9 @@ export type {
     AnalysisDiagnostic,
     AnalysisDiagnosticKind,
     VerificationCoverage,
+    // Composition errors
+    UnsatisfiedRequirementError,
+    DuplicateProvisionError,
 } from "./errors/structured-errors.js";
 
 // Error constructors (all phases)
@@ -176,6 +180,9 @@ export {
     patchDeleteNotInArray,
     // Analysis diagnostics
     analysisDiagnostic,
+    // Composition errors
+    unsatisfiedRequirement,
+    duplicateProvision,
 } from "./errors/structured-errors.js";
 
 // Phase 5 — Code generation
@@ -233,4 +240,8 @@ export {
 // Patch engine
 export { applyPatches } from "./patch/apply.js";
 export type { AstPatch, PatchApplyResult } from "./patch/apply.js";
+
+// Fragment composition
+export { compose } from "./compose/compose.js";
+export type { ComposeResult } from "./compose/compose.js";
 

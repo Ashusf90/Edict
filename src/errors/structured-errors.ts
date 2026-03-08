@@ -58,7 +58,10 @@ export type StructuredError =
     | PatchIndexOutOfRangeError
     | PatchDeleteNotInArrayError
     // Phase 5 — Codegen errors
-    | WasmValidationError;
+    | WasmValidationError
+    // Composition errors
+    | UnsatisfiedRequirementError
+    | DuplicateProvisionError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -673,4 +676,40 @@ export function wasmValidationError(
     message: string,
 ): WasmValidationError {
     return { error: "wasm_validation_error", message };
+}
+
+// =============================================================================
+// Composition errors
+// =============================================================================
+
+export interface UnsatisfiedRequirementError {
+    error: "unsatisfied_requirement";
+    fragmentId: string;
+    requirement: string;
+    availableProvisions: string[];
+}
+
+export interface DuplicateProvisionError {
+    error: "duplicate_provision";
+    name: string;
+    fragmentIds: string[];
+}
+
+// =============================================================================
+// Composition error constructors
+// =============================================================================
+
+export function unsatisfiedRequirement(
+    fragmentId: string,
+    requirement: string,
+    availableProvisions: string[],
+): UnsatisfiedRequirementError {
+    return { error: "unsatisfied_requirement", fragmentId, requirement, availableProvisions };
+}
+
+export function duplicateProvision(
+    name: string,
+    fragmentIds: string[],
+): DuplicateProvisionError {
+    return { error: "duplicate_provision", name, fragmentIds };
 }

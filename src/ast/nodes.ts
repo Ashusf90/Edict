@@ -43,6 +43,19 @@ export interface EdictModule {
 }
 
 /**
+ * A composable program fragment.
+ * Agents can validate fragments independently and compose them into a module.
+ */
+export interface EdictFragment {
+    kind: "fragment";
+    id: string;
+    provides: string[];       // names this fragment defines
+    requires: string[];       // names this fragment depends on (external)
+    imports: Import[];        // module imports needed by this fragment
+    definitions: Definition[];
+}
+
+/**
  * Import names from another module.
  */
 export interface Import {
@@ -440,6 +453,7 @@ export const VALID_BASIC_TYPE_NAMES = [
 
 export const ALL_VALID_KINDS = [
     "module",
+    "fragment",
     "import",
     ...VALID_DEFINITION_KINDS,
     "param",

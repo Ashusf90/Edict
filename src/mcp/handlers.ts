@@ -21,6 +21,8 @@ import { stripDescriptions } from "./minimal-schema.js";
 import { lint } from "../lint/lint.js";
 import type { LintWarning } from "../lint/warnings.js";
 import { expandCompact, compactSchemaReference } from "../compact/expand.js";
+import { compose } from "../compose/compose.js";
+import type { EdictFragment } from "../ast/nodes.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -254,6 +256,7 @@ export function handleVersion(): VersionResult {
             contracts: true,
             effects: true,
             unitTypes: true,
+            fragments: true,
             multiModule: false,
             compactAst: true,
         },
@@ -282,4 +285,40 @@ export function handleLint(ast: unknown): LintResult {
     const module = expanded as import("../ast/nodes.js").EdictModule;
     const warnings = lint(module);
     return { ok: true, warnings };
+}
+
+// =============================================================================
+// Compose handler
+// =============================================================================
+
+export interface ComposeHandlerResult {
+    ok: boolean;
+    module?: unknown;
+    errors?: StructuredError[];
+}
+
+export async function handleCompose(
+    fragments: unknown[],
+    moduleName: string = "composed",
+    moduleId: string = "mod-composed-001",
+    runCheck: boolean = false,
+): Promise<ComposeHandlerResult> {
+    // Expand compact format on each fragment
+    const expandedFragments = fragments.map((f) => expandCompact(f)) as EdictFragment[];
+
+    // Compose fragments into a module
+    const result = compose(expandedFragments, moduleName, moduleId);
+    if (!result.ok) {
+        return { ok: false, errors: result.errors };
+    }
+
+    // Optionally run full pipeline check on composed module
+    if (runCheck) {
+        const checkResult = await check(result.module);
+        if (!checkResult.ok) {
+            return { ok: false, module: result.module, errors: checkResult.errors };
+        }
+    }
+
+    return { ok: true, module: result.module };
 }

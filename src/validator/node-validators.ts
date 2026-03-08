@@ -225,6 +225,93 @@ export function validateModule(
 }
 
 // =============================================================================
+// Fragment Validation
+// =============================================================================
+
+export function validateFragment(
+    node: unknown,
+    path: string,
+    errors: StructuredError[],
+    idTracker: IdTracker,
+): void {
+    if (!isObject(node)) {
+        errors.push(
+            invalidFieldType("$", null, "$", "object", typeof node),
+        );
+        return;
+    }
+
+    const kind = node["kind"];
+    if (kind !== "fragment") {
+        if (kind === undefined) {
+            errors.push(missingField(path, null, "kind", "string"));
+        } else {
+            errors.push(unknownNodeKind(path, String(kind), ["fragment"]));
+        }
+        return;
+    }
+
+    trackId(node, path, errors, idTracker);
+
+    // provides — required string array
+    const provides = requireArray(node, "provides", path, errors);
+    if (provides) {
+        for (let i = 0; i < provides.length; i++) {
+            if (!isString(provides[i])) {
+                errors.push(
+                    invalidFieldType(
+                        `${path}.provides[${i}]`,
+                        getNodeId(node),
+                        `provides[${i}]`,
+                        "string",
+                        typeof provides[i],
+                    ),
+                );
+            }
+        }
+    }
+
+    // requires — required string array
+    const requires = requireArray(node, "requires", path, errors);
+    if (requires) {
+        for (let i = 0; i < requires.length; i++) {
+            if (!isString(requires[i])) {
+                errors.push(
+                    invalidFieldType(
+                        `${path}.requires[${i}]`,
+                        getNodeId(node),
+                        `requires[${i}]`,
+                        "string",
+                        typeof requires[i],
+                    ),
+                );
+            }
+        }
+    }
+
+    // imports — required array (can be empty)
+    const imports = requireArray(node, "imports", path, errors);
+    if (imports) {
+        for (let i = 0; i < imports.length; i++) {
+            validateImport(imports[i], `${path}.imports[${i}]`, errors, idTracker);
+        }
+    }
+
+    // definitions — required array
+    const defs = requireArray(node, "definitions", path, errors);
+    if (defs) {
+        for (let i = 0; i < defs.length; i++) {
+            validateDefinition(
+                defs[i],
+                `${path}.definitions[${i}]`,
+                errors,
+                idTracker,
+            );
+        }
+    }
+}
+
+// =============================================================================
 // Import Validation
 // =============================================================================
 
