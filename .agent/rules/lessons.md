@@ -104,3 +104,15 @@ if (url.endsWith(".ts")) {
 - **Root cause**: `edictTypeName` was only set for records, enums, options, results, and tuples — not for basic types like `String`. Function parameters and let bindings didn't propagate String type info to codegen locals.
 - **Fix**: Set `edictTypeName = "String"` in three places: `compileLet` (for String-typed let bindings), `compileFunction` (for String-typed params), and added `isStringExpr()` helper to check the Edict-level type from literals, locals, and function signatures.
 - **Pattern**: When adding codegen that needs to distinguish types that share the same WASM type, always check `edictTypeName`/`edictType` on `LocalEntry`, not just the WASM type.
+
+## 17. Adding Feature Flags — Don't Replace, Append
+- **Problem**: When adding `fragments: true` to `handleVersion`'s features map, I accidentally replaced `multiModule: false` instead of adding alongside it.
+- **Root cause**: Using `replace_file_content` on the exact line rather than inserting a new line. The tool replaced the target line instead of inserting adjacent.
+- **Fix**: Always verify the diff output from edits to feature maps — ensure existing flags are preserved.
+- **Pattern**: When adding to a configuration/feature object, double-check that existing entries are still present in the diff. Run `/review` on the implementation to catch this class of bug.
+
+## 18. StringTable Interning Must Happen Before toMemorySegments
+- **Problem**: When adding debug instrumentation to codegen, initially interned function names AFTER `toMemorySegments()` and `setMemory()` were called, meaning the debug strings wouldn't be in the WASM data section.
+- **Root cause**: The string interning was placed alongside the debug import declarations, after memory setup. But `toMemorySegments()` serializes whatever is in the StringTable at call time.
+- **Fix**: Move all `strings.intern()` calls (including debug fn names) to before `toMemorySegments()`.
+- **Pattern**: Any new strings added to the `StringTable` must be interned in the pre-scan phase, before `toMemorySegments()` is called. Order matters: intern → segments → setMemory → compile.

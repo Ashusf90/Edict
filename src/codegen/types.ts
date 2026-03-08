@@ -75,6 +75,13 @@ export interface CompileSuccess {
     ok: true;
     wasm: Uint8Array;
     wat?: string; // WAT text for debugging — only emitted if CompileOptions.emitWat is true
+    /** Debug metadata — maps WASM function names to AST nodeIds. Only present when debugMode is true. */
+    debugMetadata?: DebugMetadata;
+}
+
+/** Maps WASM function names to their AST node IDs for crash location mapping. */
+export interface DebugMetadata {
+    fnMap: Record<string, string>;
 }
 
 export interface CompileFailure {
@@ -92,6 +99,8 @@ export interface CompileOptions {
     emitWat?: boolean;
     /** Side-table of inferred types from type checker */
     typeInfo?: TypedModuleInfo;
+    /** Enable debug instrumentation — injects __trace_enter/__trace_exit calls for call stack tracking */
+    debugMode?: boolean;
 }
 
 // =============================================================================

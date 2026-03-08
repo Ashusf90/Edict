@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { validate } from "../validator/validate.js";
 import { check } from "../check.js";
 import { compile } from "../codegen/codegen.js";
-import { run } from "../codegen/runner.js";
+import { run, runDebug } from "../codegen/runner.js";
 import type { RunLimits } from "../codegen/runner.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
 import type { StructuredError, AnalysisDiagnostic, VerificationCoverage } from "../errors/structured-errors.js";
@@ -257,6 +257,7 @@ export function handleVersion(): VersionResult {
             effects: true,
             unitTypes: true,
             fragments: true,
+            debug: true,
             multiModule: false,
             compactAst: true,
         },
@@ -321,4 +322,57 @@ export async function handleCompose(
     }
 
     return { ok: true, module: result.module };
+}
+
+// =============================================================================
+// Debug handler
+// =============================================================================
+
+export interface DebugHandlerResult {
+    ok: boolean;
+    output?: string;
+    exitCode?: number;
+    returnValue?: number;
+    callStack?: string[];
+    crashLocation?: { fn: string; nodeId: string };
+    stepsExecuted?: number;
+    error?: string;
+    errors?: StructuredError[];
+}
+
+export async function handleDebug(
+    ast: unknown,
+    options?: { maxSteps?: number },
+): Promise<DebugHandlerResult> {
+    // Full pipeline: expand → check → compile(debugMode) → runDebug
+    const expanded = expandCompact(ast);
+    const checkResult = await check(expanded);
+    if (!checkResult.ok || !checkResult.module) {
+        return { ok: false, errors: checkResult.errors };
+    }
+
+    const compileResult = compile(checkResult.module, {
+        typeInfo: checkResult.typeInfo,
+        debugMode: true,
+    });
+    if (!compileResult.ok) {
+        return { ok: false, errors: compileResult.errors };
+    }
+
+    const debugResult = await runDebug(
+        compileResult.wasm,
+        compileResult.debugMetadata!,
+        { maxSteps: options?.maxSteps },
+    );
+
+    return {
+        ok: true,
+        output: debugResult.output,
+        exitCode: debugResult.exitCode,
+        returnValue: debugResult.returnValue,
+        callStack: debugResult.callStack,
+        crashLocation: debugResult.crashLocation,
+        stepsExecuted: debugResult.stepsExecuted,
+        error: debugResult.error,
+    };
 }

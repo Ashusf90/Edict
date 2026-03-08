@@ -23,6 +23,7 @@ import {
     type CompileFailure,
     type CompileOptions,
     type FunctionSig,
+    type DebugMetadata,
 
     type FieldLayout,
     type EnumVariantLayout,
@@ -35,7 +36,7 @@ import { inferImportSignatures } from "./imports.js";
 import { compileExpr, inferExprWasmType } from "./compile-expr.js";
 
 // Re-export types for backwards compatibility
-export type { CompileResult, CompileSuccess, CompileFailure, CompileOptions };
+export type { CompileResult, CompileSuccess, CompileFailure, CompileOptions, DebugMetadata };
 export type { FieldLayout, EnumVariantLayout, EnumLayout, RecordLayout };
 
 // Re-export expression compilation functions (moved to compile-expr.ts)
@@ -63,6 +64,23 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
             }
             if (def.kind === "const") {
                 collectStrings([def.value], strings);
+            }
+        }
+
+        // Debug metadata: map function names → AST nodeIds (always built, zero-cost side-table)
+        const fnMap: Record<string, string> = {};
+        const debugFnNamePtrs = new Map<string, number>();
+        for (const def of module.definitions) {
+            if (def.kind === "fn") {
+                fnMap[def.name] = def.id;
+            }
+        }
+
+        // Debug mode: intern function names BEFORE toMemorySegments so they're in the data section
+        if (options?.debugMode) {
+            for (const name of Object.keys(fnMap)) {
+                const interned = strings.intern(name);
+                debugFnNamePtrs.set(name, interned.offset);
             }
         }
 
@@ -255,10 +273,22 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
             }
         }
 
+        // Debug mode: import trace host functions
+        if (options?.debugMode) {
+            mod.addFunctionImport(
+                "__trace_enter", "debug", "__trace_enter",
+                binaryen.createType([binaryen.i32]), binaryen.none,
+            );
+            mod.addFunctionImport(
+                "__trace_exit", "debug", "__trace_exit",
+                binaryen.createType([binaryen.i32]), binaryen.none,
+            );
+        }
+
         // Compile each function
         for (const def of module.definitions) {
             if (def.kind === "fn") {
-                compileFunction(def, cc);
+                compileFunction(def, cc, options?.debugMode ? debugFnNamePtrs : undefined);
             }
         }
 
@@ -315,7 +345,11 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
         const wat = options?.emitWat ? mod.emitText() : undefined;
         const wasm = mod.emitBinary();
 
-        return { ok: true, wasm, ...(wat ? { wat } : {}) };
+        const result: CompileSuccess = { ok: true, wasm, ...(wat ? { wat } : {}) };
+        if (options?.debugMode) {
+            result.debugMetadata = { fnMap };
+        }
+        return result;
     } catch (e) {
         errors.push(wasmValidationError(e instanceof Error ? e.message : String(e)));
         return { ok: false, errors };
@@ -331,6 +365,7 @@ export function compile(module: EdictModule, options?: CompileOptions): CompileR
 function compileFunction(
     fn: FunctionDef,
     cc: CompilationContext,
+    debugFnNamePtrs?: Map<string, number>,
 ): void {
     const { mod } = cc;
     const params = fn.params.map((p) => {
@@ -376,6 +411,30 @@ function compileFunction(
         }
         return compiled;
     });
+
+    // Debug mode: wrap body with __trace_enter at entry and __trace_exit at exit
+    if (debugFnNamePtrs) {
+        const namePtr = debugFnNamePtrs.get(fn.name);
+        if (namePtr !== undefined) {
+            const enterCall = mod.call("__trace_enter", [mod.i32.const(namePtr)], binaryen.none);
+            const exitCall = mod.call("__trace_exit", [mod.i32.const(namePtr)], binaryen.none);
+
+            if (returnType === binaryen.none) {
+                // void function: enter, body, exit
+                bodyExprs.unshift(enterCall);
+                bodyExprs.push(exitCall);
+            } else {
+                // function with return value: enter, save result to temp, exit, return temp
+                const tmpIdx = ctx.addLocal("__debug_ret", returnType);
+                bodyExprs.unshift(enterCall);
+                // Replace final expr with: set temp = final, exit, get temp
+                const finalExpr = bodyExprs.pop()!;
+                bodyExprs.push(mod.local.set(tmpIdx, finalExpr));
+                bodyExprs.push(exitCall);
+                bodyExprs.push(mod.local.get(tmpIdx, returnType));
+            }
+        }
+    }
 
     let body: binaryen.ExpressionRef;
     if (bodyExprs.length === 0) {

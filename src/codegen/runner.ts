@@ -246,3 +246,175 @@ export async function runDirect(
         returnValue,
     };
 }
+
+// =============================================================================
+// Debug execution — call stack tracking and crash diagnostics
+// =============================================================================
+
+import type { DebugMetadata } from "./types.js";
+import { readString } from "../builtins/host-helpers.js";
+
+/** Result from debug execution — includes crash diagnostics and trace info */
+export interface DebugResult {
+    /** Captured stdout output */
+    output: string;
+    /** Exit code (0 = success) */
+    exitCode: number;
+    /** Return value from main (if any) */
+    returnValue?: number;
+    /** Call stack at crash time (function names, outermost first) */
+    callStack?: string[];
+    /** Crash location — mapped from debug metadata */
+    crashLocation?: { fn: string; nodeId: string };
+    /** Number of function entries recorded */
+    stepsExecuted: number;
+    /** Error type, if execution was killed */
+    error?: "execution_timeout" | "execution_oom" | "step_limit_exceeded";
+}
+
+/** Options for debug execution */
+export interface DebugOptions {
+    /** Maximum number of function entries before stopping (default: 10_000) */
+    maxSteps?: number;
+    /** Sandbox directory for file IO builtins */
+    sandboxDir?: string;
+    /** Optional host adapter */
+    adapter?: EdictHostAdapter;
+}
+
+/** Thrown when step limit is exceeded during debug execution */
+class StepLimitError extends Error {
+    constructor(public stepsExecuted: number) {
+        super("step_limit_exceeded");
+    }
+}
+
+/**
+ * Execute a debug-instrumented WASM binary with call stack tracking.
+ *
+ * Must be compiled with `debugMode: true` so the WASM contains
+ * `__trace_enter` / `__trace_exit` calls.
+ *
+ * @param wasm - The WASM binary (compiled with debugMode: true)
+ * @param debugMetadata - fnName→nodeId mapping from compile result
+ * @param options - Debug execution options (maxSteps, sandboxDir)
+ */
+export async function runDebug(
+    wasm: Uint8Array,
+    debugMetadata: DebugMetadata,
+    options: DebugOptions = {},
+): Promise<DebugResult> {
+    const maxSteps = options.maxSteps ?? 10_000;
+    const callStack: string[] = [];
+    let stepsExecuted = 0;
+
+    const state: RuntimeState = {
+        outputParts: [],
+        instance: null,
+        sandboxDir: options.sandboxDir,
+    };
+    const importObject = createHostImports(state, options.adapter);
+
+    const decoder = new TextDecoder();
+
+    // Add debug host functions that track the call stack
+    importObject["debug"] = {
+        __trace_enter: (fnNamePtr: number) => {
+            stepsExecuted++;
+            if (stepsExecuted > maxSteps) {
+                throw new StepLimitError(stepsExecuted);
+            }
+            const fnName = readString(state, fnNamePtr, decoder);
+            callStack.push(fnName);
+        },
+        __trace_exit: (fnNamePtr: number) => {
+            const fnName = readString(state, fnNamePtr, decoder);
+            // Pop matching fn from stack (handles normal exits)
+            const idx = callStack.lastIndexOf(fnName);
+            if (idx !== -1) {
+                callStack.splice(idx, 1);
+            }
+        },
+    };
+
+    const { instance } = await WebAssembly.instantiate(wasm, importObject);
+    state.instance = instance;
+
+    let returnValue: number | undefined;
+    let exitCode = 0;
+
+    try {
+        const mainFn = instance.exports["main"] as
+            | ((...args: unknown[]) => number)
+            | undefined;
+
+        if (!mainFn || typeof mainFn !== "function") {
+            return {
+                output: "",
+                exitCode: 1,
+                stepsExecuted: 0,
+            };
+        }
+
+        returnValue = mainFn();
+    } catch (e) {
+        // Step limit exceeded
+        if (e instanceof StepLimitError) {
+            const topFn = callStack.length > 0 ? callStack[callStack.length - 1]! : undefined;
+            return {
+                output: state.outputParts.join(""),
+                exitCode: 1,
+                callStack: [...callStack],
+                crashLocation: topFn ? {
+                    fn: topFn,
+                    nodeId: debugMetadata.fnMap[topFn] ?? "unknown",
+                } : undefined,
+                stepsExecuted,
+                error: "step_limit_exceeded",
+            };
+        }
+
+        // Heap OOM
+        if (e instanceof EdictOomError) {
+            const topFn = callStack.length > 0 ? callStack[callStack.length - 1]! : undefined;
+            return {
+                output: state.outputParts.join(""),
+                exitCode: 1,
+                callStack: [...callStack],
+                crashLocation: topFn ? {
+                    fn: topFn,
+                    nodeId: debugMetadata.fnMap[topFn] ?? "unknown",
+                } : undefined,
+                stepsExecuted,
+                error: "execution_oom",
+            };
+        }
+
+        const msg = e instanceof Error ? e.message : String(e);
+        // Handle edict_exit:N — clean process exit
+        const exitMatch = msg.match(/^edict_exit:(\d+)$/);
+        if (exitMatch) {
+            exitCode = parseInt(exitMatch[1]!, 10);
+        } else {
+            // Runtime error (WASM trap, division by zero, etc.)
+            const topFn = callStack.length > 0 ? callStack[callStack.length - 1]! : undefined;
+            return {
+                output: state.outputParts.join("") + `Runtime error: ${msg}`,
+                exitCode: 1,
+                callStack: [...callStack],
+                crashLocation: topFn ? {
+                    fn: topFn,
+                    nodeId: debugMetadata.fnMap[topFn] ?? "unknown",
+                } : undefined,
+                stepsExecuted,
+            };
+        }
+    }
+
+    return {
+        output: state.outputParts.join(""),
+        exitCode,
+        returnValue,
+        stepsExecuted,
+    };
+}
