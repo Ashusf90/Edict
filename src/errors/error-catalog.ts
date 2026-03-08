@@ -265,14 +265,14 @@ export function buildErrorCatalog(): ErrorCatalog {
             example_cause: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "record_literal", id: "rec-001", recordName: "NonExistent", fields: [] }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "record_expr", id: "rec-001", name: "NonExistent", fields: [] }] }],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "record", id: "rec-def-001", name: "Point", fields: [{ name: "x", type: { kind: "basic", name: "Int" } }, { name: "y", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "record_literal", id: "rec-001", recordName: "Point", fields: [{ name: "x", value: { kind: "literal", id: "lit-001", value: 0 } }, { name: "y", value: { kind: "literal", id: "lit-002", value: 0 } }] }] },
+                    { kind: "record", id: "rec-def-001", name: "Point", fields: [{ kind: "field", id: "fld-x-001", name: "x", type: { kind: "basic", name: "Int" } }, { kind: "field", id: "fld-y-001", name: "y", type: { kind: "basic", name: "Int" } }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "named", name: "Point" }, contracts: [], body: [{ kind: "record_expr", id: "rec-001", name: "Point", fields: [{ kind: "field_init", name: "x", value: { kind: "literal", id: "lit-001", value: 0 } }, { kind: "field_init", name: "y", value: { kind: "literal", id: "lit-002", value: 0 } }] }] },
                 ],
             },
         },
@@ -288,14 +288,14 @@ export function buildErrorCatalog(): ErrorCatalog {
             example_cause: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "enum_literal", id: "en-001", enumName: "NonExistent", variant: "A", value: { kind: "literal", id: "lit-001", value: 1 } }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "enum_constructor", id: "en-001", enumName: "NonExistent", variant: "A", fields: [{ kind: "field_init", name: "value", value: { kind: "literal", id: "lit-001", value: 1 } }] }] }],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "enum", id: "enum-def-001", name: "Color", variants: [{ name: "Red", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "enum_literal", id: "en-001", enumName: "Color", variant: "Red", value: { kind: "literal", id: "lit-001", value: 1 } }] },
+                    { kind: "enum", id: "enum-def-001", name: "Color", variants: [{ kind: "variant", id: "var-red-001", name: "Red", fields: [{ kind: "field", id: "fld-r-001", name: "value", type: { kind: "basic", name: "Int" } }] }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "named", name: "Color" }, contracts: [], body: [{ kind: "enum_constructor", id: "en-001", enumName: "Color", variant: "Red", fields: [{ kind: "field_init", name: "value", value: { kind: "literal", id: "lit-001", value: 1 } }] }] },
                 ],
             },
         },
@@ -313,16 +313,16 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "enum", id: "enum-001", name: "Color", variants: [{ name: "Red", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "enum_literal", id: "en-001", enumName: "Color", variant: "Blue", value: { kind: "literal", id: "lit-001", value: 1 } }] },
+                    { kind: "enum", id: "enum-001", name: "Color", variants: [{ kind: "variant", id: "var-red-002", name: "Red", fields: [{ kind: "field", id: "fld-r-002", name: "value", type: { kind: "basic", name: "Int" } }] }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "enum_constructor", id: "en-001", enumName: "Color", variant: "Blue", fields: [{ kind: "field_init", name: "value", value: { kind: "literal", id: "lit-001", value: 1 } }] }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "enum", id: "enum-001", name: "Color", variants: [{ name: "Red", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "enum_literal", id: "en-001", enumName: "Color", variant: "Red", value: { kind: "literal", id: "lit-001", value: 1 } }] },
+                    { kind: "enum", id: "enum-001", name: "Color", variants: [{ kind: "variant", id: "var-red-003", name: "Red", fields: [{ kind: "field", id: "fld-r-003", name: "value", type: { kind: "basic", name: "Int" } }] }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "named", name: "Color" }, contracts: [], body: [{ kind: "enum_constructor", id: "en-001", enumName: "Color", variant: "Red", fields: [{ kind: "field_init", name: "value", value: { kind: "literal", id: "lit-001", value: 1 } }] }] },
                 ],
             },
         },
@@ -362,16 +362,16 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "add", params: [{ id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "binop", id: "bin-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] },
-                    { kind: "fn", id: "fn-002", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "add", args: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
+                    { kind: "fn", id: "fn-001", name: "add", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "binop", id: "bin-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] },
+                    { kind: "fn", id: "fn-002", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-add-001", name: "add" }, args: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "add", params: [{ id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "binop", id: "bin-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] },
-                    { kind: "fn", id: "fn-002", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "add", args: [{ kind: "literal", id: "lit-001", value: 1 }, { kind: "literal", id: "lit-002", value: 2 }] }] },
+                    { kind: "fn", id: "fn-001", name: "add", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "binop", id: "bin-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] },
+                    { kind: "fn", id: "fn-002", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-add-002", name: "add" }, args: [{ kind: "literal", id: "lit-001", value: 1 }, { kind: "literal", id: "lit-002", value: 2 }] }] },
                 ],
             },
         },
@@ -385,12 +385,12 @@ export function buildErrorCatalog(): ErrorCatalog {
             example_cause: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "let", id: "let-001", name: "x", type: { kind: "basic", name: "Int" }, value: { kind: "literal", id: "lit-001", value: 5 }, body: { kind: "call", id: "call-001", fn: "x", args: [] } }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-x-call", name: "x" }, args: [] }] }],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "let", id: "let-001", name: "x", type: { kind: "basic", name: "Int" }, value: { kind: "literal", id: "lit-001", value: 5 }, body: { kind: "ident", id: "id-001", name: "x" } }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
             },
         },
         {
@@ -407,16 +407,16 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "record", id: "rec-001", name: "Point", fields: [{ name: "x", type: { kind: "basic", name: "Int" } }, { name: "y", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [{ id: "p-001", name: "p", type: { kind: "basic", name: "Point" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "access", id: "acc-001", target: { kind: "ident", id: "id-001", name: "p" }, field: "z" }] },
+                    { kind: "record", id: "rec-001", name: "Point", fields: [{ kind: "field", id: "fld-x-002", name: "x", type: { kind: "basic", name: "Int" } }, { kind: "field", id: "fld-y-002", name: "y", type: { kind: "basic", name: "Int" } }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "p", type: { kind: "named", name: "Point" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "access", id: "acc-001", target: { kind: "ident", id: "id-001", name: "p" }, field: "z" }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "record", id: "rec-001", name: "Point", fields: [{ name: "x", type: { kind: "basic", name: "Int" } }, { name: "y", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [{ id: "p-001", name: "p", type: { kind: "basic", name: "Point" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "access", id: "acc-001", target: { kind: "ident", id: "id-001", name: "p" }, field: "x" }] },
+                    { kind: "record", id: "rec-001", name: "Point", fields: [{ kind: "field", id: "fld-x-003", name: "x", type: { kind: "basic", name: "Int" } }, { kind: "field", id: "fld-y-003", name: "y", type: { kind: "basic", name: "Int" } }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "p", type: { kind: "named", name: "Point" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "access", id: "acc-001", target: { kind: "ident", id: "id-001", name: "p" }, field: "x" }] },
                 ],
             },
         },
@@ -433,16 +433,16 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "record", id: "rec-001", name: "Point", fields: [{ name: "x", type: { kind: "basic", name: "Int" } }, { name: "y", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "record_literal", id: "rl-001", recordName: "Point", fields: [{ name: "x", value: { kind: "literal", id: "lit-001", value: 1 } }] }] },
+                    { kind: "record", id: "rec-001", name: "Point", fields: [{ kind: "field", id: "fld-x-004", name: "x", type: { kind: "basic", name: "Int" } }, { kind: "field", id: "fld-y-004", name: "y", type: { kind: "basic", name: "Int" } }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "record_expr", id: "rl-001", name: "Point", fields: [{ kind: "field_init", name: "x", value: { kind: "literal", id: "lit-001", value: 1 } }] }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "record", id: "rec-001", name: "Point", fields: [{ name: "x", type: { kind: "basic", name: "Int" } }, { name: "y", type: { kind: "basic", name: "Int" } }] },
-                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "record_literal", id: "rl-001", recordName: "Point", fields: [{ name: "x", value: { kind: "literal", id: "lit-001", value: 1 } }, { name: "y", value: { kind: "literal", id: "lit-002", value: 2 } }] }] },
+                    { kind: "record", id: "rec-001", name: "Point", fields: [{ kind: "field", id: "fld-x-005", name: "x", type: { kind: "basic", name: "Int" } }, { kind: "field", id: "fld-y-005", name: "y", type: { kind: "basic", name: "Int" } }] },
+                    { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "named", name: "Point" }, contracts: [], body: [{ kind: "record_expr", id: "rl-001", name: "Point", fields: [{ kind: "field_init", name: "x", value: { kind: "literal", id: "lit-001", value: 1 } }, { kind: "field_init", name: "y", value: { kind: "literal", id: "lit-002", value: 2 } }] }] },
                 ],
             },
         },
@@ -465,14 +465,14 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["reads"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "print", args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
+                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["reads"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-print-001", name: "print" }, args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["io"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "print", args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
+                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["io"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-print-002", name: "print" }, args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
                 ],
             },
         },
@@ -491,14 +491,14 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["pure"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "print", args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
+                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["pure"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-print-003", name: "print" }, args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["io"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "print", args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
+                    { kind: "fn", id: "fn-001", name: "greet", params: [], effects: ["io"], returnType: { kind: "basic", name: "String" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-print-004", name: "print" }, args: [{ kind: "literal", id: "lit-001", value: "hi" }] }] },
                 ],
             },
         },
@@ -519,12 +519,12 @@ export function buildErrorCatalog(): ErrorCatalog {
             example_cause: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "abs", params: [{ id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-001", op: ">", left: { kind: "ident", id: "id-r", name: "result" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "abs", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-001", op: ">", left: { kind: "ident", id: "id-r", name: "result" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "abs", params: [{ id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-001", op: ">=", left: { kind: "ident", id: "id-r", name: "result" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "if", id: "if-001", condition: { kind: "binop", id: "cmp-002", op: ">=", left: { kind: "ident", id: "id-x1", name: "x" }, right: { kind: "literal", id: "lit-001", value: 0 } }, then: { kind: "ident", id: "id-x2", name: "x" }, else: { kind: "binop", id: "neg-001", op: "*", left: { kind: "literal", id: "lit-m1", value: -1 }, right: { kind: "ident", id: "id-x3", name: "x" } } }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "abs", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-001", op: ">=", left: { kind: "ident", id: "id-r", name: "result" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "if", id: "if-001", condition: { kind: "binop", id: "cmp-002", op: ">=", left: { kind: "ident", id: "id-x1", name: "x" }, right: { kind: "literal", id: "lit-001", value: 0 } }, then: [{ kind: "ident", id: "id-x2", name: "x" }], else: [{ kind: "binop", id: "neg-001", op: "*", left: { kind: "literal", id: "lit-m1", value: -1 }, right: { kind: "ident", id: "id-x3", name: "x" } }] }] }],
             },
         },
         {
@@ -536,15 +536,16 @@ export function buildErrorCatalog(): ErrorCatalog {
                 { name: "functionName", type: "string" },
                 { name: "timeoutMs", type: "number" },
             ],
+            // Timeout trigger: use a deeply nested arithmetic expression that's hard for Z3
             example_cause: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "complex", params: [{ id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "literal", id: "lit-t", value: true } }], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "complex", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-t1", op: ">", left: { kind: "binop", id: "mul-t1", op: "*", left: { kind: "ident", id: "id-r-t1", name: "result" }, right: { kind: "ident", id: "id-r-t2", name: "result" } }, right: { kind: "binop", id: "mul-t2", op: "*", left: { kind: "ident", id: "id-r-t3", name: "result" }, right: { kind: "literal", id: "lit-t1", value: -1 } } } }], body: [{ kind: "binop", id: "add-001", op: "+", left: { kind: "ident", id: "id-001", name: "x" }, right: { kind: "literal", id: "lit-002", value: 1 } }] }],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "complex", params: [{ id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
+                definitions: [{ kind: "fn", id: "fn-001", name: "complex", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "binop", id: "add-001", op: "+", left: { kind: "ident", id: "id-001", name: "x" }, right: { kind: "literal", id: "lit-002", value: 1 } }] }],
             },
         },
         {
@@ -556,15 +557,22 @@ export function buildErrorCatalog(): ErrorCatalog {
                 { name: "functionName", type: "string" },
                 { name: "unsupportedNodeKind", type: "string" },
             ],
+            // Undecidable: contract contains a call node which Z3 can't translate
             example_cause: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "f", params: [{ id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "call", id: "call-001", fn: "someComplexFn", args: [{ kind: "ident", id: "id-r", name: "result" }] } }], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
+                definitions: [
+                    { kind: "fn", id: "fn-helper", name: "helper", params: [{ kind: "param", id: "p-h", name: "n", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "ident", id: "id-h", name: "n" }] },
+                    { kind: "fn", id: "fn-001", name: "f", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-ud", op: ">", left: { kind: "call", id: "call-ud", fn: { kind: "ident", id: "id-hcall", name: "helper" }, args: [{ kind: "ident", id: "id-r", name: "result" }] }, right: { kind: "literal", id: "lit-ud", value: 0 } } }], body: [{ kind: "ident", id: "id-001", name: "x" }] },
+                ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
-                definitions: [{ kind: "fn", id: "fn-001", name: "f", params: [{ id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "post", id: "post-001", condition: { kind: "binop", id: "cmp-001", op: ">=", left: { kind: "ident", id: "id-r", name: "result" }, right: { kind: "literal", id: "lit-001", value: 0 } } }], body: [{ kind: "ident", id: "id-001", name: "x" }] }],
+                definitions: [
+                    { kind: "fn", id: "fn-helper", name: "helper", params: [{ kind: "param", id: "p-h", name: "n", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "ident", id: "id-h", name: "n" }] },
+                    { kind: "fn", id: "fn-001", name: "f", params: [{ kind: "param", id: "p-001", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "ident", id: "id-001", name: "x" }] },
+                ],
             },
         },
         {
@@ -582,16 +590,16 @@ export function buildErrorCatalog(): ErrorCatalog {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "divide", params: [{ id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "pre", id: "pre-001", condition: { kind: "binop", id: "cmp-001", op: "!=", left: { kind: "ident", id: "id-b", name: "b" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "binop", id: "div-001", op: "/", left: { kind: "ident", id: "id-a", name: "a" }, right: { kind: "ident", id: "id-b2", name: "b" } }] },
-                    { kind: "fn", id: "fn-002", name: "main", params: [{ id: "p-003", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "divide", args: [{ kind: "ident", id: "id-x", name: "x" }, { kind: "literal", id: "lit-001", value: 0 }] }] },
+                    { kind: "fn", id: "fn-001", name: "divide", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "pre", id: "pre-001", condition: { kind: "binop", id: "cmp-001", op: "!=", left: { kind: "ident", id: "id-b", name: "b" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "binop", id: "div-001", op: "/", left: { kind: "ident", id: "id-a", name: "a" }, right: { kind: "ident", id: "id-b2", name: "b" } }] },
+                    { kind: "fn", id: "fn-002", name: "main", params: [{ kind: "param", id: "p-003", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-div-001", name: "divide" }, args: [{ kind: "ident", id: "id-x", name: "x" }, { kind: "literal", id: "lit-001", value: 0 }] }] },
                 ],
             },
             example_fix: {
                 kind: "module",
                 name: "test",
                 definitions: [
-                    { kind: "fn", id: "fn-001", name: "divide", params: [{ id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "pre", id: "pre-001", condition: { kind: "binop", id: "cmp-001", op: "!=", left: { kind: "ident", id: "id-b", name: "b" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "binop", id: "div-001", op: "/", left: { kind: "ident", id: "id-a", name: "a" }, right: { kind: "ident", id: "id-b2", name: "b" } }] },
-                    { kind: "fn", id: "fn-002", name: "main", params: [{ id: "p-003", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: "divide", args: [{ kind: "ident", id: "id-x", name: "x" }, { kind: "literal", id: "lit-001", value: 1 }] }] },
+                    { kind: "fn", id: "fn-001", name: "divide", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "basic", name: "Int" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [{ kind: "pre", id: "pre-001", condition: { kind: "binop", id: "cmp-001", op: "!=", left: { kind: "ident", id: "id-b", name: "b" }, right: { kind: "literal", id: "lit-z", value: 0 } } }], body: [{ kind: "binop", id: "div-001", op: "/", left: { kind: "ident", id: "id-a", name: "a" }, right: { kind: "ident", id: "id-b2", name: "b" } }] },
+                    { kind: "fn", id: "fn-002", name: "main", params: [{ kind: "param", id: "p-003", name: "x", type: { kind: "basic", name: "Int" } }], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-div-002", name: "divide" }, args: [{ kind: "ident", id: "id-x", name: "x" }, { kind: "literal", id: "lit-001", value: 1 }] }] },
                 ],
             },
         },

@@ -1,0 +1,801 @@
+{
+  "timestamp": "2026-03-08T17:45:40.982Z",
+  "strategy": "mock-deterministic",
+  "corpusSize": 30,
+  "summary": {
+    "recoveryRate": 0.7666666666666667,
+    "avgRounds": 1.1304347826086956,
+    "byStage": {
+      "validator": {
+        "total": 9,
+        "recovered": 9,
+        "rate": 1
+      },
+      "resolver": {
+        "total": 6,
+        "recovered": 3,
+        "rate": 0.5
+      },
+      "type_checker": {
+        "total": 7,
+        "recovered": 3,
+        "rate": 0.42857142857142855
+      },
+      "effect_checker": {
+        "total": 3,
+        "recovered": 3,
+        "rate": 1
+      },
+      "contract_verifier": {
+        "total": 5,
+        "recovered": 5,
+        "rate": 1
+      }
+    },
+    "byDifficulty": {
+      "1": {
+        "total": 26,
+        "recovered": 20,
+        "rate": 0.7692307692307693
+      },
+      "2": {
+        "total": 4,
+        "recovered": 3,
+        "rate": 0.75
+      }
+    },
+    "fieldCoverage": {
+      "duplicate_id": {
+        "fieldsUsed": [
+          "nodeId"
+        ],
+        "fieldsAvailable": [
+          "nodeId"
+        ]
+      },
+      "unknown_node_kind": {
+        "fieldsUsed": [
+          "received",
+          "validKinds"
+        ],
+        "fieldsAvailable": [
+          "received",
+          "validKinds"
+        ]
+      },
+      "missing_field": {
+        "fieldsUsed": [
+          "nodeId",
+          "field"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "field"
+        ]
+      },
+      "invalid_field_type": {
+        "fieldsUsed": [
+          "nodeId",
+          "field",
+          "expectedFormat"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "field",
+          "expectedFormat"
+        ]
+      },
+      "invalid_effect": {
+        "fieldsUsed": [
+          "nodeId",
+          "received",
+          "validEffects"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "received",
+          "validEffects"
+        ]
+      },
+      "invalid_operator": {
+        "fieldsUsed": [
+          "nodeId",
+          "validOperators"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "validOperators"
+        ]
+      },
+      "invalid_basic_type_name": {
+        "fieldsUsed": [
+          "nodeId",
+          "received",
+          "validNames"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "received",
+          "validNames"
+        ]
+      },
+      "conflicting_effects": {
+        "fieldsUsed": [
+          "nodeId",
+          "effectsFound"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "effectsFound"
+        ]
+      },
+      "undefined_reference": {
+        "fieldsUsed": [
+          "nodeId",
+          "suggestion",
+          "candidates"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "suggestion",
+          "candidates"
+        ]
+      },
+      "duplicate_definition": {
+        "fieldsUsed": [
+          "nodeId",
+          "name"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "name"
+        ]
+      },
+      "unknown_record": {
+        "fieldsUsed": [
+          "nodeId",
+          "candidates"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "name",
+          "candidates"
+        ]
+      },
+      "unknown_enum": {
+        "fieldsUsed": [
+          "nodeId",
+          "candidates"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "recordName",
+          "fieldName",
+          "availableFields"
+        ]
+      },
+      "unknown_variant": {
+        "fieldsUsed": [
+          "nodeId",
+          "availableVariants"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "expected",
+          "actual",
+          "suggestion"
+        ]
+      },
+      "type_mismatch": {
+        "fieldsUsed": [
+          "nodeId",
+          "suggestion",
+          "expected",
+          "actual"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "expected",
+          "actual",
+          "suggestion"
+        ]
+      },
+      "arity_mismatch": {
+        "fieldsUsed": [
+          "nodeId",
+          "expected",
+          "actual"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "expected",
+          "actual"
+        ]
+      },
+      "not_a_function": {
+        "fieldsUsed": [
+          "nodeId"
+        ],
+        "fieldsAvailable": [
+          "nodeId"
+        ]
+      },
+      "unknown_field": {
+        "fieldsUsed": [
+          "nodeId",
+          "suggestion",
+          "availableFields"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "suggestion",
+          "availableFields"
+        ]
+      },
+      "missing_record_fields": {
+        "fieldsUsed": [
+          "nodeId",
+          "missingFields",
+          "suggestion"
+        ],
+        "fieldsAvailable": [
+          "path",
+          "nodeId",
+          "field",
+          "expectedFormat",
+          "actualFormat"
+        ]
+      },
+      "effect_violation": {
+        "fieldsUsed": [
+          "nodeId",
+          "suggestion",
+          "missingEffects",
+          "calleeEffects"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "suggestion",
+          "missingEffects",
+          "calleeEffects"
+        ]
+      },
+      "effect_in_pure": {
+        "fieldsUsed": [
+          "nodeId",
+          "suggestion",
+          "missingEffects",
+          "calleeEffects"
+        ],
+        "fieldsAvailable": [
+          "nodeId",
+          "suggestion",
+          "missingEffects",
+          "calleeEffects"
+        ]
+      },
+      "contract_failure": {
+        "fieldsUsed": [
+          "contractId",
+          "nodeId",
+          "functionName"
+        ],
+        "fieldsAvailable": [
+          "contractId",
+          "nodeId",
+          "functionName"
+        ]
+      },
+      "verification_timeout": {
+        "fieldsUsed": [
+          "contractId",
+          "nodeId",
+          "functionName"
+        ],
+        "fieldsAvailable": [
+          "contractId",
+          "nodeId",
+          "functionName"
+        ]
+      },
+      "undecidable_predicate": {
+        "fieldsUsed": [
+          "contractId",
+          "functionName"
+        ],
+        "fieldsAvailable": [
+          "contractId",
+          "functionName"
+        ]
+      },
+      "precondition_not_met": {
+        "fieldsUsed": [
+          "contractId",
+          "functionName"
+        ],
+        "fieldsAvailable": [
+          "contractId",
+          "functionName"
+        ]
+      }
+    }
+  },
+  "entries": [
+    {
+      "id": "catalog-duplicate_id",
+      "targetErrors": [
+        "duplicate_id"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-unknown_node_kind",
+      "targetErrors": [
+        "unknown_node_kind"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-missing_field",
+      "targetErrors": [
+        "missing_field"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 4,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-invalid_field_type",
+      "targetErrors": [
+        "invalid_field_type"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-invalid_effect",
+      "targetErrors": [
+        "invalid_effect"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-invalid_operator",
+      "targetErrors": [
+        "invalid_operator"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-invalid_basic_type_name",
+      "targetErrors": [
+        "invalid_basic_type_name"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-conflicting_effects",
+      "targetErrors": [
+        "conflicting_effects"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-undefined_reference",
+      "targetErrors": [
+        "undefined_reference"
+      ],
+      "stage": "resolver",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-duplicate_definition",
+      "targetErrors": [
+        "duplicate_definition"
+      ],
+      "stage": "resolver",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-unknown_record",
+      "targetErrors": [
+        "unknown_record"
+      ],
+      "stage": "resolver",
+      "difficulty": 1,
+      "recovered": false,
+      "rounds": 5,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "unknown_record",
+          "nodeId": "rec-001",
+          "name": "NonExistent",
+          "candidates": []
+        }
+      ]
+    },
+    {
+      "id": "catalog-unknown_enum",
+      "targetErrors": [
+        "unknown_enum"
+      ],
+      "stage": "resolver",
+      "difficulty": 1,
+      "recovered": false,
+      "rounds": 5,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "unknown_field",
+          "nodeId": "en-001",
+          "recordName": "Option.None",
+          "fieldName": "value",
+          "availableFields": []
+        },
+        {
+          "error": "type_mismatch",
+          "nodeId": "fn-001",
+          "expected": {
+            "kind": "basic",
+            "name": "Int"
+          },
+          "actual": {
+            "kind": "named",
+            "name": "Option"
+          },
+          "suggestion": {
+            "nodeId": "fn-001",
+            "field": "type",
+            "value": {
+              "kind": "basic",
+              "name": "Int"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "catalog-unknown_variant",
+      "targetErrors": [
+        "unknown_variant"
+      ],
+      "stage": "resolver",
+      "difficulty": 1,
+      "recovered": false,
+      "rounds": 5,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "type_mismatch",
+          "nodeId": "fn-001",
+          "expected": {
+            "kind": "basic",
+            "name": "Int"
+          },
+          "actual": {
+            "kind": "named",
+            "name": "Color"
+          },
+          "suggestion": {
+            "nodeId": "fn-001",
+            "field": "type",
+            "value": {
+              "kind": "basic",
+              "name": "Int"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "catalog-type_mismatch",
+      "targetErrors": [
+        "type_mismatch"
+      ],
+      "stage": "type_checker",
+      "difficulty": 1,
+      "recovered": false,
+      "rounds": 5,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "type_mismatch",
+          "nodeId": "fn-001",
+          "expected": {
+            "kind": "basic",
+            "name": "Int"
+          },
+          "actual": {
+            "kind": "basic",
+            "name": "String"
+          },
+          "suggestion": {
+            "nodeId": "fn-001",
+            "field": "type",
+            "value": {
+              "kind": "basic",
+              "name": "Int"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "catalog-arity_mismatch",
+      "targetErrors": [
+        "arity_mismatch"
+      ],
+      "stage": "type_checker",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-not_a_function",
+      "targetErrors": [
+        "not_a_function"
+      ],
+      "stage": "type_checker",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-unknown_field",
+      "targetErrors": [
+        "unknown_field"
+      ],
+      "stage": "type_checker",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-missing_record_fields",
+      "targetErrors": [
+        "missing_record_fields"
+      ],
+      "stage": "type_checker",
+      "difficulty": 1,
+      "recovered": false,
+      "rounds": 5,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "invalid_field_type",
+          "path": "$.definitions[1].body[0].fields[0]",
+          "nodeId": null,
+          "field": "$.definitions[1].body[0].fields[0]",
+          "expectedFormat": "object",
+          "actualFormat": "string"
+        }
+      ]
+    },
+    {
+      "id": "catalog-effect_violation",
+      "targetErrors": [
+        "effect_violation"
+      ],
+      "stage": "effect_checker",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-effect_in_pure",
+      "targetErrors": [
+        "effect_in_pure"
+      ],
+      "stage": "effect_checker",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-contract_failure",
+      "targetErrors": [
+        "contract_failure"
+      ],
+      "stage": "contract_verifier",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-verification_timeout",
+      "targetErrors": [
+        "verification_timeout"
+      ],
+      "stage": "contract_verifier",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-undecidable_predicate",
+      "targetErrors": [
+        "undecidable_predicate"
+      ],
+      "stage": "contract_verifier",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "catalog-precondition_not_met",
+      "targetErrors": [
+        "precondition_not_met"
+      ],
+      "stage": "contract_verifier",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "manual-typo-fn-call",
+      "targetErrors": [
+        "undefined_reference"
+      ],
+      "stage": "resolver",
+      "difficulty": 2,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "manual-transitive-effect",
+      "targetErrors": [
+        "effect_violation"
+      ],
+      "stage": "effect_checker",
+      "difficulty": 2,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "manual-dup-id-fn-param",
+      "targetErrors": [
+        "duplicate_id"
+      ],
+      "stage": "validator",
+      "difficulty": 1,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "manual-contract-off-by-one",
+      "targetErrors": [
+        "contract_failure"
+      ],
+      "stage": "contract_verifier",
+      "difficulty": 2,
+      "recovered": true,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": []
+    },
+    {
+      "id": "manual-if-branch-mismatch",
+      "targetErrors": [
+        "type_mismatch"
+      ],
+      "stage": "type_checker",
+      "difficulty": 1,
+      "recovered": false,
+      "rounds": 1,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "type_mismatch",
+          "nodeId": "if-001",
+          "expected": {
+            "kind": "basic",
+            "name": "Int"
+          },
+          "actual": {
+            "kind": "basic",
+            "name": "String"
+          }
+        }
+      ]
+    },
+    {
+      "id": "manual-missing-multiple-fields",
+      "targetErrors": [
+        "missing_record_fields"
+      ],
+      "stage": "type_checker",
+      "difficulty": 2,
+      "recovered": false,
+      "rounds": 5,
+      "maxRounds": 5,
+      "finalErrors": [
+        {
+          "error": "invalid_field_type",
+          "path": "$.definitions[1].body[0].fields[0]",
+          "nodeId": null,
+          "field": "$.definitions[1].body[0].fields[0]",
+          "expectedFormat": "object",
+          "actualFormat": "string"
+        },
+        {
+          "error": "invalid_field_type",
+          "path": "$.definitions[1].body[0].fields[1]",
+          "nodeId": null,
+          "field": "$.definitions[1].body[0].fields[1]",
+          "expectedFormat": "object",
+          "actualFormat": "string"
+        }
+      ]
+    }
+  ]
+}

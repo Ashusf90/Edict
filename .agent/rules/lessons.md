@@ -134,3 +134,9 @@ if (url.endsWith(".ts")) {
 - **Root cause**: Defaulted to "write code that encodes the rules" instead of asking "does a machine-readable source of truth already exist that encodes these rules?"
 - **Fix**: Use the JSON Schema directly at runtime as the validation source. Zero hand-written structural checks. Only semantic checks not expressible in the schema remain manual.
 - **Pattern**: Before writing any validation, configuration, or routing logic, ask: **"Is there an existing artifact (schema, type definition, config file, AST) that already encodes this information?"** If yes, derive the behavior from that artifact automatically. Hand-written code that duplicates machine-readable sources is a maintenance liability and a correctness risk. Automate over hand-write, always.
+
+## 21. Benchmark Corpora: Derive From Existing Data Sources
+- **Problem**: When building the error recovery benchmark (#9), initially hand-wrote 50 broken AST entries — even though `buildErrorCatalog()` already maintained `example_cause`/`example_fix` pairs for every error type.
+- **Root cause**: Jumped to "write the corpus" instead of asking "does an existing programmatic source already contain this data?"
+- **Fix**: Import `buildErrorCatalog()` and extract corpus entries programmatically. Only add hand-crafted entries for edge cases the catalog doesn't cover (multi-error, near-misses, transitive effects).
+- **Pattern**: This is the same lesson as #20 applied to test data. Any time you need a corpus, dataset, or fixture set, first check: **does a programmatic source already exist that produces this data?** If yes, derive from it. Reserve hand-written entries for genuinely novel scenarios.
