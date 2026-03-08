@@ -72,6 +72,12 @@ function collectStringExpr(expr: Expression, strings: StringTable): void {
                 collectStringExpr(part, strings);
             }
             break;
+        case "forall":
+        case "exists":
+            collectStringExpr(expr.range.from, strings);
+            collectStringExpr(expr.range.to, strings);
+            collectStringExpr(expr.body, strings);
+            break;
         // ident, array — no string literals directly
     }
 }

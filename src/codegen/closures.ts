@@ -116,6 +116,12 @@ export function collectFreeVariables(
             case "string_interp":
                 for (const p of expr.parts) walk(p);
                 break;
+            case "forall":
+            case "exists":
+                walk(expr.range.from);
+                walk(expr.range.to);
+                walk(expr.body);
+                break;
             case "literal":
                 break;
         }

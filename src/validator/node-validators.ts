@@ -1044,6 +1044,10 @@ export function validateExpression(
         case "string_interp":
             validateStringInterp(node, path, errors, idTracker);
             break;
+        case "forall":
+        case "exists":
+            validateQuantifierExpr(node, path, errors, idTracker);
+            break;
         default:
             errors.push(unknownNodeKind(path, kind, [...VALID_EXPRESSION_KINDS]));
     }
@@ -1545,5 +1549,32 @@ function validateStringInterp(
                 idTracker,
             );
         }
+    }
+}
+
+function validateQuantifierExpr(
+    node: AnyNode,
+    path: string,
+    errors: StructuredError[],
+    idTracker: IdTracker,
+): void {
+    trackId(node, path, errors, idTracker);
+    requireString(node, "variable", path, errors);
+
+    const range = requireObject(node, "range", path, errors);
+    if (range) {
+        const from = requireObject(range, "from", `${path}.range`, errors);
+        if (from) {
+            validateExpression(from, `${path}.range.from`, errors, idTracker);
+        }
+        const to = requireObject(range, "to", `${path}.range`, errors);
+        if (to) {
+            validateExpression(to, `${path}.range.to`, errors, idTracker);
+        }
+    }
+
+    const body = requireObject(node, "body", path, errors);
+    if (body) {
+        validateExpression(body, `${path}.body`, errors, idTracker);
     }
 }

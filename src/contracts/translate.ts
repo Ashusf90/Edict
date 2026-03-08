@@ -116,6 +116,10 @@ export function translateExpr(
         case "block":
             return translateBlock(tctx, expr, contractId, functionName);
 
+        case "forall":
+        case "exists":
+            return translateQuantifier(tctx, expr, contractId, functionName);
+
         default:
             tctx.errors.push({ contractId, functionName, unsupportedNodeKind: expr.kind });
             return null;
@@ -523,4 +527,50 @@ function translateBlock(
     functionName: string,
 ): any | null {
     return translateExprList(tctx, expr.body, contractId, functionName);
+}
+
+// ---------------------------------------------------------------------------
+// Quantifier (forall / exists) → Z3 ForAll / Exists
+// ---------------------------------------------------------------------------
+
+function translateQuantifier(
+    tctx: TranslationContext,
+    expr: Expression & { kind: "forall" | "exists" },
+    contractId: string,
+    functionName: string,
+): any | null {
+    const { ctx } = tctx;
+
+    // Translate range bounds
+    const fromZ3 = translateExpr(tctx, expr.range.from, contractId, functionName);
+    const toZ3 = translateExpr(tctx, expr.range.to, contractId, functionName);
+    if (fromZ3 === null || toZ3 === null) return null;
+
+    // Create a fresh Z3 integer constant for the bound variable
+    const boundVar = ctx.Int.const(expr.variable);
+
+    // Save variable state, bind the quantified variable
+    const savedVars = new Map(tctx.variables);
+    tctx.variables.set(expr.variable, boundVar);
+
+    // Translate the body predicate
+    const bodyZ3 = translateExpr(tctx, expr.body, contractId, functionName);
+
+    // Restore variables
+    tctx.variables = savedVars;
+
+    if (bodyZ3 === null) return null;
+
+    // Range constraint: from <= variable < to
+    const rangeConstraint = ctx.And(boundVar.ge(fromZ3), boundVar.lt(toZ3));
+
+    if (expr.kind === "forall") {
+        // ∀ variable ∈ [from, to) → body
+        // Encoded as: ForAll([variable], range => body)
+        return ctx.ForAll([boundVar], ctx.Implies(rangeConstraint, bodyZ3));
+    } else {
+        // ∃ variable ∈ [from, to) ∧ body
+        // Encoded as: Exists([variable], range ∧ body)
+        return ctx.Exists([boundVar], ctx.And(rangeConstraint, bodyZ3));
+    }
 }

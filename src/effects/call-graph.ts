@@ -101,6 +101,13 @@ export function collectCalls(exprs: Expression[]): CallEdge[] {
                 for (const part of expr.parts) walk(part);
                 break;
 
+            case "forall":
+            case "exists":
+                walk(expr.range.from);
+                walk(expr.range.to);
+                walk(expr.body);
+                break;
+
             case "lambda":
                 // Opaque — do not recurse into lambda body
                 break;

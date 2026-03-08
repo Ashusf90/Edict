@@ -444,6 +444,12 @@
         },
         {
           "$ref": "#/definitions/StringInterp"
+        },
+        {
+          "$ref": "#/definitions/ForallExpr"
+        },
+        {
+          "$ref": "#/definitions/ExistsExpr"
         }
       ]
     },
@@ -1163,6 +1169,88 @@
         "parts"
       ]
     },
+    "ForallExpr": {
+      "description": "Universal quantifier — contract-only.\nforall variable in [range.from, range.to): body\nTranslates to Z3 ForAll. Body must evaluate to Bool.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "forall"
+        },
+        "id": {
+          "type": "string"
+        },
+        "variable": {
+          "type": "string"
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "$ref": "#/definitions/Expression"
+            },
+            "to": {
+              "$ref": "#/definitions/Expression"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ]
+        },
+        "body": {
+          "$ref": "#/definitions/Expression"
+        }
+      },
+      "required": [
+        "body",
+        "id",
+        "kind",
+        "range",
+        "variable"
+      ]
+    },
+    "ExistsExpr": {
+      "description": "Existential quantifier — contract-only.\nexists variable in [range.from, range.to): body\nTranslates to Z3 Exists. Body must evaluate to Bool.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "exists"
+        },
+        "id": {
+          "type": "string"
+        },
+        "variable": {
+          "type": "string"
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "$ref": "#/definitions/Expression"
+            },
+            "to": {
+              "$ref": "#/definitions/Expression"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ]
+        },
+        "body": {
+          "$ref": "#/definitions/Expression"
+        }
+      },
+      "required": [
+        "body",
+        "id",
+        "kind",
+        "range",
+        "variable"
+      ]
+    },
     "Contract": {
       "description": "Pre/post contract on a function.",
       "type": "object",
@@ -1306,6 +1394,12 @@
             },
             {
               "$ref": "#/definitions/StringInterp"
+            },
+            {
+              "$ref": "#/definitions/ForallExpr"
+            },
+            {
+              "$ref": "#/definitions/ExistsExpr"
             }
           ]
         }

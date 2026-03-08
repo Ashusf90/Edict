@@ -463,6 +463,22 @@ function resolveExpression(
         case "string_interp":
             for (const part of expr.parts) resolveExpression(part, scope, errors);
             break;
+
+        case "forall":
+        case "exists": {
+            resolveExpression(expr.range.from, scope, errors);
+            resolveExpression(expr.range.to, scope, errors);
+            const qScope = scope.child();
+            const err = qScope.define(expr.variable, {
+                name: expr.variable,
+                kind: "param",
+                nodeId: expr.id,
+                type: { kind: "basic", name: "Int" },
+            });
+            if (err) errors.push(err);
+            resolveExpression(expr.body, qScope, errors);
+            break;
+        }
     }
 }
 

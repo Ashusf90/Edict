@@ -50,6 +50,8 @@ export const KIND_MAP: Record<string, string> = {
     lam: "lambda",
     blk: "block",
     si: "string_interp",
+    fa: "forall",
+    ex: "exists",
 
     // Type kinds
     b: "basic",
@@ -133,6 +135,9 @@ export const KEY_MAP: Record<string, string> = {
     dv: "defaultValue",
     fn: "fn",
     op: "op",
+    rg: "range",
+    fm: "from",
+    to: "to",
 };
 
 // =============================================================================

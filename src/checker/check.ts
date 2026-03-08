@@ -280,6 +280,10 @@ function inferExpr(
 
         case "string_interp":
             return inferStringInterp(expr, env, errors, typeInfo);
+
+        case "forall":
+        case "exists":
+            return inferQuantifier(expr, env, errors, typeInfo);
     }
 }
 
@@ -893,6 +897,30 @@ function inferStringInterp(
         checkExpectedType(partType, STRING_TYPE, part.id, env, errors);
     }
     return STRING_TYPE;
+}
+
+function inferQuantifier(
+    expr: Expression & { kind: "forall" | "exists" },
+    env: TypeEnv,
+    errors: StructuredError[],
+    typeInfo: TypedModuleInfo,
+): TypeExpr {
+    // Range bounds must be Int
+    const fromType = inferExpr(expr.range.from, env, errors, typeInfo);
+    checkExpectedType(fromType, INT_TYPE, expr.range.from.id, env, errors);
+
+    const toType = inferExpr(expr.range.to, env, errors, typeInfo);
+    checkExpectedType(toType, INT_TYPE, expr.range.to.id, env, errors);
+
+    // Bind the quantified variable as Int in a child env
+    const qEnv = env.child();
+    qEnv.bind(expr.variable, INT_TYPE);
+
+    // Body must be Bool
+    const bodyType = inferExpr(expr.body, qEnv, errors, typeInfo);
+    checkExpectedType(bodyType, BOOL_TYPE, expr.id, qEnv, errors);
+
+    return BOOL_TYPE;
 }
 
 // =============================================================================

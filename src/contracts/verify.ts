@@ -329,6 +329,12 @@ function collectCallSites(exprs: Expression[]): CallSiteInfo[] {
             case "access":
                 walk(expr.target, conditions);
                 break;
+            case "forall":
+            case "exists":
+                walk(expr.range.from, conditions);
+                walk(expr.range.to, conditions);
+                walk(expr.body, conditions);
+                break;
             case "lambda":
             case "literal":
             case "ident":

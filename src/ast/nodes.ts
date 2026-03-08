@@ -196,7 +196,9 @@ export type Expression =
     | FieldAccess
     | LambdaExpr
     | BlockExpr
-    | StringInterp;
+    | StringInterp
+    | ForallExpr
+    | ExistsExpr;
 
 export interface Literal {
     kind: "literal";
@@ -393,6 +395,32 @@ export interface StringInterp {
     parts: Expression[];
 }
 
+/**
+ * Universal quantifier — contract-only.
+ * forall variable in [range.from, range.to): body
+ * Translates to Z3 ForAll. Body must evaluate to Bool.
+ */
+export interface ForallExpr {
+    kind: "forall";
+    id: string;
+    variable: string;
+    range: { from: Expression; to: Expression };
+    body: Expression;
+}
+
+/**
+ * Existential quantifier — contract-only.
+ * exists variable in [range.from, range.to): body
+ * Translates to Z3 Exists. Body must evaluate to Bool.
+ */
+export interface ExistsExpr {
+    kind: "exists";
+    id: string;
+    variable: string;
+    range: { from: Expression; to: Expression };
+    body: Expression;
+}
+
 // =============================================================================
 // Valid kind values — used by the validator
 // =============================================================================
@@ -422,6 +450,8 @@ export const VALID_EXPRESSION_KINDS = [
     "lambda",
     "block",
     "string_interp",
+    "forall",
+    "exists",
 ] as const;
 
 export const VALID_TYPE_KINDS = [
