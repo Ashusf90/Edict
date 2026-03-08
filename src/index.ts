@@ -29,7 +29,7 @@ export { buildCallGraph, collectCalls } from "./effects/call-graph.js";
 export type { CallEdge, CallGraph } from "./effects/call-graph.js";
 
 // Phase 4 — Contract Verification
-export { contractVerify, clearVerificationCache } from "./contracts/verify.js";
+export { contractVerify, clearVerificationCache, type ContractVerifyOptions } from "./contracts/verify.js";
 export type { ContractVerifyResult } from "./contracts/verify.js";
 export { getZ3, resetZ3 } from "./contracts/z3-context.js";
 export { translateExpr, translateExprList, createParamVariables } from "./contracts/translate.js";
