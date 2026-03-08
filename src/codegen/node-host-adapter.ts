@@ -10,7 +10,7 @@
 import { createHash, createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve as pathResolve } from "node:path";
+import { resolve as pathResolve, relative, isAbsolute, sep } from "node:path";
 import type { EdictHostAdapter } from "./host-adapter.js";
 
 /** Max response body size (1 MB) — prevents WASM memory overflow. */
@@ -25,8 +25,9 @@ const IO_MAX_FILE_BYTES = 1_048_576;
  */
 function validateSandboxPath(rawPath: string, sandboxDir: string): { ok: true; path: string } | { ok: false; error: string } {
     const resolved = pathResolve(sandboxDir, rawPath);
-    if (!resolved.startsWith(sandboxDir)) {
-        return { ok: false, error: `path_outside_sandbox: ${rawPath}` };
+    const rel = relative(sandboxDir, resolved);
+    if (rel === ".." || rel.startsWith(".." + sep) || isAbsolute(rel)) {
+        return { ok: false, error: "io_not_permitted" };
     }
     return { ok: true, path: resolved };
 }
@@ -123,7 +124,7 @@ export class NodeHostAdapter implements EdictHostAdapter {
 
     readFile(path: string): { ok: true; data: string } | { ok: false; error: string } {
         if (!this.sandboxDir) {
-            return { ok: false, error: "filesystem_not_configured" };
+            return { ok: false, error: "io_not_permitted" };
         }
         const validation = validateSandboxPath(path, this.sandboxDir);
         if (!validation.ok) {
@@ -143,7 +144,7 @@ export class NodeHostAdapter implements EdictHostAdapter {
 
     writeFile(path: string, content: string): { ok: true } | { ok: false; error: string } {
         if (!this.sandboxDir) {
-            return { ok: false, error: "filesystem_not_configured" };
+            return { ok: false, error: "io_not_permitted" };
         }
         const validation = validateSandboxPath(path, this.sandboxDir);
         if (!validation.ok) {

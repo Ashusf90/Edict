@@ -43,6 +43,8 @@ export interface RunLimits {
     maxMemoryMb?: number;
     /** Sandbox directory for file IO builtins. If unset, readFile/writeFile return Err. */
     sandboxDir?: string;
+    /** Optional list of allowed hostnames for HTTP requests. If unset, all hosts are allowed. */
+    allowedHosts?: string[];
     /** Optional host adapter for platform-specific operations. Defaults to NodeHostAdapter. */
     adapter?: EdictHostAdapter;
 }
@@ -104,7 +106,7 @@ export async function run(
             try {
                 const runner = await import(url);
                 const wasmBytes = new Uint8Array(workerData.wasm);
-                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir });
+                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir, allowedHosts: workerData.allowedHosts });
                 parentPort.postMessage({ type: "result", data: result });
             } catch (e) {
                 parentPort.postMessage({
@@ -121,6 +123,7 @@ export async function run(
                 entryFn,
                 runnerModuleUrl,
                 sandboxDir: limits.sandboxDir,
+                allowedHosts: limits.allowedHosts,
             },
             // Register tsx ESM loader so the worker can import .ts files (vitest/dev)
             execArgv: ["--import", "tsx"],
@@ -199,7 +202,7 @@ export async function runDirect(
     entryFn: string = "main",
     limits: RunLimits = {},
 ): Promise<RunResult> {
-    const state: RuntimeState = { outputParts: [], instance: null, sandboxDir: limits.sandboxDir };
+    const state: RuntimeState = { outputParts: [], instance: null, sandboxDir: limits.sandboxDir, allowedHosts: limits.allowedHosts };
     const importObject = createHostImports(state, limits.adapter);
 
     const { instance } = await WebAssembly.instantiate(wasm, importObject);
@@ -284,6 +287,8 @@ export interface DebugOptions {
     maxSteps?: number;
     /** Sandbox directory for file IO builtins */
     sandboxDir?: string;
+    /** Optional list of allowed hostnames for HTTP requests. */
+    allowedHosts?: string[];
     /** Optional host adapter */
     adapter?: EdictHostAdapter;
 }
@@ -318,6 +323,7 @@ export async function runDebug(
         outputParts: [],
         instance: null,
         sandboxDir: options.sandboxDir,
+        allowedHosts: options.allowedHosts,
     };
     const importObject = createHostImports(state, options.adapter);
 

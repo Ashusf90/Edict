@@ -19,6 +19,8 @@ export interface RuntimeState {
     instance: WasmInstance | null;
     /** Optional sandbox directory for file IO. If unset, readFile/writeFile return Err. */
     sandboxDir?: string;
+    /** Optional list of allowed hostnames for HTTP requests. If unset, all hosts are allowed. */
+    allowedHosts?: string[];
 }
 
 interface WasmInstance {
