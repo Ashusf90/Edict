@@ -69,7 +69,9 @@ export type StructuredError =
     // Multi-module errors
     | CircularImportError
     | UnresolvedModuleError
-    | DuplicateModuleNameError;
+    | DuplicateModuleNameError
+    // Runtime errors
+    | MissingExternalModuleError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -822,4 +824,21 @@ export function duplicateModuleName(
     moduleIds: string[],
 ): DuplicateModuleNameError {
     return { error: "duplicate_module_name", moduleName, moduleIds };
+}
+
+// =============================================================================
+// Runtime errors
+// =============================================================================
+
+export interface MissingExternalModuleError {
+    error: "missing_external_module";
+    module: string;
+    availableModules: string[];
+}
+
+export function missingExternalModule(
+    module: string,
+    availableModules: string[],
+): MissingExternalModuleError {
+    return { error: "missing_external_module", module, availableModules };
 }

@@ -47,6 +47,8 @@ export interface RunLimits {
     allowedHosts?: string[];
     /** Optional host adapter for platform-specific operations. Defaults to NodeHostAdapter. */
     adapter?: EdictHostAdapter;
+    /** External WASM modules keyed by import namespace (base64-encoded). */
+    externalModules?: Record<string, string>;
 }
 
 export interface RunResult {
@@ -106,7 +108,7 @@ export async function run(
             try {
                 const runner = await import(url);
                 const wasmBytes = new Uint8Array(workerData.wasm);
-                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir, allowedHosts: workerData.allowedHosts });
+                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir, allowedHosts: workerData.allowedHosts, externalModules: workerData.externalModules });
                 parentPort.postMessage({ type: "result", data: result });
             } catch (e) {
                 parentPort.postMessage({
@@ -124,6 +126,7 @@ export async function run(
                 runnerModuleUrl,
                 sandboxDir: limits.sandboxDir,
                 allowedHosts: limits.allowedHosts,
+                externalModules: limits.externalModules,
             },
             // Register tsx ESM loader so the worker can import .ts files (vitest/dev)
             execArgv: ["--import", "tsx"],
@@ -205,7 +208,60 @@ export async function runDirect(
     const state: RuntimeState = { outputParts: [], instance: null, sandboxDir: limits.sandboxDir, allowedHosts: limits.allowedHosts };
     const importObject = createHostImports(state, limits.adapter);
 
-    const { instance } = await WebAssembly.instantiate(wasm, importObject);
+    // Instantiate external WASM modules and merge their exports into the import object
+    if (limits.externalModules) {
+        for (const [namespace, base64] of Object.entries(limits.externalModules)) {
+            // Protect reserved namespaces — builtins take precedence
+            if (importObject[namespace]) continue;
+            try {
+                const extBytes = new Uint8Array(
+                    typeof Buffer !== "undefined"
+                        ? Buffer.from(base64, "base64")
+                        : Uint8Array.from(atob(base64), c => c.charCodeAt(0)),
+                );
+                const extResult = await WebAssembly.instantiate(extBytes, {});
+                const extExports: Record<string, unknown> = {};
+                for (const [key, val] of Object.entries(extResult.instance.exports)) {
+                    if (typeof val === "function") {
+                        extExports[key] = val;
+                    }
+                }
+                importObject[namespace] = extExports;
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                return {
+                    output: `External module error (${namespace}): ${msg}`,
+                    exitCode: 1,
+                };
+            }
+        }
+    }
+
+    let instance: WebAssembly.Instance;
+    try {
+        const result = await WebAssembly.instantiate(wasm, importObject);
+        instance = result.instance;
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // Detect missing import module errors
+        const moduleMatch = msg.match(/module "([^"]+)"/);
+        if (moduleMatch) {
+            const moduleName = moduleMatch[1]!;
+            const available = Object.keys(limits.externalModules ?? {});
+            return {
+                output: JSON.stringify({
+                    error: "missing_external_module",
+                    module: moduleName,
+                    availableModules: available,
+                }),
+                exitCode: 1,
+            };
+        }
+        return {
+            output: `WASM instantiation error: ${msg}`,
+            exitCode: 1,
+        };
+    }
     state.instance = instance;
 
     let returnValue: number | undefined;

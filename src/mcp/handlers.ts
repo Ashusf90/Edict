@@ -220,9 +220,13 @@ export async function handleCompileMulti(modules: unknown[]): Promise<CompileRes
     return { ok: true, wasm: base64 };
 }
 
-export async function handleRun(wasmBase64: string, limits?: RunLimits): Promise<RunResult> {
+export async function handleRun(wasmBase64: string, limits?: RunLimits, externalModules?: Record<string, string>): Promise<RunResult> {
     const wasmBytes = new Uint8Array(Buffer.from(wasmBase64, "base64"));
-    const result = await run(wasmBytes, "main", limits);
+    const runLimits: RunLimits = { ...limits };
+    if (externalModules) {
+        runLimits.externalModules = externalModules;
+    }
+    const result = await run(wasmBytes, "main", runLimits);
     return {
         output: result.output,
         exitCode: result.exitCode,
@@ -454,6 +458,7 @@ export function handleVersion(): VersionResult {
             multiModule: true,
             compactAst: true,
             incrementalCheck: true,
+            wasmInterop: true,
         },
         limits: {
             z3TimeoutMs: 5000,
