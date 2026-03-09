@@ -29,11 +29,17 @@ export type ComposeResult =
 /**
  * Compose an array of fragments into a single EdictModule.
  *
+ * Pipeline:
  * 1. Validates each fragment independently
  * 2. Checks for duplicate provisions across fragments
  * 3. Checks that all requirements are satisfied
  * 4. Merges imports (deduped by module+name)
  * 5. Concatenates definitions
+ *
+ * @param fragments - Array of validated Edict fragments to compose
+ * @param moduleName - Name for the composed module (default: `"composed"`)
+ * @param moduleId - Node ID for the composed module (default: `"mod-composed-001"`)
+ * @returns `{ ok: true, module }` on success, or `{ ok: false, errors }` if composition fails
  */
 export function compose(
     fragments: EdictFragment[],

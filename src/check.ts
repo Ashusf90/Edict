@@ -36,6 +36,9 @@ export interface CheckResult {
  * If type checking fails, returns type errors (effect checking skipped).
  * If effect checking fails, returns effect errors (contract verification skipped).
  * If all passes succeed, returns `{ ok: true, errors: [] }` with diagnostics and coverage.
+ *
+ * @param ast - Any JSON value to run through the full compiler pipeline
+ * @returns `{ ok, errors, module?, typeInfo?, diagnostics?, coverage? }` — the checked module or phase-specific errors
  */
 export async function check(ast: unknown): Promise<CheckResult> {
     // Phase 1 — Structural validation

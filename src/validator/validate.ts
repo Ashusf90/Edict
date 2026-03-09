@@ -27,6 +27,9 @@ export type ValidationResult = ValidationSuccess | ValidationFailure;
  *
  * Auto-detects `kind: "module"` vs `kind: "fragment"`.
  * Returns all errors found (does not stop at first error).
+ *
+ * @param ast - Any JSON value to validate against the Edict AST schema
+ * @returns `{ ok: true }` if valid, or `{ ok: false, errors }` with all structural errors
  */
 export function validate(ast: unknown): ValidationResult {
     const errors: StructuredError[] = [];
@@ -57,7 +60,11 @@ export function validate(ast: unknown): ValidationResult {
 /**
  * Validate an unknown JSON value specifically as an Edict fragment.
  *
- * Returns all errors found (does not stop at first error).
+ * Unlike {@link validate}, does not auto-detect module vs fragment —
+ * always validates against the fragment schema.
+ *
+ * @param ast - Any JSON value to validate as an Edict fragment
+ * @returns `{ ok: true }` if valid, or `{ ok: false, errors }` with all structural errors
  */
 export function validateFragmentAst(ast: unknown): ValidationResult {
     const errors: StructuredError[] = [];

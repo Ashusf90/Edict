@@ -53,7 +53,13 @@ export interface TypeCheckResult {
 import { UNKNOWN_TYPE, INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOL_TYPE } from "../ast/type-constants.js";
 
 /**
- * Entry point: type-check a validated + resolved Edict module.
+ * Type-check a validated and name-resolved Edict module.
+ *
+ * Uses bidirectional type inference: infers types for expressions and checks
+ * them against annotations. Produces a side-table of inferred types (no AST mutation).
+ *
+ * @param module - A validated and resolved Edict module
+ * @returns `{ errors, typeInfo }` — errors array (empty if well-typed) and inferred type side-table
  */
 export function typeCheck(module: EdictModule): TypeCheckResult {
     const errors: StructuredError[] = [];

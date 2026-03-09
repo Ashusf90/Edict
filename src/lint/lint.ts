@@ -30,7 +30,13 @@ const OVERSIZED_THRESHOLD = 50;
 
 /**
  * Run lint analysis on a validated Edict module.
- * Returns an array of non-blocking warnings.
+ *
+ * Non-blocking analysis pass that detects code quality issues:
+ * unused variables, unused imports, missing contracts, oversized functions,
+ * empty bodies, redundant effects, and decomposition opportunities.
+ *
+ * @param module - A structurally valid Edict module (post-Phase 1 validation)
+ * @returns Array of non-blocking lint warnings (never prevents compilation)
  */
 export function lint(module: EdictModule): LintWarning[] {
     const warnings: LintWarning[] = [];

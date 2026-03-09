@@ -75,8 +75,16 @@ export function clearVerificationCache(): void {
 }
 
 /**
- * Verify all contracts in the module.
- * Returns errors and INFO-level diagnostics for skipped verifications.
+ * Verify all pre/post contracts in the module using Z3 SMT solver.
+ *
+ * For each postcondition, checks: `preconditions ∧ ¬postcondition`.
+ * Results: unsat → proven, sat → counterexample error, unknown → timeout error.
+ * Caches proven results per-function. Uncached verifications run in a worker thread
+ * by default to keep the MCP server responsive.
+ *
+ * @param module - A validated, resolved, type-checked, and effect-checked Edict module
+ * @param options - Optional: `{ useWorker?: boolean }` — set `false` for tests
+ * @returns `{ errors, diagnostics, cacheStats }` — contract violations, skipped-check diagnostics, and cache statistics
  */
 export async function contractVerify(
     module: EdictModule,
@@ -399,6 +407,17 @@ interface VerifyFunctionResult {
     diagnostics: AnalysisDiagnostic[];
 }
 
+/**
+ * Verify all contracts for a single function using Z3.
+ *
+ * For each postcondition: translates preconditions + body + negated postcondition
+ * into Z3 constraints. If unsatisfiable → proven; if satisfiable → counterexample.
+ *
+ * @param ctx - Z3 context instance
+ * @param fn - The function definition whose contracts to verify
+ * @param module - The containing module (needed for callsite precondition analysis)
+ * @returns `{ errors, diagnostics }` — contract violation errors and skipped-check diagnostics
+ */
 export async function verifyFunction(
     ctx: Z3Context,
     fn: FunctionDef,

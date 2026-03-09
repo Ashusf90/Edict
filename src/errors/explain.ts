@@ -72,6 +72,9 @@ function getCatalogIndex(): Map<string, ErrorCatalogEntry> {
  * Given a structured error object, return enriched repair context derived
  * from the error catalog. The error must have an `error` field (the
  * discriminator string) to be looked up.
+ *
+ * @param error - A structured error with an `error` discriminator field
+ * @returns Repair context including pipeline stage, example cause/fix, and repair strategy — or a `found: false` result if lookup fails
  */
 export function explainError(error: Record<string, unknown>): ExplainResult {
     // Guard: must have `error` discriminator field

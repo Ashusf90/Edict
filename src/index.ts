@@ -1,8 +1,23 @@
-// =============================================================================
-// Edict Public API
-// =============================================================================
+/**
+ * @module edict-lang
+ *
+ * Edict Public API — the complete compiler pipeline and supporting utilities.
+ *
+ * Pipeline phases (in order):
+ * 1. **Validation** — structural AST validation (`validate`)
+ * 2. **Resolution** — name resolution with did-you-mean suggestions (`resolve`)
+ * 3. **Type Checking** — bidirectional type inference (`typeCheck`)
+ * 4. **Effect Checking** — call-graph-based effect propagation (`effectCheck`)
+ * 5. **Contract Verification** — Z3 SMT proving of pre/post contracts (`contractVerify`)
+ * 6. **Code Generation** — WASM compilation via binaryen (`compile`)
+ * 7. **Execution** — WASM instantiation and execution (`run`, `runDirect`)
+ *
+ * Convenience wrappers: `check` (phases 1–5), `compileAndRun` (phases 1–7).
+ */
 
-// Phase 1 — Validation
+// ---------------------------------------------------------------------------
+// Phase 1 — Validation: structural AST schema checking
+// ---------------------------------------------------------------------------
 export { validate, validateFragmentAst } from "./validator/validate.js";
 export type {
     ValidationResult,
@@ -10,25 +25,33 @@ export type {
     ValidationFailure,
 } from "./validator/validate.js";
 
-// Phase 2 — Name Resolution
+// ---------------------------------------------------------------------------
+// Phase 2a — Name Resolution: identifier binding with Levenshtein suggestions
+// ---------------------------------------------------------------------------
 export { resolve } from "./resolver/resolve.js";
 export { Scope } from "./resolver/scope.js";
 export type { SymbolKind, SymbolInfo } from "./resolver/scope.js";
 export { levenshteinDistance, findCandidates } from "./resolver/levenshtein.js";
 
-// Phase 2 — Type Checking
+// ---------------------------------------------------------------------------
+// Phase 2b — Type Checking: bidirectional type inference
+// ---------------------------------------------------------------------------
 export { typeCheck } from "./checker/check.js";
 export type { TypedModuleInfo, TypeCheckResult } from "./checker/check.js";
 export { TypeEnv } from "./checker/type-env.js";
 export { typesEqual, isUnknown, resolveType } from "./checker/types-equal.js";
 
-// Phase 3 — Effect Checking
+// ---------------------------------------------------------------------------
+// Phase 3 — Effect Checking: call-graph effect propagation
+// ---------------------------------------------------------------------------
 export { effectCheck } from "./effects/effect-check.js";
 export type { EffectCheckResult } from "./effects/effect-check.js";
 export { buildCallGraph, collectCalls } from "./effects/call-graph.js";
 export type { CallEdge, CallGraph } from "./effects/call-graph.js";
 
-// Phase 4 — Contract Verification
+// ---------------------------------------------------------------------------
+// Phase 4 — Contract Verification: Z3 SMT proving of pre/post contracts
+// ---------------------------------------------------------------------------
 export { contractVerify, clearVerificationCache, type ContractVerifyOptions } from "./contracts/verify.js";
 export type { ContractVerifyResult } from "./contracts/verify.js";
 export { getZ3, resetZ3 } from "./contracts/z3-context.js";
@@ -36,11 +59,15 @@ export { translateExpr, translateExprList, createParamVariables } from "./contra
 export type { TranslationContext, TranslationError } from "./contracts/translate.js";
 export { computeVerificationHash } from "./contracts/hash.js";
 
-// Pipeline
+// ---------------------------------------------------------------------------
+// Full Pipeline: validate → resolve → typeCheck → effectCheck → contractVerify
+// ---------------------------------------------------------------------------
 export { check } from "./check.js";
 export type { CheckResult } from "./check.js";
 
-// AST node types
+// ---------------------------------------------------------------------------
+// AST Node Types: all expression, definition, and pattern types
+// ---------------------------------------------------------------------------
 export type {
     EdictModule,
     EdictFragment,
@@ -84,7 +111,9 @@ export type {
     StringInterp,
 } from "./ast/nodes.js";
 
-// Type expressions
+// ---------------------------------------------------------------------------
+// Type Expressions: all type annotation node types
+// ---------------------------------------------------------------------------
 export type {
     TypeExpr,
     BasicType,
@@ -98,7 +127,9 @@ export type {
     TupleType,
 } from "./ast/types.js";
 
-// Error types
+// ---------------------------------------------------------------------------
+// Error Types: structured error interfaces for all pipeline phases
+// ---------------------------------------------------------------------------
 export type {
     StructuredError,
     DuplicateIdError,
@@ -147,7 +178,9 @@ export type {
     DuplicateModuleNameError,
 } from "./errors/structured-errors.js";
 
-// Error constructors (all phases)
+// ---------------------------------------------------------------------------
+// Error Constructors: factory functions for all structured error types
+// ---------------------------------------------------------------------------
 export {
     // Phase 1
     duplicateId,
@@ -194,7 +227,9 @@ export {
     duplicateModuleName,
 } from "./errors/structured-errors.js";
 
-// Phase 5 — Code generation
+// ---------------------------------------------------------------------------
+// Phase 5 — Code Generation: WASM compilation via binaryen
+// ---------------------------------------------------------------------------
 export { compile } from "./codegen/codegen.js";
 export type {
     CompileResult,
@@ -213,24 +248,34 @@ export type {
 export { StringTable } from "./codegen/string-table.js";
 export { BUILTIN_FUNCTIONS, isBuiltin, getBuiltin } from "./builtins/builtins.js";
 
-// Host adapter system
+// ---------------------------------------------------------------------------
+// Host Adapters: platform-specific I/O implementations (Node, Browser)
+// ---------------------------------------------------------------------------
 export type { EdictHostAdapter } from "./codegen/host-adapter.js";
 export { NodeHostAdapter } from "./codegen/node-host-adapter.js";
 export { BrowserHostAdapter } from "./codegen/browser-host-adapter.js";
 export { EdictOomError } from "./builtins/host-helpers.js";
 
-// Error catalog
+// ---------------------------------------------------------------------------
+// Error Catalog: machine-readable registry of all error types with examples
+// ---------------------------------------------------------------------------
 export { buildErrorCatalog } from "./errors/error-catalog.js";
 export type { ErrorCatalog, ErrorCatalogEntry } from "./errors/error-catalog.js";
 
-// Error explain
+// ---------------------------------------------------------------------------
+// Error Explain: structured repair context from error catalog
+// ---------------------------------------------------------------------------
 export { explainError } from "./errors/explain.js";
 export type { ExplainResult, ExplainResultFound, ExplainResultNotFound, RepairAction } from "./errors/explain.js";
 
-// Compact AST format
+// ---------------------------------------------------------------------------
+// Compact AST Format: token-efficient abbreviated AST representation
+// ---------------------------------------------------------------------------
 export { expandCompact, isCompactAst, compactSchemaReference } from "./compact/expand.js";
 
-// Lint
+// ---------------------------------------------------------------------------
+// Lint: non-blocking code quality warnings
+// ---------------------------------------------------------------------------
 export { lint } from "./lint/lint.js";
 export type { LintWarning } from "./lint/lint.js";
 export type {
@@ -250,26 +295,36 @@ export {
     redundantEffect,
 } from "./lint/warnings.js";
 
-// Patch engine
+// ---------------------------------------------------------------------------
+// Patch Engine: surgical AST modifications by nodeId
+// ---------------------------------------------------------------------------
 export { applyPatches } from "./patch/apply.js";
 export type { AstPatch, PatchApplyResult } from "./patch/apply.js";
 
-// Fragment composition
+// ---------------------------------------------------------------------------
+// Fragment Composition: merge fragments into a single module
+// ---------------------------------------------------------------------------
 export { compose } from "./compose/compose.js";
 export type { ComposeResult } from "./compose/compose.js";
 
-// Multi-module compilation
+// ---------------------------------------------------------------------------
+// Multi-Module Compilation: cross-module resolution and linking
+// ---------------------------------------------------------------------------
 export { checkMultiModule } from "./multi-module.js";
 export type { MultiModuleCheckResult } from "./multi-module.js";
 
-// Incremental checking
+// ---------------------------------------------------------------------------
+// Incremental Checking: re-verify only changed definitions
+// ---------------------------------------------------------------------------
 export { incrementalCheck } from "./incremental/check.js";
 export type { IncrementalCheckResult } from "./incremental/check.js";
 export { buildDepGraph, transitiveDependents } from "./incremental/dep-graph.js";
 export type { DepGraph } from "./incremental/dep-graph.js";
 export { diffDefinitions } from "./incremental/diff.js";
 
-// Test-Contract Bridge
+// ---------------------------------------------------------------------------
+// Test-Contract Bridge: auto-generate tests from Z3-verified contracts
+// ---------------------------------------------------------------------------
 export { generateTests } from "./contracts/generate-tests.js";
 export type { GeneratedTest, GenerateTestsResult } from "./contracts/generate-tests.js";
 

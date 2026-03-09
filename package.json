@@ -56,7 +56,9 @@
     "test:slow": "vitest run tests/mcp/integration.test.ts tests/mcp/agent-simulation.test.ts tests/e2e-agent-loop.test.ts tests/compact/expand.test.ts",
     "typecheck": "tsc --noEmit",
     "validate-examples": "tsx scripts/validate-examples.ts",
-    "ci:local": "npm run typecheck && npm run build && npm test && npm run validate-examples",
+    "ci:local": "npm run typecheck && npm run check:jsdoc && npm run build && npm test && npm run validate-examples",
+    "check:jsdoc": "bash scripts/check-jsdoc.sh",
+    "generate:jsdoc": "tsx scripts/generate-jsdoc.ts",
     "generate-schema": "tsx scripts/generate-schema.ts",
     "mcp": "tsx src/mcp/server.ts",
     "benchmark": "tsx scripts/benchmark.ts"

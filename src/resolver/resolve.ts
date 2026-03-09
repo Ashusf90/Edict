@@ -27,7 +27,14 @@ import { BUILTIN_ENUMS } from "../builtins/builtin-enums.js";
 import { UNKNOWN_TYPE } from "../ast/type-constants.js";
 
 /**
- * Entry point: resolve all names in a validated Edict module.
+ * Resolve all names in a validated Edict module.
+ *
+ * Two-pass algorithm:
+ * 1. Collect top-level definitions and imports into module scope
+ * 2. Walk all expressions and patterns checking that every name reference resolves
+ *
+ * @param module - A structurally valid Edict module (must pass {@link validate} first)
+ * @returns Array of resolution errors (empty if all names resolve)
  */
 export function resolve(module: EdictModule): StructuredError[] {
     const errors: StructuredError[] = [];

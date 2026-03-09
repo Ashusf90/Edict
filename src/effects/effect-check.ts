@@ -31,6 +31,9 @@ export interface EffectCheckResult {
  * - If caller is not `pure`: missing caller effects → `effect_violation` error
  *
  * Skipped checks produce INFO-level diagnostics instead of silent success.
+ *
+ * @param module - A validated and type-checked Edict module
+ * @returns `{ errors, diagnostics }` — effect violation errors and skipped-check diagnostics
  */
 export function effectCheck(module: EdictModule): EffectCheckResult {
     const { graph, functionDefs, importedNames } = buildCallGraph(module);

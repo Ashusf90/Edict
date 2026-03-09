@@ -93,10 +93,12 @@ export interface RedundantEffectWarning {
 // Factory functions
 // =============================================================================
 
+/** Create a warning for an unused `let` binding that is never referenced. */
 export function unusedVariable(nodeId: string, name: string): UnusedVariableWarning {
     return { warning: "unused_variable", severity: "warning", nodeId, name };
 }
 
+/** Create a warning for imported names that are never referenced in the module. */
 export function unusedImport(
     nodeId: string,
     importModule: string,
@@ -105,10 +107,12 @@ export function unusedImport(
     return { warning: "unused_import", severity: "warning", nodeId, importModule, unusedNames };
 }
 
+/** Create a warning for a function (non-main) that has no pre/post contracts. */
 export function missingContract(nodeId: string, functionName: string): MissingContractWarning {
     return { warning: "missing_contract", severity: "warning", nodeId, functionName };
 }
 
+/** Create a warning for a function whose body exceeds the expression node threshold. */
 export function oversizedFunction(
     nodeId: string,
     functionName: string,
@@ -118,10 +122,12 @@ export function oversizedFunction(
     return { warning: "oversized_function", severity: "warning", nodeId, functionName, expressionCount, threshold };
 }
 
+/** Create a warning for a function with an empty body. */
 export function emptyBody(nodeId: string, functionName: string): EmptyBodyWarning {
     return { warning: "empty_body", severity: "warning", nodeId, functionName };
 }
 
+/** Create a warning for effects declared on a function that are not required by its call graph. */
 export function redundantEffect(
     nodeId: string,
     functionName: string,
@@ -143,6 +149,7 @@ export function redundantEffect(
     };
 }
 
+/** Create a warning suggesting decomposition of an oversized function into independent segments. */
 export function decompositionSuggested(
     nodeId: string,
     functionName: string,

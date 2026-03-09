@@ -50,6 +50,17 @@ export { compileExpr, inferExprWasmType };
 // Compiler
 // =============================================================================
 
+/**
+ * Compile a validated Edict module AST into WASM bytecode via binaryen.
+ *
+ * Handles: Int/Float/Bool/String literals, binary/unary ops, function calls,
+ * if/else, let bindings, blocks, match expressions, records, enums, lambdas,
+ * closures, and all builtin functions.
+ *
+ * @param module - A fully checked Edict module AST
+ * @param options - Optional compilation settings (typeInfo, debugMode, maxMemoryPages, emitWat)
+ * @returns `{ ok: true, wasm }` on success, or `{ ok: false, errors }` on failure
+ */
 export function compile(module: EdictModule, options?: CompileOptions): CompileResult {
     const mod = new binaryen.Module();
     const strings = new StringTable();

@@ -146,7 +146,10 @@ export const KEY_MAP: Record<string, string> = {
 
 /**
  * Detect whether an AST value uses compact format.
- * A compact AST has "k" as a key instead of "kind".
+ * A compact AST has `"k"` as a key instead of `"kind"`.
+ *
+ * @param ast - Any JSON value to test
+ * @returns `true` if the value uses compact format keys
  */
 export function isCompactAst(ast: unknown): boolean {
     if (ast === null || typeof ast !== "object" || Array.isArray(ast)) {
@@ -163,10 +166,13 @@ export function isCompactAst(ast: unknown): boolean {
 /**
  * Recursively expand a compact-format AST to the canonical full format.
  *
- * - Expands abbreviated keys (e.g., "k" → "kind", "rt" → "returnType")
- * - Expands abbreviated kind values (e.g., "lit" → "literal", "bin" → "binop")
+ * - Expands abbreviated keys (e.g., `"k"` → `"kind"`, `"rt"` → `"returnType"`)
+ * - Expands abbreviated kind values (e.g., `"lit"` → `"literal"`, `"bin"` → `"binop"`)
  * - Passes through full-format ASTs unchanged (idempotent)
  * - Unknown compact kinds pass through → validator will catch them
+ *
+ * @param ast - Any JSON value (compact or full format)
+ * @returns The same AST with all compact abbreviations expanded to canonical form
  */
 export function expandCompact(ast: unknown): unknown {
     if (ast === null || ast === undefined) {

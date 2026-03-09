@@ -30,6 +30,9 @@ export type CallGraph = Map<string, CallEdge[]>;
 /**
  * Walk expressions and collect all ident-based function calls.
  * Recurses into all expression types except lambda bodies (opaque).
+ *
+ * @param exprs - Array of expressions to walk
+ * @returns Array of call edges discovered (callee name + call site node ID)
  */
 export function collectCalls(exprs: Expression[]): CallEdge[] {
     const edges: CallEdge[] = [];
@@ -62,6 +65,9 @@ export function collectCalls(exprs: Expression[]): CallEdge[] {
 /**
  * Build the module call graph: edges per function, function defs, and imported names.
  * Only walks FunctionDef.body — contracts are Z3 specs, not runtime code.
+ *
+ * @param module - A validated Edict module
+ * @returns `{ graph, functionDefs, importedNames }` — the call graph, function definitions map, and set of imported names
  */
 export function buildCallGraph(module: EdictModule): {
     graph: CallGraph;

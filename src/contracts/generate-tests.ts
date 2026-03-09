@@ -46,7 +46,13 @@ const Z3_TIMEOUT_MS = 5000;
 
 /**
  * Generate test cases from contracts in the module.
+ *
  * Uses Z3 to find boundary values (proven contracts) and counterexamples (failing contracts).
+ * For functions with preconditions, also generates precondition boundary tests.
+ * Output is pure structured data — no WASM compilation needed.
+ *
+ * @param module - A validated Edict module with function contracts
+ * @returns `{ ok, tests, skipped? }` — generated tests and names of functions that were skipped (unsupported param types)
  */
 export async function generateTests(module: EdictModule): Promise<GenerateTestsResult> {
     const ctx = await getZ3();

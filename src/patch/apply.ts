@@ -41,6 +41,17 @@ interface NodeEntry {
 // Public API
 // =============================================================================
 
+/**
+ * Apply surgical patches to an Edict AST by nodeId.
+ *
+ * Deep-clones the AST before mutation to avoid side effects.
+ * Supports `replace`, `delete`, and `insert` operations on any node
+ * identified by its unique `id` field.
+ *
+ * @param ast - The original Edict AST (will not be mutated)
+ * @param patches - Array of patch operations to apply sequentially
+ * @returns `{ ok: true, ast }` with the patched clone, or `{ ok: false, errors }` if any patch fails
+ */
 export function applyPatches(ast: unknown, patches: AstPatch[]): PatchApplyResult {
     // Deep clone to avoid mutation of the original
     const cloned = JSON.parse(JSON.stringify(ast)) as unknown;

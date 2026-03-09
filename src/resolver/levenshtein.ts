@@ -5,6 +5,10 @@
 /**
  * Compute the Levenshtein edit distance between two strings.
  * Uses the classic dynamic-programming O(m*n) algorithm.
+ *
+ * @param a - First string
+ * @param b - Second string
+ * @returns The minimum number of single-character edits (insert, delete, substitute)
  */
 export function levenshteinDistance(a: string, b: string): number {
     const m = a.length;
@@ -41,6 +45,11 @@ export function levenshteinDistance(a: string, b: string): number {
  * Find candidate names that are close to the given name.
  * Returns names within maxDistance (default 2), sorted ascending by distance.
  * At most 5 results.
+ *
+ * @param name - The misspelled or unknown name to find suggestions for
+ * @param known - Array of valid names to compare against
+ * @param maxDistance - Maximum Levenshtein distance to consider (default: 2)
+ * @returns Array of similar names sorted by edit distance (max 5)
  */
 export function findCandidates(
     name: string,
