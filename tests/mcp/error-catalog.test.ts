@@ -54,6 +54,10 @@ const ALL_ERROR_TYPES = [
     "oversized_function",
     "empty_body",
     "redundant_effect",
+    // Multi-module errors
+    "circular_import",
+    "unresolved_module",
+    "duplicate_module_name",
 ];
 
 describe("handleErrorCatalog", () => {

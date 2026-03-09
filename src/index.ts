@@ -141,6 +141,10 @@ export type {
     // Composition errors
     UnsatisfiedRequirementError,
     DuplicateProvisionError,
+    // Multi-module errors
+    CircularImportError,
+    UnresolvedModuleError,
+    DuplicateModuleNameError,
 } from "./errors/structured-errors.js";
 
 // Error constructors (all phases)
@@ -184,6 +188,10 @@ export {
     // Composition errors
     unsatisfiedRequirement,
     duplicateProvision,
+    // Multi-module errors
+    circularImport,
+    unresolvedModule,
+    duplicateModuleName,
 } from "./errors/structured-errors.js";
 
 // Phase 5 — Code generation
@@ -245,4 +253,8 @@ export type { AstPatch, PatchApplyResult } from "./patch/apply.js";
 // Fragment composition
 export { compose } from "./compose/compose.js";
 export type { ComposeResult } from "./compose/compose.js";
+
+// Multi-module compilation
+export { checkMultiModule } from "./multi-module.js";
+export type { MultiModuleCheckResult } from "./multi-module.js";
 

@@ -819,6 +819,70 @@ export function buildErrorCatalog(): ErrorCatalog {
                 definitions: [{ kind: "fn", id: "fn-001", name: "helper", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 42 }] }],
             },
         },
+
+        // =====================================================================
+        // Multi-module errors
+        // =====================================================================
+        {
+            type: "circular_import",
+            pipeline_stage: "resolver",
+            fields: [
+                { name: "cycle", type: "string[]" },
+                { name: "nodeId", type: "string | null" },
+            ],
+            example_cause: {
+                modules: [
+                    { kind: "module", id: "mod-a-001", name: "a", imports: [{ kind: "import", id: "imp-a-001", module: "b", names: ["fb"] }], definitions: [] },
+                    { kind: "module", id: "mod-b-001", name: "b", imports: [{ kind: "import", id: "imp-b-001", module: "a", names: ["fa"] }], definitions: [] },
+                ],
+            },
+            example_fix: {
+                modules: [
+                    { kind: "module", id: "mod-a-001", name: "a", imports: [], definitions: [{ kind: "fn", id: "fn-fa-001", name: "fa", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
+                    { kind: "module", id: "mod-b-001", name: "b", imports: [{ kind: "import", id: "imp-b-001", module: "a", names: ["fa"] }], definitions: [{ kind: "fn", id: "fn-fb-001", name: "fb", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-fa", name: "fa" }, args: [] }] }] },
+                ],
+            },
+        },
+        {
+            type: "unresolved_module",
+            pipeline_stage: "resolver",
+            fields: [
+                { name: "moduleName", type: "string" },
+                { name: "importNodeId", type: "string" },
+                { name: "available", type: "string[]" },
+            ],
+            example_cause: {
+                modules: [
+                    { kind: "module", id: "mod-001", name: "main", imports: [{ kind: "import", id: "imp-001", module: "nonexistent", names: ["foo"] }], definitions: [] },
+                ],
+            },
+            example_fix: {
+                modules: [
+                    { kind: "module", id: "mod-math-001", name: "math", imports: [], definitions: [{ kind: "fn", id: "fn-foo-001", name: "foo", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 42 }] }] },
+                    { kind: "module", id: "mod-001", name: "main", imports: [{ kind: "import", id: "imp-001", module: "math", names: ["foo"] }], definitions: [] },
+                ],
+            },
+        },
+        {
+            type: "duplicate_module_name",
+            pipeline_stage: "resolver",
+            fields: [
+                { name: "moduleName", type: "string" },
+                { name: "moduleIds", type: "string[]" },
+            ],
+            example_cause: {
+                modules: [
+                    { kind: "module", id: "mod-001", name: "math", imports: [], definitions: [] },
+                    { kind: "module", id: "mod-002", name: "math", imports: [], definitions: [] },
+                ],
+            },
+            example_fix: {
+                modules: [
+                    { kind: "module", id: "mod-001", name: "math", imports: [], definitions: [] },
+                    { kind: "module", id: "mod-002", name: "utils", imports: [], definitions: [] },
+                ],
+            },
+        },
     ];
 
     return { count: errors.length, errors };

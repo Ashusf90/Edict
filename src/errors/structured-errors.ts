@@ -65,7 +65,11 @@ export type StructuredError =
     | MissingEntryPointError
     // Composition errors
     | UnsatisfiedRequirementError
-    | DuplicateProvisionError;
+    | DuplicateProvisionError
+    // Multi-module errors
+    | CircularImportError
+    | UnresolvedModuleError
+    | DuplicateModuleNameError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -769,4 +773,53 @@ export function duplicateProvision(
     fragmentIds: string[],
 ): DuplicateProvisionError {
     return { error: "duplicate_provision", name, fragmentIds };
+}
+
+// =============================================================================
+// Multi-module errors
+// =============================================================================
+
+export interface CircularImportError {
+    error: "circular_import";
+    cycle: string[];
+    nodeId: string | null;
+}
+
+export interface UnresolvedModuleError {
+    error: "unresolved_module";
+    moduleName: string;
+    importNodeId: string;
+    available: string[];
+}
+
+export interface DuplicateModuleNameError {
+    error: "duplicate_module_name";
+    moduleName: string;
+    moduleIds: string[];
+}
+
+// =============================================================================
+// Multi-module error constructors
+// =============================================================================
+
+export function circularImport(
+    cycle: string[],
+    nodeId: string | null = null,
+): CircularImportError {
+    return { error: "circular_import", cycle, nodeId };
+}
+
+export function unresolvedModule(
+    moduleName: string,
+    importNodeId: string,
+    available: string[],
+): UnresolvedModuleError {
+    return { error: "unresolved_module", moduleName, importNodeId, available };
+}
+
+export function duplicateModuleName(
+    moduleName: string,
+    moduleIds: string[],
+): DuplicateModuleNameError {
+    return { error: "duplicate_module_name", moduleName, moduleIds };
 }

@@ -75,7 +75,7 @@ Supported platforms: `linux/amd64`, `linux/arm64`.
 |---|---|
 | `edict_schema` | Returns the full AST JSON Schema — the spec for how to write programs |
 | `edict_version` | Returns compiler version and capability info |
-| `edict_examples` | Returns 28 example programs as JSON ASTs |
+| `edict_examples` | Returns 29 example programs as JSON ASTs |
 | `edict_validate` | Validates AST structure (field names, types, node kinds) |
 | `edict_check` | Full pipeline: validate → resolve names → type check → effect check → verify contracts |
 | `edict_compile` | Compiles a checked AST to WASM (returns base64-encoded binary) |
@@ -182,7 +182,7 @@ src/
 └── errors/        # Structured error types
 
 tests/             # 1498 tests across 88 files
-examples/          # 28 example programs (⭐→⭐⭐⭐ difficulty in README)
+examples/          # 29 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```
 

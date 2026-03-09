@@ -23,7 +23,8 @@ import { lint } from "../lint/lint.js";
 import type { LintWarning } from "../lint/warnings.js";
 import { expandCompact, compactSchemaReference } from "../compact/expand.js";
 import { compose } from "../compose/compose.js";
-import type { EdictFragment } from "../ast/nodes.js";
+import type { EdictFragment, EdictModule } from "../ast/nodes.js";
+import { checkMultiModule } from "../multi-module.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -180,6 +181,36 @@ export async function handleCompile(ast: unknown): Promise<CompileResult> {
     }
 
     // Encode WASM as base64
+    const base64 = Buffer.from(compileResult.wasm).toString("base64");
+    return { ok: true, wasm: base64 };
+}
+
+export async function handleCheckMulti(modules: unknown[]): Promise<CheckResult> {
+    const expandedModules = modules.map((m) => expandCompact(m)) as EdictModule[];
+    const result = await checkMultiModule(expandedModules);
+    if (result.ok) {
+        const res: CheckResult = { ok: true };
+        if (result.diagnostics && result.diagnostics.length > 0) res.diagnostics = result.diagnostics;
+        if (result.coverage) res.coverage = result.coverage;
+        return res;
+    }
+    const res: CheckResult = { ok: false, errors: result.errors };
+    if (result.diagnostics && result.diagnostics.length > 0) res.diagnostics = result.diagnostics;
+    return res;
+}
+
+export async function handleCompileMulti(modules: unknown[]): Promise<CompileResult> {
+    const expandedModules = modules.map((m) => expandCompact(m)) as EdictModule[];
+    const result = await checkMultiModule(expandedModules);
+    if (!result.ok || !result.mergedModule) {
+        return { ok: false, errors: result.errors };
+    }
+
+    const compileResult = compile(result.mergedModule, { typeInfo: result.typeInfo });
+    if (!compileResult.ok) {
+        return { ok: false, errors: compileResult.errors };
+    }
+
     const base64 = Buffer.from(compileResult.wasm).toString("base64");
     return { ok: true, wasm: base64 };
 }
@@ -389,12 +420,12 @@ export function handleVersion(): VersionResult {
             unitTypes: true,
             fragments: true,
             debug: true,
-            multiModule: false,
+            multiModule: true,
             compactAst: true,
         },
         limits: {
             z3TimeoutMs: 5000,
-            maxModules: 1,
+            maxModules: 16,
             executionTimeoutMs: 15_000,
             maxMemoryMb: 1,
         },

@@ -159,3 +159,9 @@ if (url.endsWith(".ts")) {
 - **Fix**: Always include `schema/`, `examples/`, and `package.json` in the production Docker stage.
 - **Pattern**: When Dockerizing an MCP server, trace all `readFileSync`/`readdirSync` calls in handler code to identify runtime file dependencies. These must be copied into the production image even if they look like "documentation" or "examples".
 
+## 25. Manual Export/Handler Updates — Consider Automation
+- **Context**: When adding multi-module compilation, had to manually update `handlers.ts`, `tools/compile.ts`, `tools/check.ts`, `index.ts` exports, and `error-catalog.test.ts` `ALL_ERROR_TYPES`. User flagged this as a maintenance burden.
+- **Pattern**: Every new feature touching the MCP surface requires ~5 manual touchpoints (handler, tool schema, tool description, index exports, catalog test). This is error-prone and tedious.
+- **Ideal**: Auto-generate `index.ts` exports from source modules, auto-derive error catalog from StructuredError union, auto-register MCP tools from a manifest. Consider building these automations when the project scales.
+- **For now**: Be aware of all touchpoints when adding new features — check handler, tool schema, version flags, index exports, error catalog, error catalog test.
+
