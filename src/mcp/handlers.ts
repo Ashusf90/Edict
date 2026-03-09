@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 
 import { validate } from "../validator/validate.js";
 import { check } from "../check.js";
@@ -193,6 +194,121 @@ export async function handleRun(wasmBase64: string, limits?: RunLimits): Promise
         error: result.error,
         limitInfo: result.limitInfo,
     };
+}
+
+export interface ExportResult {
+    ok: boolean;
+    skill?: unknown;
+    errors?: StructuredError[];
+}
+
+export async function handleExport(
+    ast: unknown,
+    metadata: { name?: string; version?: string; description?: string; author?: string }
+): Promise<ExportResult> {
+    const expanded = expandCompact(ast);
+    const checkResult = await check(expanded);
+    if (!checkResult.ok || !checkResult.module) {
+        return { ok: false, errors: checkResult.errors };
+    }
+
+    const compileResult = compile(checkResult.module, { typeInfo: checkResult.typeInfo });
+    if (!compileResult.ok) {
+        return { ok: false, errors: compileResult.errors };
+    }
+
+    const entryPointName = "main";
+    const entryDef = checkResult.module.definitions.find((d) => d.kind === "fn" && d.name === entryPointName);
+    
+    if (!entryDef || entryDef.kind !== "fn") {
+        return {
+            ok: false,
+            errors: [{
+                error: "wasm_validation_error",
+                message: `Export failed: Module must have an entry point function named '${entryPointName}'.`
+            }]
+        };
+    }
+
+    const base64Wasm = Buffer.from(compileResult.wasm).toString("base64");
+    const digest = "sha256:" + createHash("sha256").update(compileResult.wasm).digest("hex");
+
+    const signature = {
+        entryPoint: entryPointName,
+        params: entryDef.params.map((p) => ({
+            name: p.name,
+            type: p.type ? _typeToString(p.type) : "unknown"
+        })),
+        returnType: entryDef.returnType ? _typeToString(entryDef.returnType) : "unknown",
+        effects: entryDef.effects
+    };
+
+    const skill = {
+        manifestVersion: "1.0",
+        metadata: {
+            name: metadata.name || "unknown_skill",
+            version: metadata.version || "1.0.0",
+            description: metadata.description || "",
+            author: metadata.author || "unknown"
+        },
+        signature,
+        wasm: {
+            encoding: "base64",
+            data: base64Wasm,
+            digest
+        }
+    };
+
+    return { ok: true, skill };
+}
+
+function _typeToString(type: import("../ast/types.js").TypeExpr): string {
+    switch (type.kind) {
+        case "basic": return type.name;
+        case "array": return `Array<${_typeToString(type.element)}>`;
+        case "option": return `Option<${_typeToString(type.inner)}>`;
+        case "result": return `Result<${_typeToString(type.ok)}, ${_typeToString(type.err)}>`;
+        case "unit_type": return `${type.base}<${type.unit}>`;
+        case "refined": return `{ ${type.variable}: ${_typeToString(type.base)} | ... }`;
+        case "fn_type": return `(${type.params.map(_typeToString).join(", ")}) -> ${_typeToString(type.returnType)}`;
+        case "named": return type.name;
+        case "tuple": return `(${type.elements.map(_typeToString).join(", ")})`;
+        default: return "unknown";
+    }
+}
+
+export interface ImportSkillResult {
+    ok: boolean;
+    output?: string;
+    exitCode?: number;
+    error?: string;
+}
+
+export async function handleImportSkill(skill: any, limits?: RunLimits): Promise<ImportSkillResult> {
+    if (!skill || !skill.wasm || !skill.wasm.data || skill.wasm.encoding !== "base64") {
+        return { ok: false, error: "Invalid skill package format. Expected wasm.data (base64) array." };
+    }
+
+    const wasmBytes = new Uint8Array(Buffer.from(skill.wasm.data, "base64"));
+    const digest = "sha256:" + createHash("sha256").update(wasmBytes).digest("hex");
+
+    if (digest !== skill.wasm.digest) {
+        return { ok: false, error: `Checksum mismatch. Expected ${skill.wasm.digest}, but got ${digest}. The skill package may be corrupted or tampered with.` };
+    }
+
+    const entryPointName = skill.signature?.entryPoint || "main";
+    
+    try {
+        const runRes = await run(wasmBytes, entryPointName, limits);
+        return {
+            ok: true,
+            output: runRes.output,
+            exitCode: runRes.exitCode,
+            error: runRes.error
+        };
+    } catch (e: any) {
+        return { ok: false, error: e.message || String(e) };
+    }
 }
 
 export interface PatchResult {

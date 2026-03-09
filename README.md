@@ -51,7 +51,7 @@ Host capabilities available through adapters: filesystem (sandboxed), HTTP, cryp
 
 ```bash
 npm install
-npm test          # 1458 tests across 85 files
+npm test          # 1462 tests across 86 files
 npm run mcp       # start MCP server (stdio transport)
 ```
 
@@ -181,7 +181,7 @@ src/
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 
-tests/             # 1458 tests across 85 files
+tests/             # 1462 tests across 86 files
 examples/          # 28 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```

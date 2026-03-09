@@ -15,6 +15,8 @@ import { errorsTool } from "./errors.js";
 import { lintTool } from "./lint.js";
 import { composeTool } from "./compose.js";
 import { debugTool } from "./debug.js";
+import { exportTool } from "./export.js";
+import { importSkillTool } from "./import_skill.js";
 
 /** All registered MCP tools. Add new tools by creating a file and adding to this array. */
 export const ALL_TOOLS: EdictMcpTool[] = [
@@ -30,4 +32,6 @@ export const ALL_TOOLS: EdictMcpTool[] = [
     lintTool,
     composeTool,
     debugTool,
+    exportTool,
+    importSkillTool,
 ];
