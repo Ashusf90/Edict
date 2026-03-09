@@ -4,6 +4,7 @@ import {
     functionComplexityExceeded,
     moduleComplexityExceeded,
 } from "../errors/structured-errors.js";
+import { walkExpression } from "../ast/walk.js";
 
 /**
  * Validates the AST against token budget and complexity quotas.
@@ -24,82 +25,35 @@ export function complexityCheck(module: EdictModule): StructuredError[] {
             let fnCallDepth = 0;
             let fnBranches = 0;
 
-            function walk(expr: Expression, currentDepth: number): void {
-                fnAstNodes += 1;
-                
-                if (currentDepth > fnCallDepth) {
-                    fnCallDepth = currentDepth;
-                }
+            function walk(expr: Expression): void {
+                let currentDepth = 0;
 
-                const nextDepth = currentDepth + 1;
+                walkExpression(expr, {
+                    enter(node) {
+                        fnAstNodes += 1;
+                        currentDepth += 1;
+                        if (currentDepth > fnCallDepth) {
+                            fnCallDepth = currentDepth;
+                        }
 
-                switch (expr.kind) {
-                    case "literal":
-                    case "ident":
-                        break;
-                    case "binop":
-                        walk(expr.left, nextDepth);
-                        walk(expr.right, nextDepth);
-                        break;
-                    case "unop":
-                        walk(expr.operand, nextDepth);
-                        break;
-                    case "call":
-                        walk(expr.fn, nextDepth);
-                        for (const arg of expr.args) walk(arg, nextDepth);
-                        break;
-                    case "if":
-                        fnBranches += 1; // The split is a branch
-                        walk(expr.condition, nextDepth);
-                        for (const e of expr.then) walk(e, nextDepth);
-                        if (expr.else) {
-                            for (const e of expr.else) walk(e, nextDepth);
+                        if (node.kind === "if") {
+                            fnBranches += 1;
+                        } else if (node.kind === "match") {
+                            // match adds an arm for every arm
+                            fnBranches += node.arms.length;
+                        } else if (node.kind === "record_expr" || node.kind === "enum_constructor") {
+                            // record properties and enum fields count as AST nodes under current logic
+                            fnAstNodes += node.fields.length;
                         }
-                        break;
-                    case "let":
-                        walk(expr.value, nextDepth);
-                        break;
-                    case "match":
-                        walk(expr.target, nextDepth);
-                        for (const arm of expr.arms) {
-                            fnBranches += 1; // Each pattern arm is a branch
-                            for (const e of arm.body) walk(e, nextDepth);
-                        }
-                        break;
-                    case "array":
-                    case "tuple_expr":
-                        for (const e of expr.elements) walk(e, nextDepth);
-                        break;
-                    case "record_expr":
-                    case "enum_constructor":
-                        for (const field of expr.fields) {
-                            fnAstNodes += 1; // The field_init node
-                            walk(field.value, nextDepth);
-                        }
-                        break;
-                    case "access":
-                        walk(expr.target, nextDepth);
-                        break;
-                    case "lambda":
-                        for (const e of expr.body) walk(e, nextDepth);
-                        break;
-                    case "block":
-                        for (const e of expr.body) walk(e, nextDepth);
-                        break;
-                    case "string_interp":
-                        for (const part of expr.parts) walk(part, nextDepth);
-                        break;
-                    case "forall":
-                    case "exists":
-                        walk(expr.range.from, nextDepth);
-                        walk(expr.range.to, nextDepth);
-                        walk(expr.body, nextDepth);
-                        break;
-                }
+                    },
+                    leave(_node) {
+                        currentDepth -= 1;
+                    }
+                });
             }
 
             for (const e of def.body) {
-                walk(e, 1);
+                walk(e);
             }
 
             // Check function constraints

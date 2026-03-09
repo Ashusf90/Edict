@@ -10,6 +10,7 @@ import type {
     FunctionDef,
 } from "../ast/nodes.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
+import { walkExpression } from "../ast/walk.js";
 
 // =============================================================================
 // Types
@@ -33,93 +34,24 @@ export type CallGraph = Map<string, CallEdge[]>;
 export function collectCalls(exprs: Expression[]): CallEdge[] {
     const edges: CallEdge[] = [];
 
-    function walk(expr: Expression): void {
-        switch (expr.kind) {
-            case "call":
-                // Always recurse into args
-                for (const arg of expr.args) walk(arg);
-
-                if (expr.fn.kind === "ident") {
+    for (const expr of exprs) {
+        walkExpression(expr, {
+            enter(node) {
+                if (node.kind === "lambda") {
+                    // Opaque — do not recurse into lambda body
+                    return false;
+                }
+                if (node.kind === "call" && node.fn.kind === "ident") {
                     // Ident-based call → record edge
                     edges.push({
-                        calleeName: expr.fn.name,
-                        callSiteNodeId: expr.id,
+                        calleeName: node.fn.name,
+                        callSiteNodeId: node.id,
                     });
-                } else {
-                    // Non-ident fn (e.g., complex expression) → no edge, but walk fn
-                    walk(expr.fn);
                 }
-                break;
-
-            case "if":
-                walk(expr.condition);
-                for (const e of expr.then) walk(e);
-                if (expr.else) {
-                    for (const e of expr.else) walk(e);
-                }
-                break;
-
-            case "let":
-                walk(expr.value);
-                break;
-
-            case "match":
-                walk(expr.target);
-                for (const arm of expr.arms) {
-                    for (const e of arm.body) walk(e);
-                }
-                break;
-
-            case "block":
-                for (const e of expr.body) walk(e);
-                break;
-
-            case "binop":
-                walk(expr.left);
-                walk(expr.right);
-                break;
-
-            case "unop":
-                walk(expr.operand);
-                break;
-
-            case "array":
-            case "tuple_expr":
-                for (const e of expr.elements) walk(e);
-                break;
-
-            case "record_expr":
-            case "enum_constructor":
-                for (const f of expr.fields) walk(f.value);
-                break;
-
-            case "access":
-                walk(expr.target);
-                break;
-
-            case "string_interp":
-                for (const part of expr.parts) walk(part);
-                break;
-
-            case "forall":
-            case "exists":
-                walk(expr.range.from);
-                walk(expr.range.to);
-                walk(expr.body);
-                break;
-
-            case "lambda":
-                // Opaque — do not recurse into lambda body
-                break;
-
-            case "literal":
-            case "ident":
-                // Leaf nodes — no recursion
-                break;
-        }
+            }
+        });
     }
 
-    for (const expr of exprs) walk(expr);
     return edges;
 }
 

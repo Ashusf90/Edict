@@ -24,6 +24,7 @@ import {
     type AnalysisDiagnostic,
 } from "../errors/structured-errors.js";
 import { getZ3 } from "./z3-context.js";
+import { walkExpression } from "../ast/walk.js";
 import {
     createParamVariables,
     translateExpr,
@@ -377,61 +378,16 @@ function walkForDeps(
     functionDefs: Map<string, FunctionDef>,
     out: Map<string, FunctionDef>,
 ): void {
-    switch (expr.kind) {
-        case "call":
-            if (expr.fn.kind === "ident") {
-                const callee = functionDefs.get(expr.fn.name);
-                if (callee && callee.contracts.some(c => c.kind === "pre") && !out.has(expr.fn.name)) {
-                    out.set(expr.fn.name, callee);
+    walkExpression(expr, {
+        enter(node) {
+            if (node.kind === "call" && node.fn.kind === "ident") {
+                const callee = functionDefs.get(node.fn.name);
+                if (callee && callee.contracts.some(c => c.kind === "pre") && !out.has(node.fn.name)) {
+                    out.set(node.fn.name, callee);
                 }
             }
-            for (const arg of expr.args) walkForDeps(arg, functionDefs, out);
-            break;
-        case "if":
-            walkForDeps(expr.condition, functionDefs, out);
-            for (const e of expr.then) walkForDeps(e, functionDefs, out);
-            if (expr.else) for (const e of expr.else) walkForDeps(e, functionDefs, out);
-            break;
-        case "let":
-            walkForDeps(expr.value, functionDefs, out);
-            break;
-        case "block":
-            for (const e of expr.body) walkForDeps(e, functionDefs, out);
-            break;
-        case "binop":
-            walkForDeps(expr.left, functionDefs, out);
-            walkForDeps(expr.right, functionDefs, out);
-            break;
-        case "unop":
-            walkForDeps(expr.operand, functionDefs, out);
-            break;
-        case "match":
-            walkForDeps(expr.target, functionDefs, out);
-            for (const arm of expr.arms) for (const e of arm.body) walkForDeps(e, functionDefs, out);
-            break;
-        case "lambda":
-            for (const e of expr.body) walkForDeps(e, functionDefs, out);
-            break;
-        case "array":
-        case "tuple_expr":
-            for (const e of expr.elements) walkForDeps(e, functionDefs, out);
-            break;
-        case "record_expr":
-        case "enum_constructor":
-            for (const f of expr.fields) walkForDeps(f.value, functionDefs, out);
-            break;
-        case "access":
-            walkForDeps(expr.target, functionDefs, out);
-            break;
-        case "forall":
-        case "exists":
-            walkForDeps(expr.range.from, functionDefs, out);
-            walkForDeps(expr.range.to, functionDefs, out);
-            walkForDeps(expr.body, functionDefs, out);
-            break;
-        default:
-            break;
-    }
+        }
+    });
 }
 
 // ---------------------------------------------------------------------------

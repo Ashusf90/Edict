@@ -7,6 +7,7 @@ import binaryen from "binaryen";
 import type { Expression } from "../ast/nodes.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
 import { type FunctionSig, FunctionContext } from "./types.js";
+import { walkExpression } from "../ast/walk.js";
 
 // =============================================================================
 // Free variable collection
@@ -26,64 +27,30 @@ export function collectFreeVariables(
     const free = new Map<string, { wasmType: binaryen.Type }>();
     const locallyDefined = new Set<string>();
 
-    function walk(expr: Expression): void {
-        switch (expr.kind) {
-            case "ident":
-                if (
-                    !paramNames.has(expr.name) &&
-                    !constGlobals.has(expr.name) &&
-                    !fnSigs.has(expr.name) &&
-                    !BUILTIN_FUNCTIONS.has(expr.name) &&
-                    !locallyDefined.has(expr.name) &&
-                    !free.has(expr.name)
-                ) {
-                    // This is a free variable — we'll determine its WASM type later
-                    // during compilation when we have access to the enclosing context.
-                    free.set(expr.name, { wasmType: binaryen.i32 }); // placeholder
-                }
-                break;
-            case "let":
-                walk(expr.value);
-                locallyDefined.add(expr.name);
-                break;
-            case "binop":
-                walk(expr.left);
-                walk(expr.right);
-                break;
-            case "unop":
-                walk(expr.operand);
-                break;
-            case "call":
-                walk(expr.fn);
-                for (const a of expr.args) walk(a);
-                break;
-            case "if":
-                walk(expr.condition);
-                for (const e of expr.then) walk(e);
-                if (expr.else) for (const e of expr.else) walk(e);
-                break;
-            case "block":
-                for (const e of expr.body) walk(e);
-                break;
-            case "match":
-                walk(expr.target);
-                for (const arm of expr.arms) {
-                    for (const e of arm.body) walk(e);
-                }
-                break;
-            case "lambda":
-                // Nested lambda — its params shadow, but we still walk its body
-                // to find free variables from OUR scope
-                {
-                    const innerParams = new Set(expr.params.map(p => p.name));
+    for (const expr of body) {
+        walkExpression(expr, {
+            enter(node) {
+                if (node.kind === "ident") {
+                    if (
+                        !paramNames.has(node.name) &&
+                        !constGlobals.has(node.name) &&
+                        !fnSigs.has(node.name) &&
+                        !BUILTIN_FUNCTIONS.has(node.name) &&
+                        !locallyDefined.has(node.name) &&
+                        !free.has(node.name)
+                    ) {
+                        free.set(node.name, { wasmType: binaryen.i32 }); // placeholder
+                    }
+                } else if (node.kind === "let") {
+                    locallyDefined.add(node.name);
+                } else if (node.kind === "lambda") {
+                    const innerParams = new Set(node.params.map(p => p.name));
                     const innerFree = collectFreeVariables(
-                        expr.body,
+                        node.body,
                         innerParams,
                         constGlobals,
                         fnSigs,
                     );
-                    // Any free var from the inner lambda that isn't our param
-                    // or locally defined is also free in our scope
                     for (const [name, info] of innerFree) {
                         if (
                             !paramNames.has(name) &&
@@ -96,38 +63,12 @@ export function collectFreeVariables(
                             free.set(name, info);
                         }
                     }
+                    return false; // Do not recurse into lambda body (inner call handled it)
                 }
-                break;
-            case "array":
-                for (const e of expr.elements) walk(e);
-                break;
-            case "tuple_expr":
-                for (const e of expr.elements) walk(e);
-                break;
-            case "record_expr":
-                for (const f of expr.fields) walk(f.value);
-                break;
-            case "enum_constructor":
-                for (const f of expr.fields) walk(f.value);
-                break;
-            case "access":
-                walk(expr.target);
-                break;
-            case "string_interp":
-                for (const p of expr.parts) walk(p);
-                break;
-            case "forall":
-            case "exists":
-                walk(expr.range.from);
-                walk(expr.range.to);
-                walk(expr.body);
-                break;
-            case "literal":
-                break;
-        }
+            }
+        });
     }
 
-    for (const expr of body) walk(expr);
     return free;
 }
 
