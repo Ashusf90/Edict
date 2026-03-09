@@ -28,6 +28,8 @@ import { checkMultiModule } from "../multi-module.js";
 import { incrementalCheck } from "../incremental/check.js";
 import { generateTests } from "../contracts/generate-tests.js";
 import type { GeneratedTest } from "../contracts/generate-tests.js";
+import { explainError } from "../errors/explain.js";
+import type { ExplainResult } from "../errors/explain.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -435,6 +437,10 @@ export function handleErrorCatalog(): ErrorCatalog {
     return buildErrorCatalog();
 }
 
+export function handleExplain(error: unknown): ExplainResult {
+    return explainError(error as Record<string, unknown>);
+}
+
 export function handlePatchSchema(): unknown {
     if (!cachedPatchSchema) {
         cachedPatchSchema = JSON.parse(readFileSync(patchSchemaPath, "utf-8"));
@@ -462,6 +468,7 @@ export function handleVersion(): VersionResult {
             incrementalCheck: true,
             testBridge: true,
             wasmInterop: true,
+            explain: true,
         },
         limits: {
             z3TimeoutMs: 5000,

@@ -223,6 +223,10 @@ export { EdictOomError } from "./builtins/host-helpers.js";
 export { buildErrorCatalog } from "./errors/error-catalog.js";
 export type { ErrorCatalog, ErrorCatalogEntry } from "./errors/error-catalog.js";
 
+// Error explain
+export { explainError } from "./errors/explain.js";
+export type { ExplainResult, ExplainResultFound, ExplainResultNotFound, RepairAction } from "./errors/explain.js";
+
 // Compact AST format
 export { expandCompact, isCompactAst, compactSchemaReference } from "./compact/expand.js";
 
