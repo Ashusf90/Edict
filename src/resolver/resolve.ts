@@ -211,6 +211,7 @@ function resolveContract(
     bodyScope: Scope,
     errors: StructuredError[],
 ): void {
+    if (!contract.condition) return; // semantic assertions — no expression to resolve
     if (contract.kind === "post") {
         // Post-contracts have implicit `result` binding typed as returnType
         const postScope = bodyScope.child();

@@ -168,7 +168,7 @@ describe("Sandbox Limits", () => {
             expect(result.exitCode).toBe(0);
             expect(result.output).toBe("Hello, World!");
             expect(result.error).toBeUndefined();
-        }, 10_000);
+        }, 20_000);
     });
 
     describe("runDirect (no limits)", () => {

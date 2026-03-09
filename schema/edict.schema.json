@@ -1250,7 +1250,7 @@
       ]
     },
     "Contract": {
-      "description": "Pre/post contract on a function.",
+      "description": "Pre/post contract on a function.\nMust have exactly one of `condition` (manual expression) or `semantic` (pre-built assertion).\n`semantic` is only valid on `post` contracts (v1).",
       "type": "object",
       "properties": {
         "kind": {
@@ -1264,14 +1264,107 @@
           "type": "string"
         },
         "condition": {
-          "$ref": "#/definitions/Expression"
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Literal"
+            },
+            {
+              "$ref": "#/definitions/Identifier"
+            },
+            {
+              "$ref": "#/definitions/BinaryOp"
+            },
+            {
+              "$ref": "#/definitions/UnaryOp"
+            },
+            {
+              "$ref": "#/definitions/Call"
+            },
+            {
+              "$ref": "#/definitions/IfExpr"
+            },
+            {
+              "$ref": "#/definitions/LetExpr"
+            },
+            {
+              "$ref": "#/definitions/MatchExpr"
+            },
+            {
+              "$ref": "#/definitions/ArrayExpr"
+            },
+            {
+              "$ref": "#/definitions/TupleExpr"
+            },
+            {
+              "$ref": "#/definitions/RecordExpr"
+            },
+            {
+              "$ref": "#/definitions/EnumConstructor"
+            },
+            {
+              "$ref": "#/definitions/FieldAccess"
+            },
+            {
+              "$ref": "#/definitions/LambdaExpr"
+            },
+            {
+              "$ref": "#/definitions/BlockExpr"
+            },
+            {
+              "$ref": "#/definitions/StringInterp"
+            },
+            {
+              "$ref": "#/definitions/ForallExpr"
+            },
+            {
+              "$ref": "#/definitions/ExistsExpr"
+            }
+          ]
+        },
+        "semantic": {
+          "description": "A pre-built semantic assertion that translates to a proven-correct Z3 encoding.\nAgents use these instead of manually writing Z3-verifiable expressions.",
+          "$ref": "#/definitions/SemanticAssertion"
         }
       },
       "required": [
-        "condition",
         "id",
         "kind"
       ]
+    },
+    "SemanticAssertion": {
+      "description": "A pre-built semantic assertion that translates to a proven-correct Z3 encoding.\nAgents use these instead of manually writing Z3-verifiable expressions.",
+      "type": "object",
+      "properties": {
+        "assertion": {
+          "$ref": "#/definitions/SemanticAssertionKind"
+        },
+        "target": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "assertion",
+        "target"
+      ]
+    },
+    "SemanticAssertionKind": {
+      "description": "The 7 built-in semantic assertion kinds.",
+      "enum": [
+        "bounded",
+        "length_preserved",
+        "no_duplicates",
+        "permutation_of",
+        "sorted",
+        "subset_of",
+        "sum_preserved"
+      ],
+      "type": "string"
     },
     "ComplexityConstraints": {
       "description": "Bounds on token complexity and program size to prevent runaway agents.",

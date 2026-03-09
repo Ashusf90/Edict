@@ -14,6 +14,7 @@ import {
     invalidOperator,
     invalidBasicTypeName,
     conflictingEffects,
+    invalidSemanticAssertion,
 } from "../errors/structured-errors.js";
 import type { IdTracker } from "./id-tracker.js";
 
@@ -615,6 +616,55 @@ function runSemanticChecks(
             errors.push(
                 invalidFieldType(path, nodeId, "types", "object", typeof types),
             );
+        }
+    }
+
+    // Contract field check — applies to contract nodes (kind: "pre" | "post")
+    // Contract must have exactly one of condition or semantic.
+    // semantic is only valid on post contracts (v1).
+    if (
+        kindProp &&
+        kindProp["enum"] &&
+        (kindProp["enum"] as string[]).includes("pre") &&
+        (kindProp["enum"] as string[]).includes("post")
+    ) {
+        const kind = node["kind"] as string;
+        const hasCondition = node["condition"] !== undefined && node["condition"] !== null;
+        const hasSemantic = node["semantic"] !== undefined && node["semantic"] !== null;
+
+        if (!hasCondition && !hasSemantic) {
+            errors.push(
+                missingField(path, nodeId, "condition", "Expression or semantic: SemanticAssertion"),
+            );
+        }
+
+        if (hasCondition && hasSemantic) {
+            errors.push(
+                invalidFieldType(path, nodeId, "semantic", "absent (condition is already set)", "object"),
+            );
+        }
+
+        if (hasSemantic && kind === "pre") {
+            errors.push(
+                invalidFieldType(path, nodeId, "semantic", "absent (semantic assertions only valid on post contracts)", "object"),
+            );
+        }
+
+        // Validate semantic assertion kind if present
+        if (hasSemantic && isObject(node["semantic"])) {
+            const semantic = node["semantic"] as AnyNode;
+            const assertion = semantic["assertion"];
+            const VALID = ["sorted", "permutation_of", "subset_of", "sum_preserved", "no_duplicates", "length_preserved", "bounded"];
+            if (isString(assertion) && !VALID.includes(assertion)) {
+                errors.push(
+                    invalidSemanticAssertion(
+                        nodeId ?? "",
+                        nodeId ?? "",
+                        assertion,
+                        VALID,
+                    ),
+                );
+            }
         }
     }
 }

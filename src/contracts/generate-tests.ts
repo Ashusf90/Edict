@@ -138,6 +138,7 @@ async function generateTestsForFunction(
     // Translate preconditions
     const translatedPres: any[] = [];
     for (const pre of preconds) {
+        if (!pre.condition) continue; // semantic assertions skip test generation
         const z3Pre = translateExpr(tctx, pre.condition, pre.id, fn.name);
         if (z3Pre !== null) translatedPres.push(z3Pre);
     }
@@ -190,7 +191,7 @@ async function generateBoundaryTests(
 ): Promise<GeneratedTest[]> {
     const tests: GeneratedTest[] = [];
 
-    const z3Post = translateExpr(tctx, post.condition, post.id, fn.name);
+    const z3Post = post.condition ? translateExpr(tctx, post.condition, post.id, fn.name) : null;
     tctx.errors = [];
     if (z3Post === null) return tests;
 
@@ -243,7 +244,7 @@ async function generateCounterexampleTests(
 ): Promise<GeneratedTest[]> {
     const tests: GeneratedTest[] = [];
 
-    const z3Post = translateExpr(tctx, post.condition, post.id, fn.name);
+    const z3Post = post.condition ? translateExpr(tctx, post.condition, post.id, fn.name) : null;
     tctx.errors = [];
     if (z3Post === null) return tests;
 

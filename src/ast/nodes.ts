@@ -171,12 +171,42 @@ export interface Param {
 
 /**
  * Pre/post contract on a function.
+ * Must have exactly one of `condition` (manual expression) or `semantic` (pre-built assertion).
+ * `semantic` is only valid on `post` contracts (v1).
  */
 export interface Contract {
     kind: "pre" | "post";
     id: string;
-    condition: Expression;
+    condition?: Expression;
+    semantic?: SemanticAssertion;
 }
+
+/**
+ * A pre-built semantic assertion that translates to a proven-correct Z3 encoding.
+ * Agents use these instead of manually writing Z3-verifiable expressions.
+ */
+export interface SemanticAssertion {
+    assertion: SemanticAssertionKind;
+    target: string;        // variable name: "result", param name, etc.
+    args?: string[];       // assertion-specific args: e.g. ["ascending"], ["input"]
+}
+
+/**
+ * The 7 built-in semantic assertion kinds.
+ */
+export type SemanticAssertionKind =
+    | "sorted"             // forall i: arr[i] <= arr[i+1]
+    | "permutation_of"     // same elements, same counts as args[0]
+    | "subset_of"          // all elements in result are in args[0]
+    | "sum_preserved"      // sum(target) == sum(args[0])
+    | "no_duplicates"      // forall i,j: i!=j => arr[i]!=arr[j]
+    | "length_preserved"   // len(target) == len(args[0])
+    | "bounded";           // forall x in target: args[0] <= x <= args[1]
+
+export const VALID_SEMANTIC_ASSERTIONS: readonly SemanticAssertionKind[] = [
+    "sorted", "permutation_of", "subset_of", "sum_preserved",
+    "no_duplicates", "length_preserved", "bounded",
+] as const;
 
 /**
  * Bounds on token complexity and program size to prevent runaway agents.

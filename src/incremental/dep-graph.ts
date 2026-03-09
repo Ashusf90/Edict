@@ -130,7 +130,9 @@ function collectFnDeps(fn: FunctionDef, deps: Set<string>, allNames: Set<string>
 
     // Contract expression refs (contracts may reference other functions/types)
     for (const contract of fn.contracts) {
-        collectExprTypeDeps(contract.condition, deps, allNames);
+        if (contract.condition) {
+            collectExprTypeDeps(contract.condition, deps, allNames);
+        }
     }
 
     // Body expression type refs (record_expr, enum_constructor, etc.)

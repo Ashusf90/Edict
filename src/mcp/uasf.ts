@@ -36,7 +36,8 @@ export interface UasfInterface {
 
 export interface UasfContract {
     kind: "pre" | "post";
-    condition: Expression; // The AST JSON for the contract condition
+    condition?: Expression; // The AST JSON for the contract condition
+    semantic?: { assertion: string; target: string; args?: string[] };
     natural?: string;
 }
 

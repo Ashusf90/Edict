@@ -290,7 +290,8 @@ export async function handleExport(
         verified: isVerified,
         contracts: entryDef.contracts.map(c => ({
             kind: c.kind,
-            condition: c.condition
+            ...(c.condition && { condition: c.condition }),
+            ...(c.semantic && { semantic: c.semantic }),
         })),
         provenBy: isVerified ? "z3-solver" : undefined
     };

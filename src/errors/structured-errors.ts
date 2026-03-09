@@ -55,6 +55,7 @@ export type StructuredError =
     | VerificationTimeoutError
     | UndecidablePredicateError
     | PreconditionNotMetError
+    | InvalidSemanticAssertionError
     // Patch errors
     | PatchNodeNotFoundError
     | PatchInvalidFieldError
@@ -537,6 +538,7 @@ export interface ContractFailureError {
     functionName: string;
     contractKind: "pre" | "post";
     counterexample: Record<string, unknown>;
+    semanticAssertion?: string;
 }
 
 export interface VerificationTimeoutError {
@@ -565,6 +567,14 @@ export interface PreconditionNotMetError {
     counterexample: Record<string, unknown>;
 }
 
+export interface InvalidSemanticAssertionError {
+    error: "invalid_semantic_assertion";
+    nodeId: string;
+    contractId: string;
+    received: string;
+    validAssertions: readonly string[];
+}
+
 // =============================================================================
 // Phase 4 error constructors
 // =============================================================================
@@ -575,8 +585,11 @@ export function contractFailure(
     functionName: string,
     contractKind: "pre" | "post",
     counterexample: Record<string, unknown>,
+    semanticAssertion?: string,
 ): ContractFailureError {
-    return { error: "contract_failure", nodeId, contractId, functionName, contractKind, counterexample };
+    const err: ContractFailureError = { error: "contract_failure", nodeId, contractId, functionName, contractKind, counterexample };
+    if (semanticAssertion) err.semanticAssertion = semanticAssertion;
+    return err;
 }
 
 export function verificationTimeout(
@@ -606,6 +619,15 @@ export function preconditionNotMet(
     counterexample: Record<string, unknown>,
 ): PreconditionNotMetError {
     return { error: "precondition_not_met", nodeId, callSiteId, callerName, calleeName, contractId, counterexample };
+}
+
+export function invalidSemanticAssertion(
+    nodeId: string,
+    contractId: string,
+    received: string,
+    validAssertions: readonly string[],
+): InvalidSemanticAssertionError {
+    return { error: "invalid_semantic_assertion", nodeId, contractId, received, validAssertions };
 }
 
 // =============================================================================

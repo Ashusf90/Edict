@@ -177,6 +177,7 @@ function checkFunction(
 
     // Check contracts (postconditions bind `result` to the effective return type)
     for (const contract of fn.contracts) {
+        if (!contract.condition) continue; // semantic assertions — no expression to type-check
         if (contract.kind === "post") {
             const postEnv = fnEnv.child();
             postEnv.bind("result", effectiveReturnType);

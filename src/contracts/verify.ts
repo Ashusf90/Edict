@@ -31,6 +31,7 @@ import {
     translateExprList,
     type TranslationContext,
 } from "./translate.js";
+import { translateSemanticAssertion } from "./translate-semantic.js";
 import { computeVerificationHash } from "./hash.js";
 
 const TIMEOUT_MS = 5000;
@@ -484,6 +485,7 @@ export async function verifyFunction(
     // Translate all preconditions
     const translatedPres: any[] = [];
     for (const pre of preconds) {
+        if (!pre.condition) continue; // semantic assertions are postcondition-only
         const z3Pre = translateExpr(tctx, pre.condition, pre.id, fn.name);
         if (z3Pre === null) {
             // Can't translate precondition — all postconditions become undecidable
@@ -504,7 +506,13 @@ export async function verifyFunction(
 
     // Verify each postcondition
     for (const post of postconds) {
-        const z3Post = translateExpr(tctx, post.condition, post.id, fn.name);
+        // Translate: either semantic assertion or manual condition
+        let z3Post: any | null = null;
+        if (post.semantic) {
+            z3Post = translateSemanticAssertion(tctx, post.semantic);
+        } else if (post.condition) {
+            z3Post = translateExpr(tctx, post.condition, post.id, fn.name);
+        }
         if (z3Post === null) {
             // Flush errors for this contract
             const relevantErrors = tctx.errors.filter(e => e.contractId === post.id);
@@ -558,7 +566,7 @@ export async function verifyFunction(
                 }
             }
 
-            errors.push(contractFailure(fn.id, post.id, fn.name, "post", counterexample));
+            errors.push(contractFailure(fn.id, post.id, fn.name, "post", counterexample, post.semantic?.assertion));
         } else if (result === "unknown") {
             errors.push(verificationTimeout(fn.id, post.id, fn.name, TIMEOUT_MS));
         }
@@ -718,7 +726,7 @@ export async function verifyCallSitePreconditions(
     // Translate caller's preconditions (assumptions)
     const callerPres: any[] = [];
     for (const c of callerFn.contracts) {
-        if (c.kind === "pre") {
+        if (c.kind === "pre" && c.condition) {
             const z3Pre = translateExpr(tctx, c.condition, c.id, callerFn.name);
             if (z3Pre !== null) callerPres.push(z3Pre);
         }
@@ -758,6 +766,7 @@ export async function verifyCallSitePreconditions(
             }
 
             // Translate the precondition with substitutions active
+            if (!pre.condition) continue; // semantic assertions not used in preconditions
             const z3Pre = translateExpr(tctx, pre.condition, pre.id, callerFn.name);
 
             // Restore variables

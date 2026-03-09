@@ -63,7 +63,9 @@ function checkUnusedImports(module: EdictModule, warnings: LintWarning[]): void 
             case "fn":
                 collectReferencedNames(def.body, referencedNames);
                 for (const contract of def.contracts) {
-                    collectReferencedNamesFromExpr(contract.condition, referencedNames);
+                    if (contract.condition) {
+                        collectReferencedNamesFromExpr(contract.condition, referencedNames);
+                    }
                 }
                 break;
             case "const":
