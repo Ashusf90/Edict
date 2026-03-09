@@ -1,0 +1,38 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "random",
+    "version": "1.0.0",
+    "description": "Exported Edict example: random",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:09.064Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABIAdgAX8Bf2AAAX9gAn9/AX9gAXwBf2AAAXxgAX8AYAAAApYBCARob3N0BXByaW50AAAEaG9zdA1zdHJpbmdfbGVuZ3RoAAAEaG9zdA1zdHJpbmdfY29uY2F0AAIEaG9zdAtpbnRUb1N0cmluZwAABGhvc3QNZmxvYXRUb1N0cmluZwADBGhvc3QJcmFuZG9tSW50AAIEaG9zdAtyYW5kb21GbG9hdAAEBGhvc3QKcmFuZG9tVXVpZAABAwYFAAEFBgEFBAEBARAGBwF/AUHgAAsHVQYGbWVtb3J5AgAEbWFpbgAIDl9fZ2V0X2hlYXBfcHRyAAkOX19zZXRfaGVhcF9wdHIACgxfX2hlYXBfcmVzZXQACxBfX2dldF9oZWFwX3N0YXJ0AAwKZAVIAEEAQQFBBhAFEAMQAhAAGkEPQR5BAEEBEAVBAUYbEAAaQS0QBhAEEAIQABpBPxAHIgAQAhAAGkHJACAAEAEQAxACEAAaQQALBAAjAAsGACAAJAALBwBB4AAkAAsFAEHgAAsLegYAQQALDwsAAABEaWNlIHJvbGw6IABBDwsPCwAAAENvaW46IGhlYWRzAEEeCw8LAAAAQ29pbjogdGFpbHMAQS0LEg4AAABSYW5kb20gZmxvYXQ6IABBPwsKBgAAAFVVSUQ6IABByQALEQ0AAABVVUlEIGxlbmd0aDog",
+    "wasmSize": 531,
+    "checksum": "sha256:8bb98222dc8cd57d8ce019654b77e4c6623c6e3c67be70cc05b0f9008864c11b"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io",
+      "reads"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

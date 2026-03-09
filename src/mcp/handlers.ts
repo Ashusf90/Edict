@@ -228,31 +228,49 @@ export async function handleExport(
     }
 
     const base64Wasm = Buffer.from(compileResult.wasm).toString("base64");
+    const wasmSize = compileResult.wasm.length;
     const digest = "sha256:" + createHash("sha256").update(compileResult.wasm).digest("hex");
 
-    const signature = {
+    const uasfInterface: import("./uasf.js").UasfInterface = {
         entryPoint: entryPointName,
         params: entryDef.params.map((p) => ({
             name: p.name,
             type: p.type ? _typeToString(p.type) : "unknown"
         })),
-        returnType: entryDef.returnType ? _typeToString(entryDef.returnType) : "unknown",
+        returns: { type: entryDef.returnType ? _typeToString(entryDef.returnType) : "unknown" },
         effects: entryDef.effects
     };
 
-    const skill = {
-        manifestVersion: "1.0",
+    const isVerified = checkResult.coverage?.contracts?.skipped === 0;
+    const uasfVerification: import("./uasf.js").UasfVerification = {
+        verified: isVerified,
+        contracts: entryDef.contracts.map(c => ({
+            kind: c.kind,
+            condition: c.condition
+        })),
+        provenBy: isVerified ? "z3-solver" : undefined
+    };
+
+    const skill: import("./uasf.js").UasfPackage = {
+        uasf: "1.0",
         metadata: {
             name: metadata.name || "unknown_skill",
             version: metadata.version || "1.0.0",
             description: metadata.description || "",
-            author: metadata.author || "unknown"
+            author: metadata.author || "unknown",
+            createdAt: new Date().toISOString(),
+            tags: []
         },
-        signature,
-        wasm: {
-            encoding: "base64",
-            data: base64Wasm,
-            digest
+        binary: {
+            wasm: base64Wasm,
+            wasmSize: wasmSize,
+            checksum: digest
+        },
+        interface: uasfInterface,
+        verification: uasfVerification,
+        capabilities: {
+            required: entryDef.effects.includes("io") ? ["io"] : [],
+            optional: []
         }
     };
 
@@ -282,18 +300,18 @@ export interface ImportSkillResult {
 }
 
 export async function handleImportSkill(skill: any, limits?: RunLimits): Promise<ImportSkillResult> {
-    if (!skill || !skill.wasm || !skill.wasm.data || skill.wasm.encoding !== "base64") {
-        return { ok: false, error: "Invalid skill package format. Expected wasm.data (base64) array." };
+    if (!skill || !skill.binary || !skill.binary.wasm) {
+        return { ok: false, error: "Invalid skill package format. Expected binary.wasm string." };
     }
 
-    const wasmBytes = new Uint8Array(Buffer.from(skill.wasm.data, "base64"));
+    const wasmBytes = new Uint8Array(Buffer.from(skill.binary.wasm, "base64"));
     const digest = "sha256:" + createHash("sha256").update(wasmBytes).digest("hex");
 
-    if (digest !== skill.wasm.digest) {
-        return { ok: false, error: `Checksum mismatch. Expected ${skill.wasm.digest}, but got ${digest}. The skill package may be corrupted or tampered with.` };
+    if (digest !== skill.binary.checksum) {
+        return { ok: false, error: `Checksum mismatch. Expected ${skill.binary.checksum}, but got ${digest}. The skill package may be corrupted or tampered with.` };
     }
 
-    const entryPointName = skill.signature?.entryPoint || "main";
+    const entryPointName = skill.interface?.entryPoint || "main";
     
     try {
         const runRes = await run(wasmBytes, entryPointName, limits);

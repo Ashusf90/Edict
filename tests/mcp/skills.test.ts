@@ -45,17 +45,20 @@ describe("WASM Portable Agent Skills", () => {
         expect(exportResult.skill).toBeDefined();
 
         const skill = exportResult.skill as any;
-        expect(skill.manifestVersion).toBe("1.0");
+        expect(skill.uasf).toBe("1.0");
         expect(skill.metadata.name).toBe("AdditionSkill");
-        expect(skill.signature.entryPoint).toBe("main");
-        expect(skill.signature.params).toHaveLength(2);
-        expect(skill.signature.params[0].type).toBe("Int");
-        expect(skill.signature.returnType).toBe("Int");
-        expect(skill.signature.effects).toContain("pure");
+        expect(skill.interface.entryPoint).toBe("main");
+        expect(skill.interface.params).toHaveLength(2);
+        expect(skill.interface.params[0].type).toBe("Int");
+        expect(skill.interface.returns.type).toBe("Int");
+        expect(skill.interface.effects).toContain("pure");
 
-        expect(skill.wasm.encoding).toBe("base64");
-        expect(typeof skill.wasm.data).toBe("string");
-        expect(skill.wasm.digest.startsWith("sha256:")).toBe(true);
+        expect(skill.verification.verified).toBe(true);
+        expect(skill.capabilities.required).toEqual([]);
+
+        expect(typeof skill.binary.wasm).toBe("string");
+        expect(typeof skill.binary.wasmSize).toBe("number");
+        expect(skill.binary.checksum.startsWith("sha256:")).toBe(true);
     });
 
     it("should fail export if no entry point 'main' exists", async () => {
@@ -93,7 +96,7 @@ describe("WASM Portable Agent Skills", () => {
         const skill = exportResult.skill as any;
 
         // Tamper with checksum
-        skill.wasm.digest = "sha256:badf00d";
+        skill.binary.checksum = "sha256:badf00d";
 
         const importResult = await handleImportSkill(skill);
         expect(importResult.ok).toBe(false);

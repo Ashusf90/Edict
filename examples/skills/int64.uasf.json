@@ -1,0 +1,37 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "int64",
+    "version": "1.0.0",
+    "description": "Exported Edict example: int64",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.694Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABKwlgAX8Bf2ABfgF/YAABf2ACf38Bf2ABfAF/YAF/AX5gAX4BfGABfwBgAAACmAEIBGhvc3QFcHJpbnQAAARob3N0DXN0cmluZ19jb25jYXQAAwRob3N0C2ludFRvU3RyaW5nAAAEaG9zdA1mbG9hdFRvU3RyaW5nAAQEaG9zdAppbnRUb0ludDY0AAUEaG9zdAppbnQ2NFRvSW50AAEEaG9zdAxpbnQ2NFRvRmxvYXQABgRob3N0DWludDY0VG9TdHJpbmcAAQMGBQACBwgCBQQBAQEQBgYBfwFBOAsHVQYGbWVtb3J5AgAEbWFpbgAIDl9fZ2V0X2hlYXBfcHRyAAkOX19zZXRfaGVhcF9wdHIACgxfX2hlYXBfcmVzZXQACxBfX2dldF9oZWFwX3N0YXJ0AAwKYAVGAQJ+QQBBwIQ9EAQiAkGAifoAEAR8IgEQBxABEAAaQQkgAhAFEAIQARAAGkEaIAEQBhADEAEQABpBKCABEAcQARAAGkEACwQAIwALBgAgACQACwYAQTgkAAsEAEE4CwtMBABBAAsJBQAAAFN1bTogAEEJCxENAAAAQmFjayB0byBJbnQ6IABBGgsOCgAAAEFzIEZsb2F0OiAAQSgLDwsAAABBcyBTdHJpbmc6IA==",
+    "wasmSize": 493,
+    "checksum": "sha256:cd6aaee3e5f85a5b01b229881acf514899bb111d7a64149731c8f3508b096fcd"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

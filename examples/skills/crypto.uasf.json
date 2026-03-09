@@ -1,0 +1,37 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "crypto",
+    "version": "1.0.0",
+    "description": "Exported Edict example: crypto",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.127Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABHgZgAX8Bf2AAAX9gAn9/AX9gA39/fwF/YAF/AGAAAAJIBQRob3N0BXByaW50AAAEaG9zdA1zdHJpbmdfY29uY2F0AAIEaG9zdAZzaGEyNTYAAARob3N0A21kNQAABGhvc3QEaG1hYwADAwYFAAEEBQEFBAEBARAGBwF/AUGIAQsHVQYGbWVtb3J5AgAEbWFpbgAFDl9fZ2V0X2hlYXBfcHRyAAYOX19zZXRfaGVhcF9wdHIABwxfX2hlYXBfcmVzZXQACBBfX2dldF9oZWFwX3N0YXJ0AAkKXAVAAQF/QQ9BACIAEAIiARABEAAaQRwgABADEAEQABpBPUElQS8gABAEEAEQABpBxwBB4wAgABACIAFGGxAAGkEACwQAIwALBgAgACQACwcAQYgBJAALBQBBiAELC60BCABBAAsPCwAAAGhlbGxvIGVkaWN0AEEPCw0JAAAAU0hBLTI1NjogAEEcCwkFAAAATUQ1OiAAQSULCgYAAABzaGEyNTYAQS8LDgoAAABzZWNyZXQta2V5AEE9CwoGAAAASE1BQzogAEHHAAscGAAAAEhhc2ggdmVyaWZpY2F0aW9uOiBtYXRjaABB4wALHxsAAABIYXNoIHZlcmlmaWNhdGlvbjogbWlzbWF0Y2g=",
+    "wasmSize": 494,
+    "checksum": "sha256:7952b8f16bca12184bf5be35e723e7f1dd327f41009855c448c00c96c89f08a0"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

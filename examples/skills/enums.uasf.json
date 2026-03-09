@@ -1,0 +1,34 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "enums",
+    "version": "1.0.0",
+    "description": "Exported Edict example: enums",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.308Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABEQRgAAF/YAF/AX9gAX8AYAAAAwYFAQACAwAFBAEBARAGBgF/AUEICwdVBgZtZW1vcnkCAARtYWluAAAOX19nZXRfaGVhcF9wdHIAAQ5fX3NldF9oZWFwX3B0cgACDF9faGVhcF9yZXNldAADEF9fZ2V0X2hlYXBfc3RhcnQABAp0BVoBAXwjACIAQRBqJAAgAEEANgIAIABEAAAAAAAAFEA5AwggACgCAAR8IAAoAgBBAUYEfCAAKwMIIAArAxCiBQALBSAAKwMIIgEgAaJEboYb8PkhCUCiCxpBAAsEACMACwYAIAAkAAsGAEEIJAALBABBCAs=",
+    "wasmSize": 254,
+    "checksum": "sha256:92b9e072f887c3825518596ca1af7977e07a13e0158fe15dec6cf5de00bd3c05"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "pure"
+    ]
+  },
+  "verification": {
+    "verified": false,
+    "contracts": []
+  },
+  "capabilities": {
+    "required": [],
+    "optional": []
+  }
+}

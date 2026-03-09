@@ -1,0 +1,35 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "mutual-recursion",
+    "version": "1.0.0",
+    "description": "Exported Edict example: mutual-recursion",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:09.056Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABEQRgAX8Bf2AAAX9gAX8AYAAAAwcGAAABAgMBBQQBAQEQBgYBfwFBCAsHVQYGbWVtb3J5AgAEbWFpbgABDl9fZ2V0X2hlYXBfcHRyAAIOX19zZXRfaGVhcF9wdHIAAwxfX2hlYXBfcmVzZXQABBBfX2dldF9oZWFwX3N0YXJ0AAUKPwYeACAABH8gAEEBayIABH8gAEEBaxAABUEACwVBAQsLBgBBChAACwQAIwALBgAgACQACwYAQQgkAAsEAEEICw==",
+    "wasmSize": 202,
+    "checksum": "sha256:40abb911bd8b501d545fc6775affa7bdc89abdfb6f1423f2f4d63a85f01bcfdf"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "pure"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [],
+    "optional": []
+  }
+}

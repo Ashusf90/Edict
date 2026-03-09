@@ -1,0 +1,37 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "dash-replace",
+    "version": "1.0.0",
+    "description": "Exported Edict example: dash-replace",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.129Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABGAVgAX8Bf2AAAX9gA39/fwF/YAF/AGAAAAIkAgRob3N0BXByaW50AAAEaG9zdA5zdHJpbmdfcmVwbGFjZQACAwYFAAEDBAEFBAEBARAGBwF/AUHYAAsHVQYGbWVtb3J5AgAEbWFpbgACDl9fZ2V0X2hlYXBfcHRyAAMOX19zZXRfaGVhcF9wdHIABAxfX2hlYXBfcmVzZXQABRBfX2dldF9oZWFwX3N0YXJ0AAYKNQUZAEEAQcUAQcwAEAFB0QBBzAAQARAAGkEACwQAIwALBgAgACQACwcAQdgAJAALBQBB2AALC3AEAEEAC0VBAAAASGVsbG8g4oCUIHdvcmxkIOKAkyB0aGlzIGlzIGEgdGVzdCDigJQgd2l0aCBkYXNoZXMg4oCTIGV2ZXJ5d2hlcmUAQcUACwcDAAAA4oCUAEHMAAsFAQAAAC0AQdEACwcDAAAA4oCT",
+    "wasmSize": 351,
+    "checksum": "sha256:138d3e70fff668f66f6b7770873acee1455e974ac80285264593d7877cc745c3"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

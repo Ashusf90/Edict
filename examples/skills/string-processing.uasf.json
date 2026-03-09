@@ -1,0 +1,36 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "string-processing",
+    "version": "1.0.0",
+    "description": "Exported Edict example: string-processing",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:09.254Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABHgZgAX8Bf2ADf39/AX9gAAF/YAJ/fwF/YAF/AGAAAAJHBARob3N0BXByaW50AAAEaG9zdAlzdWJzdHJpbmcAAQRob3N0DXN0cmluZ19jb25jYXQAAwRob3N0C3RvVXBwZXJDYXNlAAADBwYBAAIEBQIFBAEBARAGBgF/AUEwCwdVBgZtZW1vcnkCAARtYWluAAUOX19nZXRfaGVhcF9wdHIABg5fX3NldF9oZWFwX3B0cgAHDF9faGVhcF9yZXNldAAIEF9fZ2V0X2hlYXBfc3RhcnQACQpyBiAAIAJBAUYEfyAABSAAIAEQAiAAIAEgAkEBaxAEEAILCzcBAX9BAEEQEAMQAkELEAIhAEEQQQBBARABEANBGUEDEAQhASAAQR4QAiABEAJBJBACEAAaQQALBAAjAAsGACAAJAALBgBBMCQACwQAQTALC0gGAEEACwsHAAAASGVsbG8sIABBCwsFAQAAACEAQRALCQUAAABlZGljdABBGQsFAQAAAC0AQR4LBgIAAAAgWwBBJAsFAQAAAF0=",
+    "wasmSize": 413,
+    "checksum": "sha256:5126cea0b62187ab0b4dad728c272a3e237c6244a5786aee32934e78e5638d9d"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io"
+    ]
+  },
+  "verification": {
+    "verified": false,
+    "contracts": []
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

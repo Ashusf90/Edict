@@ -1,0 +1,37 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "json",
+    "version": "1.0.0",
+    "description": "Exported Edict example: json",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.700Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABEQRgAX8Bf2AAAX9gAX8AYAAAAjQDBGhvc3QFcHJpbnQAAARob3N0CWpzb25QYXJzZQAABGhvc3QNanNvblN0cmluZ2lmeQAAAwYFAAECAwEFBAEBARAGBwF/AUHIAAsHVQYGbWVtb3J5AgAEbWFpbgADDl9fZ2V0X2hlYXBfcHRyAAQOX19zZXRfaGVhcF9wdHIABQxfX2hlYXBfcmVzZXQABhBfX2dldF9oZWFwX3N0YXJ0AAcKUQU1AEEAEAEhAEEgEAIQABogACgCAAR/IAAoAgBBAUYEfyAAKAIIGkEABQALBSAAKAIIGkEBCwsEACMACwYAIAAkAAsHAEHIACQACwUAQcgACwtOAgBBAAsgHAAAAHsibmFtZSI6IkVkaWN0IiwidmVyc2lvbiI6MX0AQSALIx8AAAB7ICAiYSIgOiAgMSwgICJiIiA6IFsgMiwgMyBdICB9",
+    "wasmSize": 354,
+    "checksum": "sha256:7b086928b654ca43288ff6a9ec8cab67583d27c084dc10a4e99eef79f52b5e90"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

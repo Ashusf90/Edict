@@ -7,20 +7,20 @@ export const importSkillTool: EdictMcpTool = {
     description: "Import and execute a compiled Edict WASM skill package, validating its checksum.",
     schema: {
         skill: z.object({
-            manifestVersion: z.string().optional(),
+            uasf: z.string().optional(),
             metadata: z.object({
                 name: z.string().optional(),
                 version: z.string().optional(),
                 description: z.string().optional(),
                 author: z.string().optional(),
             }).passthrough().optional(),
-            signature: z.object({
+            interface: z.object({
                 entryPoint: z.string().optional(),
             }).passthrough().optional(),
-            wasm: z.object({
-                encoding: z.literal("base64"),
-                data: z.string(),
-                digest: z.string()
+            binary: z.object({
+                wasm: z.string(),
+                wasmSize: z.number().optional(),
+                checksum: z.string()
             }).passthrough()
         }).passthrough().describe("The skill package JSON object (produced by edict_export)"),
         limits: z.object({

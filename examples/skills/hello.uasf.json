@@ -1,0 +1,37 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "hello",
+    "version": "1.0.0",
+    "description": "Exported Edict example: hello",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.679Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABEQRgAX8Bf2AAAX9gAX8AYAAAAg4BBGhvc3QFcHJpbnQAAAMGBQABAgMBBQQBAQEQBgYBfwFBGAsHVQYGbWVtb3J5AgAEbWFpbgABDl9fZ2V0X2hlYXBfcHRyAAIOX19zZXRfaGVhcF9wdHIAAwxfX2hlYXBfcmVzZXQABBBfX2dldF9oZWFwX3N0YXJ0AAUKIwUJAEEAEAAaQQALBAAjAAsGACAAJAALBgBBGCQACwQAQRgLCxcBAEEACxENAAAASGVsbG8sIFdvcmxkIQ==",
+    "wasmSize": 214,
+    "checksum": "sha256:354414d551c47aede9d8f24413ae8d11b5e1c60ec4041f8ba1fb199ede694e80"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "io"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [
+      "io"
+    ],
+    "optional": []
+  }
+}

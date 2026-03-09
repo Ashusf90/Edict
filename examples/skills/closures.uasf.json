@@ -1,0 +1,35 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "closures",
+    "version": "1.0.0",
+    "description": "Exported Edict example: closures",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:07.561Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABFwVgAn9/AX9gAAF/YAF/AX9gAX8AYAAAAhIBBGhvc3QJYXJyYXlfZ2V0AAADCAcAAAIBAwQBBAUBcAEDAwUEAQEBEAYGAX8BQQgLB1UGBm1lbW9yeQIABG1haW4AAw5fX2dldF9oZWFwX3B0cgAEDl9fc2V0X2hlYXBfcHRyAAUMX19oZWFwX3Jlc2V0AAYQX19nZXRfaGVhcF9zdGFydAAHCQkBAEEACwMCAwEK6QEHCgAgACgCACABagstAQF/IwAiAEEIaiQAIABBAjYCACMAIgJBCGokACACIAE2AgAgACACNgIEIAALlQEBBn9BAEEKEAIhASMAIgBBEGokACAAQQM2AgAgAEEBNgIEIABBAjYCCCAAQQM2AgwgASgCACEEIAEoAgQhBSMAIQEjACAAKAIAIgJBAnRBBGpqJAAgASACNgIAIAJBAEoEQANAIAEgA0ECdCIGaiAFIAAgBmooAgQgBBEAADYCBCADQQFqIgMgAkgNAAsLIAFBABAACwQAIwALBgAgACQACwYAQQgkAAsEAEEICw==",
+    "wasmSize": 418,
+    "checksum": "sha256:c98c46e69acb15d2e0c5bdf59126c13ed1823dc29c18f1d8c3635cd9ea616c42"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "pure"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [],
+    "optional": []
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "complete",
+    "version": "1.0.0",
+    "description": "Exported Edict example: complete",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:07.759Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABEQRgAAF/YAF/AX9gAX8AYAAAAwYFAQACAwAFBAEBARAGBgF/AUEQCwdVBgZtZW1vcnkCAARtYWluAAAOX19nZXRfaGVhcF9wdHIAAQ5fX3NldF9oZWFwX3B0cgACDF9faGVhcF9yZXNldAADEF9fZ2V0X2hlYXBfc3RhcnQABAoeBQQAQQALBAAjAAsGACAAJAALBgBBECQACwQAQRALCxEBAEEACwsHAAAASGVsbG8sIA==",
+    "wasmSize": 187,
+    "checksum": "sha256:821e776695157b0154d92777b453f3c80ad09b2a7ecef2ef3d99e341ad0f4ffa"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "pure"
+    ]
+  },
+  "verification": {
+    "verified": false,
+    "contracts": []
+  },
+  "capabilities": {
+    "required": [],
+    "optional": []
+  }
+}

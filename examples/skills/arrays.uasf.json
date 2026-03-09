@@ -1,0 +1,35 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "arrays",
+    "version": "1.0.0",
+    "description": "Exported Edict example: arrays",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:07.549Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABHgZgAX8Bf2AAAX9gAn9/AX9gA39/fwF/YAF/AGAAAAI3AwRob3N0DGFycmF5X2xlbmd0aAAABGhvc3QJYXJyYXlfZ2V0AAIEaG9zdAlhcnJheV9zZXQAAwMGBQABBAUBBQQBAQEQBgYBfwFBCAsHVQYGbWVtb3J5AgAEbWFpbgADDl9fZ2V0X2hlYXBfcHRyAAQOX19zZXRfaGVhcF9wdHIABQxfX2hlYXBfcmVzZXQABhBfX2dldF9oZWFwX3N0YXJ0AAcKYAVGAQJ/IwAiAEEQaiQAIABBAzYCACAAQQo2AgQgAEEUNgIIIABBHjYCDCAAEAAhASAAQQAQASECIABBAUHjABACGiABIAJqCwQAIwALBgAgACQACwYAQQgkAAsEAEEICw==",
+    "wasmSize": 304,
+    "checksum": "sha256:22f3b5c5a83cd82c4f2c8d8e6d8f2ed94f00fe121282d4f874109f0bfe4cafb9"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "pure"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [],
+    "optional": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "uasf": "1.0",
+  "metadata": {
+    "name": "fibonacci",
+    "version": "1.0.0",
+    "description": "Exported Edict example: fibonacci",
+    "author": "Edict Compiler",
+    "createdAt": "2026-03-09T00:46:08.677Z",
+    "tags": []
+  },
+  "binary": {
+    "wasm": "AGFzbQEAAAABEQRgAX8Bf2AAAX9gAX8AYAAAAwcGAAABAgMBBQQBAQEQBgYBfwFBCAsHVQYGbWVtb3J5AgAEbWFpbgABDl9fZ2V0X2hlYXBfcHRyAAIOX19zZXRfaGVhcF9wdHIAAwxfX2hlYXBfcmVzZXQABBBfX2dldF9oZWFwX3N0YXJ0AAUKPQYcACAAQQFMBH8gAAUgAEEBaxAAIABBAmsQAGoLCwYAQQoQAAsEACMACwYAIAAkAAsGAEEIJAALBABBCAs=",
+    "wasmSize": 200,
+    "checksum": "sha256:41ce1e516ae73231c5160cc126cf03acf500d1d1f0afd2ccb542dea4256f6a39"
+  },
+  "interface": {
+    "entryPoint": "main",
+    "params": [],
+    "returns": {
+      "type": "Int"
+    },
+    "effects": [
+      "pure"
+    ]
+  },
+  "verification": {
+    "verified": true,
+    "contracts": [],
+    "provenBy": "z3-solver"
+  },
+  "capabilities": {
+    "required": [],
+    "optional": []
+  }
+}

@@ -1,0 +1,1243 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+        "ArrayExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "elements": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "array",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "elements",
+                "id",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "ArrayType": {
+            "additionalProperties": false,
+            "description": "Homogeneous array type.",
+            "properties": {
+                "element": {
+                    "$ref": "#/definitions/TypeExpr"
+                },
+                "kind": {
+                    "const": "array",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "element",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "BasicType": {
+            "additionalProperties": false,
+            "description": "Primitive types.",
+            "properties": {
+                "kind": {
+                    "const": "basic",
+                    "type": "string"
+                },
+                "name": {
+                    "enum": [
+                        "Bool",
+                        "Float",
+                        "Int",
+                        "Int64",
+                        "String"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "BinaryOp": {
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "binop",
+                    "type": "string"
+                },
+                "left": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "op": {
+                    "$ref": "#/definitions/BinaryOperator"
+                },
+                "right": {
+                    "$ref": "#/definitions/Expression"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "left",
+                "op",
+                "right"
+            ],
+            "type": "object"
+        },
+        "BinaryOperator": {
+            "enum": [
+                "!=",
+                "%",
+                "*",
+                "+",
+                "-",
+                "/",
+                "<",
+                "<=",
+                "==",
+                ">",
+                ">=",
+                "and",
+                "implies",
+                "or"
+            ],
+            "type": "string"
+        },
+        "BindingPattern": {
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "const": "binding",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "BlockExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "body": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "block",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "body",
+                "id",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "Call": {
+            "additionalProperties": false,
+            "properties": {
+                "args": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "fn": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "call",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "args",
+                "fn",
+                "id",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "ConstructorPattern": {
+            "additionalProperties": false,
+            "properties": {
+                "fields": {
+                    "items": {
+                        "$ref": "#/definitions/Pattern"
+                    },
+                    "type": "array"
+                },
+                "kind": {
+                    "const": "constructor",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "fields",
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "Effect": {
+            "description": "The 5 canonical effect categories.\nA function's signature includes which effects it may perform.",
+            "enum": [
+                "fails",
+                "io",
+                "pure",
+                "reads",
+                "writes"
+            ],
+            "type": "string"
+        },
+        "EnumConstructor": {
+            "additionalProperties": false,
+            "properties": {
+                "enumName": {
+                    "type": "string"
+                },
+                "fields": {
+                    "items": {
+                        "$ref": "#/definitions/FieldInit"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "enum_constructor",
+                    "type": "string"
+                },
+                "variant": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "enumName",
+                "fields",
+                "id",
+                "kind",
+                "variant"
+            ],
+            "type": "object"
+        },
+        "ExistsExpr": {
+            "additionalProperties": false,
+            "description": "Existential quantifier — contract-only.\nexists variable in [range.from, range.to): body\nTranslates to Z3 Exists. Body must evaluate to Bool.",
+            "properties": {
+                "body": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "exists",
+                    "type": "string"
+                },
+                "range": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "from": {
+                            "$ref": "#/definitions/Expression"
+                        },
+                        "to": {
+                            "$ref": "#/definitions/Expression"
+                        }
+                    },
+                    "required": [
+                        "from",
+                        "to"
+                    ],
+                    "type": "object"
+                },
+                "variable": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "body",
+                "id",
+                "kind",
+                "range",
+                "variable"
+            ],
+            "type": "object"
+        },
+        "Expression": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/Literal"
+                },
+                {
+                    "$ref": "#/definitions/Identifier"
+                },
+                {
+                    "$ref": "#/definitions/BinaryOp"
+                },
+                {
+                    "$ref": "#/definitions/UnaryOp"
+                },
+                {
+                    "$ref": "#/definitions/Call"
+                },
+                {
+                    "$ref": "#/definitions/IfExpr"
+                },
+                {
+                    "$ref": "#/definitions/LetExpr"
+                },
+                {
+                    "$ref": "#/definitions/MatchExpr"
+                },
+                {
+                    "$ref": "#/definitions/ArrayExpr"
+                },
+                {
+                    "$ref": "#/definitions/TupleExpr"
+                },
+                {
+                    "$ref": "#/definitions/RecordExpr"
+                },
+                {
+                    "$ref": "#/definitions/EnumConstructor"
+                },
+                {
+                    "$ref": "#/definitions/FieldAccess"
+                },
+                {
+                    "$ref": "#/definitions/LambdaExpr"
+                },
+                {
+                    "$ref": "#/definitions/BlockExpr"
+                },
+                {
+                    "$ref": "#/definitions/StringInterp"
+                },
+                {
+                    "$ref": "#/definitions/ForallExpr"
+                },
+                {
+                    "$ref": "#/definitions/ExistsExpr"
+                }
+            ]
+        },
+        "FieldAccess": {
+            "additionalProperties": false,
+            "properties": {
+                "field": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "access",
+                    "type": "string"
+                },
+                "target": {
+                    "$ref": "#/definitions/Expression"
+                }
+            },
+            "required": [
+                "field",
+                "id",
+                "kind",
+                "target"
+            ],
+            "type": "object"
+        },
+        "FieldInit": {
+            "additionalProperties": false,
+            "description": "Field initialization in record expressions and enum constructors.\nGives these inline objects a proper `kind` discriminator like every other AST node.",
+            "properties": {
+                "kind": {
+                    "const": "field_init",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "$ref": "#/definitions/Expression"
+                }
+            },
+            "required": [
+                "kind",
+                "name",
+                "value"
+            ],
+            "type": "object"
+        },
+        "ForallExpr": {
+            "additionalProperties": false,
+            "description": "Universal quantifier — contract-only.\nforall variable in [range.from, range.to): body\nTranslates to Z3 ForAll. Body must evaluate to Bool.",
+            "properties": {
+                "body": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "forall",
+                    "type": "string"
+                },
+                "range": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "from": {
+                            "$ref": "#/definitions/Expression"
+                        },
+                        "to": {
+                            "$ref": "#/definitions/Expression"
+                        }
+                    },
+                    "required": [
+                        "from",
+                        "to"
+                    ],
+                    "type": "object"
+                },
+                "variable": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "body",
+                "id",
+                "kind",
+                "range",
+                "variable"
+            ],
+            "type": "object"
+        },
+        "FunctionType": {
+            "additionalProperties": false,
+            "description": "Function type — for higher-order functions and lambdas.",
+            "properties": {
+                "effects": {
+                    "items": {
+                        "$ref": "#/definitions/Effect"
+                    },
+                    "type": "array"
+                },
+                "kind": {
+                    "const": "fn_type",
+                    "type": "string"
+                },
+                "params": {
+                    "items": {
+                        "$ref": "#/definitions/TypeExpr"
+                    },
+                    "type": "array"
+                },
+                "returnType": {
+                    "$ref": "#/definitions/TypeExpr"
+                }
+            },
+            "required": [
+                "effects",
+                "kind",
+                "params",
+                "returnType"
+            ],
+            "type": "object"
+        },
+        "Identifier": {
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "ident",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "IfExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "condition": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "else": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "if",
+                    "type": "string"
+                },
+                "then": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "condition",
+                "id",
+                "kind",
+                "then"
+            ],
+            "type": "object"
+        },
+        "LambdaExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "body": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "lambda",
+                    "type": "string"
+                },
+                "params": {
+                    "items": {
+                        "$ref": "#/definitions/Param"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "body",
+                "id",
+                "kind",
+                "params"
+            ],
+            "type": "object"
+        },
+        "LetExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "let",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/TypeExpr"
+                },
+                "value": {
+                    "$ref": "#/definitions/Expression"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "name",
+                "value"
+            ],
+            "type": "object"
+        },
+        "Literal": {
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "literal",
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/TypeExpr"
+                },
+                "value": {
+                    "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                    ]
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "value"
+            ],
+            "type": "object"
+        },
+        "LiteralPattern": {
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "const": "literal_pattern",
+                    "type": "string"
+                },
+                "value": {
+                    "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                    ]
+                }
+            },
+            "required": [
+                "kind",
+                "value"
+            ],
+            "type": "object"
+        },
+        "MatchArm": {
+            "additionalProperties": false,
+            "properties": {
+                "body": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "arm",
+                    "type": "string"
+                },
+                "pattern": {
+                    "$ref": "#/definitions/Pattern"
+                }
+            },
+            "required": [
+                "body",
+                "id",
+                "kind",
+                "pattern"
+            ],
+            "type": "object"
+        },
+        "MatchExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "arms": {
+                    "items": {
+                        "$ref": "#/definitions/MatchArm"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "match",
+                    "type": "string"
+                },
+                "target": {
+                    "$ref": "#/definitions/Expression"
+                }
+            },
+            "required": [
+                "arms",
+                "id",
+                "kind",
+                "target"
+            ],
+            "type": "object"
+        },
+        "NamedType": {
+            "additionalProperties": false,
+            "description": "Reference to a user-defined type (RecordDef or EnumDef) by name.",
+            "properties": {
+                "kind": {
+                    "const": "named",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "OptionType": {
+            "additionalProperties": false,
+            "description": "Optional value — None or Some(T).",
+            "properties": {
+                "inner": {
+                    "$ref": "#/definitions/TypeExpr"
+                },
+                "kind": {
+                    "const": "option",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "inner",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "Param": {
+            "additionalProperties": false,
+            "description": "Function parameter.",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "param",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/TypeExpr"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "Pattern": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/LiteralPattern"
+                },
+                {
+                    "$ref": "#/definitions/WildcardPattern"
+                },
+                {
+                    "$ref": "#/definitions/BindingPattern"
+                },
+                {
+                    "$ref": "#/definitions/ConstructorPattern"
+                }
+            ]
+        },
+        "RecordExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "fields": {
+                    "items": {
+                        "$ref": "#/definitions/FieldInit"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "record_expr",
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "fields",
+                "id",
+                "kind",
+                "name"
+            ],
+            "type": "object"
+        },
+        "RefinedType": {
+            "additionalProperties": false,
+            "description": "Refinement type — base type + logical predicate verified by Z3 (Phase 4).\nExample: { v: Int | v > 0 } is a positive integer.",
+            "properties": {
+                "base": {
+                    "$ref": "#/definitions/TypeExpr"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "refined",
+                    "type": "string"
+                },
+                "predicate": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "variable": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "base",
+                "id",
+                "kind",
+                "predicate",
+                "variable"
+            ],
+            "type": "object"
+        },
+        "ResultType": {
+            "additionalProperties": false,
+            "description": "Result type for error handling. Interacts with the \"fails\" effect.",
+            "properties": {
+                "err": {
+                    "$ref": "#/definitions/TypeExpr"
+                },
+                "kind": {
+                    "const": "result",
+                    "type": "string"
+                },
+                "ok": {
+                    "$ref": "#/definitions/TypeExpr"
+                }
+            },
+            "required": [
+                "err",
+                "kind",
+                "ok"
+            ],
+            "type": "object"
+        },
+        "StringInterp": {
+            "additionalProperties": false,
+            "description": "String interpolation — desugars to string_concat chains at compile time.\nAll parts must evaluate to String.",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "string_interp",
+                    "type": "string"
+                },
+                "parts": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "parts"
+            ],
+            "type": "object"
+        },
+        "TupleExpr": {
+            "additionalProperties": false,
+            "properties": {
+                "elements": {
+                    "items": {
+                        "$ref": "#/definitions/Expression"
+                    },
+                    "type": "array"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "tuple_expr",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "elements",
+                "id",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "TupleType": {
+            "additionalProperties": false,
+            "description": "Fixed-size heterogeneous tuple.",
+            "properties": {
+                "elements": {
+                    "items": {
+                        "$ref": "#/definitions/TypeExpr"
+                    },
+                    "type": "array"
+                },
+                "kind": {
+                    "const": "tuple",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "elements",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "TypeExpr": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/BasicType"
+                },
+                {
+                    "$ref": "#/definitions/ArrayType"
+                },
+                {
+                    "$ref": "#/definitions/OptionType"
+                },
+                {
+                    "$ref": "#/definitions/ResultType"
+                },
+                {
+                    "$ref": "#/definitions/UnitType"
+                },
+                {
+                    "$ref": "#/definitions/RefinedType"
+                },
+                {
+                    "$ref": "#/definitions/FunctionType"
+                },
+                {
+                    "$ref": "#/definitions/NamedType"
+                },
+                {
+                    "$ref": "#/definitions/TupleType"
+                }
+            ],
+            "description": "Union of all type expressions in Edict."
+        },
+        "UasfBinary": {
+            "additionalProperties": false,
+            "properties": {
+                "checksum": {
+                    "type": "string"
+                },
+                "wasm": {
+                    "type": "string"
+                },
+                "wasmSize": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "checksum",
+                "wasm",
+                "wasmSize"
+            ],
+            "type": "object"
+        },
+        "UasfCapabilities": {
+            "additionalProperties": false,
+            "properties": {
+                "optional": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "required": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "optional",
+                "required"
+            ],
+            "type": "object"
+        },
+        "UasfContract": {
+            "additionalProperties": false,
+            "properties": {
+                "condition": {
+                    "$ref": "#/definitions/Expression"
+                },
+                "kind": {
+                    "enum": [
+                        "post",
+                        "pre"
+                    ],
+                    "type": "string"
+                },
+                "natural": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "condition",
+                "kind"
+            ],
+            "type": "object"
+        },
+        "UasfInterface": {
+            "additionalProperties": false,
+            "properties": {
+                "effects": {
+                    "items": {
+                        "$ref": "#/definitions/Effect"
+                    },
+                    "type": "array"
+                },
+                "entryPoint": {
+                    "type": "string"
+                },
+                "params": {
+                    "items": {
+                        "$ref": "#/definitions/UasfParam"
+                    },
+                    "type": "array"
+                },
+                "returns": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "description": {
+                            "type": "string"
+                        },
+                        "type": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "type"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "effects",
+                "entryPoint",
+                "params",
+                "returns"
+            ],
+            "type": "object"
+        },
+        "UasfMetadata": {
+            "additionalProperties": false,
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "license": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "tags": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "version": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "author",
+                "description",
+                "name",
+                "version"
+            ],
+            "type": "object"
+        },
+        "UasfParam": {
+            "additionalProperties": false,
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "type"
+            ],
+            "type": "object"
+        },
+        "UasfVerification": {
+            "additionalProperties": false,
+            "properties": {
+                "contracts": {
+                    "items": {
+                        "$ref": "#/definitions/UasfContract"
+                    },
+                    "type": "array"
+                },
+                "provenBy": {
+                    "type": "string"
+                },
+                "verified": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "contracts",
+                "verified"
+            ],
+            "type": "object"
+        },
+        "UnaryOp": {
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "unop",
+                    "type": "string"
+                },
+                "op": {
+                    "$ref": "#/definitions/UnaryOperator"
+                },
+                "operand": {
+                    "$ref": "#/definitions/Expression"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "op",
+                "operand"
+            ],
+            "type": "object"
+        },
+        "UnaryOperator": {
+            "enum": [
+                "-",
+                "not"
+            ],
+            "type": "string"
+        },
+        "UnitType": {
+            "additionalProperties": false,
+            "description": "Semantic unit type — compile-time enforcement, zero runtime cost.\nPrevents mixing incompatible units (e.g., currency<usd> + temp<celsius>).",
+            "properties": {
+                "base": {
+                    "enum": [
+                        "Float",
+                        "Int"
+                    ],
+                    "type": "string"
+                },
+                "kind": {
+                    "const": "unit_type",
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "base",
+                "kind",
+                "unit"
+            ],
+            "type": "object"
+        },
+        "WildcardPattern": {
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "const": "wildcard",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind"
+            ],
+            "type": "object"
+        }
+    },
+    "properties": {
+        "binary": {
+            "$ref": "#/definitions/UasfBinary"
+        },
+        "capabilities": {
+            "$ref": "#/definitions/UasfCapabilities"
+        },
+        "interface": {
+            "$ref": "#/definitions/UasfInterface"
+        },
+        "metadata": {
+            "$ref": "#/definitions/UasfMetadata"
+        },
+        "uasf": {
+            "type": "string"
+        },
+        "verification": {
+            "$ref": "#/definitions/UasfVerification"
+        }
+    },
+    "required": [
+        "binary",
+        "capabilities",
+        "interface",
+        "metadata",
+        "uasf",
+        "verification"
+    ],
+    "type": "object"
+}
+
