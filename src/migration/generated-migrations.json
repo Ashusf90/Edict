@@ -1,0 +1,13 @@
+[
+  {
+    "from": "1.0",
+    "to": "1.1",
+    "ops": [
+      {
+        "op": "add_field",
+        "path": "schemaVersion",
+        "default": ""
+      }
+    ]
+  }
+]

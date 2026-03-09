@@ -180,6 +180,9 @@ export type {
     CircularImportError,
     UnresolvedModuleError,
     DuplicateModuleNameError,
+    // Migration errors
+    MigrationFailedError,
+    UnsupportedSchemaVersionError,
 } from "./errors/structured-errors.js";
 
 // ---------------------------------------------------------------------------
@@ -229,6 +232,9 @@ export {
     circularImport,
     unresolvedModule,
     duplicateModuleName,
+    // Migration errors
+    migrationFailed,
+    unsupportedSchemaVersion,
 } from "./errors/structured-errors.js";
 
 // ---------------------------------------------------------------------------
@@ -336,4 +342,10 @@ export { diffDefinitions } from "./incremental/diff.js";
 // ---------------------------------------------------------------------------
 export { generateTests } from "./contracts/generate-tests.js";
 export type { GeneratedTest, GenerateTestsResult } from "./contracts/generate-tests.js";
+
+// ---------------------------------------------------------------------------
+// Schema Migration: auto-migrate ASTs from older schema versions
+// ---------------------------------------------------------------------------
+export { migrateToLatest, applyMigration, CURRENT_SCHEMA_VERSION, MINIMUM_SCHEMA_VERSION, MIGRATION_REGISTRY } from "./migration/migrate.js";
+export type { Migration, MigrationOp, MigrationResult, MigrationSuccess, MigrationFailure } from "./migration/migrate.js";
 

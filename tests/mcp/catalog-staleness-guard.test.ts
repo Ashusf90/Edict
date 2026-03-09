@@ -21,7 +21,7 @@ describe("error catalog staleness guard", () => {
     // Filter to module-based entries that go through the pipeline
     const pipelineEntries = catalog.errors.filter(e => {
         const cause = e.example_cause as Record<string, unknown>;
-        return cause?.kind === "module" && !["lint", "codegen", "patch"].includes(e.pipeline_stage);
+        return cause?.kind === "module" && !["lint", "codegen", "patch", "migration"].includes(e.pipeline_stage);
     });
 
     describe("every example_cause must trigger an error", () => {

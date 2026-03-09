@@ -72,7 +72,10 @@ export type StructuredError =
     | UnresolvedModuleError
     | DuplicateModuleNameError
     // Runtime errors
-    | MissingExternalModuleError;
+    | MissingExternalModuleError
+    // Migration errors
+    | MigrationFailedError
+    | UnsupportedSchemaVersionError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -863,4 +866,40 @@ export function missingExternalModule(
     availableModules: string[],
 ): MissingExternalModuleError {
     return { error: "missing_external_module", module, availableModules };
+}
+
+// =============================================================================
+// Migration errors
+// =============================================================================
+
+export interface MigrationFailedError {
+    error: "migration_failed";
+    fromVersion: string;
+    toVersion: string;
+    detail: string;
+}
+
+export interface UnsupportedSchemaVersionError {
+    error: "unsupported_schema_version";
+    version: string;
+    supportedRange: { min: string; max: string };
+}
+
+// =============================================================================
+// Migration error constructors
+// =============================================================================
+
+export function migrationFailed(
+    fromVersion: string,
+    toVersion: string,
+    detail: string,
+): MigrationFailedError {
+    return { error: "migration_failed", fromVersion, toVersion, detail };
+}
+
+export function unsupportedSchemaVersion(
+    version: string,
+    supportedRange: { min: string; max: string },
+): UnsupportedSchemaVersionError {
+    return { error: "unsupported_schema_version", version, supportedRange };
 }

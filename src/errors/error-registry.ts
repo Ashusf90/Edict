@@ -49,6 +49,8 @@ import {
     unresolvedModule,
     duplicateModuleName,
     missingExternalModule,
+    migrationFailed,
+    unsupportedSchemaVersion,
 } from "./structured-errors.js";
 
 // =============================================================================
@@ -150,6 +152,10 @@ export const ERROR_REGISTRY: ErrorRegistryEntry[] = [
 
     // Runtime errors
     { type: "missing_external_module", stage: "codegen",           make: () => missingExternalModule("mod", ["a"]) },
+
+    // Migration errors
+    { type: "migration_failed",        stage: "migration",          make: () => migrationFailed("1.0", "1.1", "Op failed") },
+    { type: "unsupported_schema_version", stage: "migration",       make: () => unsupportedSchemaVersion("99.0", { min: "1.0", max: "1.1" }) },
 ];
 
 // =============================================================================

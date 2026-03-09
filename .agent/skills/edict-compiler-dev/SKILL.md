@@ -78,9 +78,11 @@ Error constructors live in `src/errors/structured-errors.ts`. Each constructor i
 1. Add the TypeScript interface to `structured-errors.ts`
 2. Add it to the `StructuredError` union type
 3. Create a factory function (e.g., `export function myNewError(...)`)
-4. Export both the type and constructor from `src/index.ts`
-5. Use the constructor in the relevant pipeline stage
-6. Add tests
+4. Add a registry entry in `error-registry.ts` (type + stage + make)
+5. Add examples in `error-catalog.ts` (example_cause + example_fix)
+6. Export both the type and constructor from `src/index.ts`
+7. Use the constructor in the relevant pipeline stage
+8. Add tests
 
 **Every error must include:**
 - `error` — discriminator string (e.g., `"type_mismatch"`)
@@ -100,9 +102,23 @@ Error constructors live in `src/errors/structured-errors.ts`. Each constructor i
 7. **Contracts** — add Z3 translation if the node appears in predicates (`src/contracts/translate.ts`)
 8. **Codegen** — add WASM generation in `src/codegen/codegen.ts`
 9. **Schema** — regenerate: `npm run generate-schema`
-10. **Examples** — add an example program using the new node
-11. **Tests** — add tests for each pipeline stage
-12. **Exports** — export the new type from `src/index.ts`
+10. **Schema Version** — bump `CURRENT_SCHEMA_VERSION` in `src/migration/migrate.ts`, run `npm run snapshot-schema` to save the new snapshot, then run `npm run diff-schemas` to auto-generate migration ops
+11. **Examples** — add an example program using the new node
+12. **Tests** — add tests for each pipeline stage
+13. **Exports** — export the new type from `src/index.ts`
+
+## Schema Migration
+
+Edict auto-migrates agent ASTs from older schema versions. When the AST evolves:
+
+1. Bump `CURRENT_SCHEMA_VERSION` in `src/migration/migrate.ts`
+2. Run `npm run snapshot-schema` — stores current schema as `schema/snapshots/v{N}.json`
+3. Run `npm run diff-schemas` — auto-generates migration ops by diffing snapshots
+4. Migrations apply automatically in all pipeline entry points via `migrateToLatest()`
+
+Migration ops are auto-derived: added properties → `add_field`, removed → `remove_field`. The `MIGRATION_REGISTRY` in `migrate.ts` can also hold manual overrides for complex transforms.
+
+**Key files:** `src/migration/migrate.ts`, `scripts/diff-schemas.ts`, `scripts/snapshot-schema.ts`, `schema/snapshots/`
 
 ## How to Add a New Builtin Function
 

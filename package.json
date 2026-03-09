@@ -60,6 +60,8 @@
     "check:jsdoc": "bash scripts/check-jsdoc.sh",
     "generate:jsdoc": "tsx scripts/generate-jsdoc.ts",
     "generate-schema": "tsx scripts/generate-schema.ts",
+    "snapshot-schema": "tsx scripts/snapshot-schema.ts",
+    "diff-schemas": "tsx scripts/diff-schemas.ts",
     "mcp": "tsx src/mcp/server.ts",
     "benchmark": "tsx scripts/benchmark.ts"
   },

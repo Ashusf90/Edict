@@ -12,9 +12,6 @@
     "name": {
       "type": "string"
     },
-    "schemaVersion": {
-      "type": "string"
-    },
     "imports": {
       "type": "array",
       "items": {

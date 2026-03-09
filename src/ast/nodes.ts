@@ -38,6 +38,7 @@ export interface EdictModule {
     kind: "module";
     id: string;
     name: string;
+    schemaVersion?: string;
     imports: Import[];
     definitions: Definition[];
     budget?: ComplexityConstraints;

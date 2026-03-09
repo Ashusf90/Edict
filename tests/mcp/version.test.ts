@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { handleVersion } from "../../src/mcp/handlers.js";
 import { BUILTIN_FUNCTIONS } from "../../src/codegen/builtins.js";
+import { CURRENT_SCHEMA_VERSION } from "../../src/migration/migrate.js";
 
 describe("handleVersion", () => {
     it("returns correctly structured capability information", () => {
@@ -8,7 +9,7 @@ describe("handleVersion", () => {
 
         expect(typeof result.version).toBe("string");
         expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
-        expect(result.schemaVersion).toBe("1.0");
+        expect(result.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
         expect(Array.isArray(result.builtins)).toBe(true);
         expect(typeof result.features).toBe("object");
         expect(typeof result.limits).toBe("object");

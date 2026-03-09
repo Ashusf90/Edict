@@ -24,7 +24,7 @@ export interface ErrorCatalogEntry {
     /** Discriminator string (e.g., "type_mismatch") */
     type: string;
     /** Pipeline stage that produces this error */
-    pipeline_stage: "validator" | "resolver" | "type_checker" | "complexity_checker" | "effect_checker" | "contract_verifier" | "codegen" | "patch" | "lint";
+    pipeline_stage: "validator" | "resolver" | "type_checker" | "complexity_checker" | "effect_checker" | "contract_verifier" | "codegen" | "patch" | "lint" | "migration";
     /** All fields present on this error (excluding the `error` discriminator) */
     fields: { name: string; type: string }[];
     /** Minimal AST that triggers this error */
@@ -354,6 +354,18 @@ const ERROR_EXAMPLES: Record<string, ExamplePair> = {
     missing_external_module: {
         cause: { _note: "WASM run called without required external module" },
         fix: { _note: "Provide the external module in externalModules parameter" },
+    },
+
+    // =========================================================================
+    // Migration errors
+    // =========================================================================
+    migration_failed: {
+        cause: { kind: "module", id: "mod-001", name: "test", schemaVersion: "1.0", imports: [], definitions: [] },
+        fix: { kind: "module", id: "mod-001", name: "test", schemaVersion: "1.1", imports: [], definitions: [] },
+    },
+    unsupported_schema_version: {
+        cause: { kind: "module", id: "mod-001", name: "test", schemaVersion: "99.0", imports: [], definitions: [] },
+        fix: { kind: "module", id: "mod-001", name: "test", schemaVersion: "1.1", imports: [], definitions: [] },
     },
     unit_mismatch: {
         cause: { kind: "module", name: "test", definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "unit_type", base: "Int", unit: "meters" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "unit_type", base: "Int", unit: "kg" } }], effects: ["pure"], returnType: { kind: "unit_type", base: "Int", unit: "meters" }, contracts: [], body: [{ kind: "binop", id: "binop-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] }] },

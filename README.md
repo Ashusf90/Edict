@@ -35,6 +35,7 @@ Contract Verifier ── unproven? → StructuredError + counterexample → Agen
 - **Contract verification** — Pre/post conditions verified at compile time by Z3 (via SMT). Failing contracts return concrete counterexamples.
 - **WASM compilation** — Verified programs compile to WebAssembly via binaryen and run in Node.js.
 - **MCP interface** — All tools exposed via [Model Context Protocol](https://modelcontextprotocol.io/) for direct agent integration.
+- **Schema migration** — ASTs from older schema versions are auto-migrated. No breakage when the language evolves.
 
 ## Execution Model
 
@@ -51,7 +52,7 @@ Host capabilities available through adapters: filesystem (sandboxed), HTTP, cryp
 
 ```bash
 npm install
-npm test          # 1598 tests across 96 files
+npm test          # 1618 tests across 97 files
 npm run mcp       # start MCP server (stdio transport)
 ```
 
@@ -83,6 +84,13 @@ Supported platforms: `linux/amd64`, `linux/arm64`.
 | `edict_patch` | Applies targeted AST patches by nodeId and re-checks |
 | `edict_errors` | Returns machine-readable catalog of all error types |
 | `edict_lint` | Runs non-blocking quality analysis and returns warnings |
+| `edict_debug` | Execution tracing and crash diagnostics |
+| `edict_compose` | Combines composable program fragments into a module |
+| `edict_explain` | Explains AST nodes, errors, or compiler behavior |
+| `edict_export` | Packages a program as a UASF portable skill |
+| `edict_import_skill` | Imports and executes a UASF skill package |
+| `edict_generate_tests` | Generates tests from Z3-verified contracts |
+| `edict_replay` | Records and replays deterministic execution traces |
 
 ### MCP Resources
 
@@ -170,18 +178,23 @@ src/
 │   ├── compile-expr.ts  # Expression compilation
 │   ├── compile-*.ts     # Specialized compilers (calls, data, match, scalars)
 │   ├── runner.ts        # WASM execution (Node.js WebAssembly API)
-│   ├── host-adapter.ts  # EdictHostAdapter interface
+│   ├── host-adapter.ts  # EdictHostAdapter interface + platform adapters
 │   ├── closures.ts      # Closure capture and compilation
 │   ├── hof-generators.ts # Higher-order function WASM generators
+│   ├── recording-adapter.ts # Execution recording for replay
+│   ├── replay-adapter.ts  # Deterministic replay from recorded traces
 │   └── string-table.ts  # String interning for WASM memory
 ├── builtins/      # Builtin registry and domain-specific builtins
 ├── compact/       # Compact AST format (token-efficient for agents)
+├── compose/       # Composable program fragments
+├── incremental/   # Incremental checking (dependency graph + diff)
 ├── lint/          # Non-blocking quality warnings
 ├── patch/         # Surgical AST patching by nodeId
+├── migration/     # Schema version migration (auto-upgrade older ASTs)
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 
-tests/             # 1598 tests across 96 files
+tests/             # 1618 tests across 97 files
 examples/          # 30 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```

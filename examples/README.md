@@ -31,6 +31,7 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [crypto](crypto.edict.json) | `sha256`, `md5`, `hmac` | Cryptographic hashing and HMAC authentication |
 | [int64](int64.edict.json) | `intToInt64`, `int64ToInt`, `int64ToFloat`, `int64ToString` | 64-bit integer conversions and arithmetic |
 | [json](json.edict.json) | `enum`, `match`, nested `enum_constructor` | JSON-like data model using recursive enum variants |
+| [intent-declarations](intent-declarations.edict.json) | `intent`, `fn`, contracts | Functions with structured intent metadata |
 
 ## ⭐⭐⭐ Advanced
 
@@ -44,6 +45,7 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [random](random.edict.json) | `randomInt`, `randomFloat`, `randomUuid` | Random number generation: dice rolls, floats, UUIDs |
 | [io](io.edict.json) | `readFile`, `writeFile`, `env`, `args`, `Result` matching | File I/O with Result error handling, environment access |
 | [string-processing](string-processing.edict.json) | multiple string builtins, `let` chains, `if` | Comprehensive string manipulation pipeline |
+| [multi-module](multi-module.edict.json) | multi-module compilation, `import`, linking | Cross-module compilation and linking |
 | [complete](complete.edict.json) | all features combined | Kitchen-sink example: records, enums, contracts, lambdas, HOFs, imports |
 
 ## Recommended Learning Path

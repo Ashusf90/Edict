@@ -33,6 +33,8 @@ Every program is a **module**:
 }
 ```
 
+The optional `schemaVersion` field tracks which schema version the AST targets. **You don't need to include it** — programs without `schemaVersion` are treated as v1.0 and auto-migrated to the current version by the compiler. If you include it, set it to the current version (check via `edict_version`).
+
 A module contains **definitions**: functions (`fn`), records (`record`), enums (`enum`), type aliases (`type`), and constants (`const`).
 
 Every module needs a `main` function that returns `Int` (exit code).

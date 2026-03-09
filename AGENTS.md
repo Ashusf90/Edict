@@ -37,7 +37,7 @@ npm run mcp       # stdio transport
 npx edict-lang    # after npm install
 ```
 
-**Tools**: `edict_schema`, `edict_version`, `edict_examples`, `edict_validate`, `edict_check`, `edict_compile`, `edict_run`, `edict_patch`, `edict_errors`, `edict_lint`
+**Tools**: `edict_schema`, `edict_version`, `edict_examples`, `edict_validate`, `edict_check`, `edict_compile`, `edict_run`, `edict_patch`, `edict_errors`, `edict_lint`, `edict_debug`, `edict_compose`, `edict_explain`, `edict_export`, `edict_import_skill`, `edict_generate_tests`, `edict_replay`
 
 **Resources**: `edict://schema`, `edict://schema/minimal`, `edict://examples`, `edict://errors`, `edict://schema/patch`
 
@@ -63,12 +63,15 @@ src/
 ├── codegen/       # Phase 5: WASM generation (binaryen) + execution
 ├── builtins/      # Builtin registry
 ├── compact/       # Token-efficient compact AST format
+├── compose/       # Composable program fragments
+├── incremental/   # Incremental checking (dependency graph + diff)
 ├── lint/          # Non-blocking quality warnings
 ├── patch/         # Surgical AST patching by nodeId
+├── migration/     # Schema version migration (auto-upgrade older ASTs)
 ├── mcp/           # MCP server (tools + resources)
 └── errors/        # Structured error types
 
-tests/             # 1598 tests across 96 files
+tests/             # 1618 tests across 97 files
 examples/          # 30 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```

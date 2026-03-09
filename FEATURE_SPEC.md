@@ -1,6 +1,6 @@
 # Edict Feature Specification v1
 
-> **Status**: All phases implemented (v1.5.0) — AST → Validate → Resolve → Type Check → Effect Check → Contracts → Codegen → Execute
+> **Status**: All phases implemented (v1.8.0) — AST → Validate → Resolve → Type Check → Effect Check → Contracts → Codegen → Execute
 > **Implementation**: TypeScript · **Pipeline**: AST-first · **Users**: Agents only
 > **Canonical format**: JSON AST · **Interface**: MCP structured output
 
@@ -205,6 +205,7 @@ interface EdictModule {
   kind: "module"
   id: string
   name: string
+  schemaVersion?: string   // e.g. "1.1" — omit to default to "1.0" (auto-migrated)
   imports: Import[]
   definitions: Definition[]
 }
@@ -292,7 +293,7 @@ type Effect = "pure" | "reads" | "writes" | "io" | "fails"
 interface Contract {
   kind: "pre" | "post"
   id: string
-  condition: Expression
+  condition?: Expression  // optional — omit for marker-only contracts
 }
 
 // Types
@@ -599,6 +600,13 @@ edict.run(wasm)         → { output: string, exitCode: number }
 edict.patch(ast, ops)   → Apply targeted AST patches by nodeId and re-check
 edict.errors()          → Machine-readable catalog of all error types
 edict.lint(ast)         → Non-blocking quality warnings
+edict.debug(wasm)       → Execution tracing and crash diagnostics
+edict.compose(frags)    → Combine program fragments into a module
+edict.explain(target)   → Explain AST nodes, errors, or compiler behavior
+edict.export(ast)       → Package as UASF portable skill
+edict.import_skill(pkg) → Import and execute a UASF skill package
+edict.generate_tests(ast) → Generate tests from Z3-verified contracts
+edict.replay(trace)     → Record and replay deterministic execution traces
 ```
 
 **Example agent session**:

@@ -31,6 +31,7 @@ import { generateTests } from "../contracts/generate-tests.js";
 import type { GeneratedTest } from "../contracts/generate-tests.js";
 import { explainError } from "../errors/explain.js";
 import type { ExplainResult } from "../errors/explain.js";
+import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "../migration/migrate.js";
 
 // =============================================================================
 // Path resolution (relative to this file, works regardless of cwd)
@@ -122,6 +123,7 @@ export interface RunResult {
 export interface VersionResult {
     version: string;
     schemaVersion: string;
+    supportedSchemaVersions: string[];
     builtins: string[];
     features: Record<string, boolean>;
     limits: Record<string, number>;
@@ -157,7 +159,9 @@ export function handleExamples(): ExamplesResult {
 
 export function handleValidate(ast: unknown): ValidateResult {
     const expanded = expandCompact(ast);
-    const result = validate(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const result = validate(migrated.ast);
     if (result.ok) {
         return { ok: true };
     }
@@ -166,7 +170,9 @@ export function handleValidate(ast: unknown): ValidateResult {
 
 export async function handleCheck(ast: unknown): Promise<CheckResult> {
     const expanded = expandCompact(ast);
-    const result = await check(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const result = await check(migrated.ast);
     if (result.ok) {
         const res: CheckResult = { ok: true };
         if (result.diagnostics && result.diagnostics.length > 0) res.diagnostics = result.diagnostics;
@@ -179,9 +185,11 @@ export async function handleCheck(ast: unknown): Promise<CheckResult> {
 }
 
 export async function handleCompile(ast: unknown): Promise<CompileResult> {
-    // Full pipeline: expand compact format, then check, then compile
+    // Full pipeline: expand compact format, then migrate, then check, then compile
     const expanded = expandCompact(ast);
-    const checkResult = await check(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const checkResult = await check(migrated.ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -197,8 +205,21 @@ export async function handleCompile(ast: unknown): Promise<CompileResult> {
 }
 
 export async function handleCheckMulti(modules: unknown[]): Promise<CheckResult> {
-    const expandedModules = modules.map((m) => expandCompact(m)) as EdictModule[];
-    const result = await checkMultiModule(expandedModules);
+    const expandedModules = modules.map((m) => {
+        const expanded = expandCompact(m);
+        const migrated = migrateToLatest(expanded);
+        if (!migrated.ok) return null;
+        return migrated.ast;
+    });
+    // Check for migration failures
+    for (let i = 0; i < modules.length; i++) {
+        if (expandedModules[i] === null) {
+            const expanded = expandCompact(modules[i]);
+            const migrated = migrateToLatest(expanded);
+            if (!migrated.ok) return { ok: false, errors: migrated.errors };
+        }
+    }
+    const result = await checkMultiModule(expandedModules as EdictModule[]);
     if (result.ok) {
         const res: CheckResult = { ok: true };
         if (result.diagnostics && result.diagnostics.length > 0) res.diagnostics = result.diagnostics;
@@ -211,8 +232,20 @@ export async function handleCheckMulti(modules: unknown[]): Promise<CheckResult>
 }
 
 export async function handleCompileMulti(modules: unknown[]): Promise<CompileResult> {
-    const expandedModules = modules.map((m) => expandCompact(m)) as EdictModule[];
-    const result = await checkMultiModule(expandedModules);
+    const expandedModules = modules.map((m) => {
+        const expanded = expandCompact(m);
+        const migrated = migrateToLatest(expanded);
+        if (!migrated.ok) return null;
+        return migrated.ast;
+    });
+    for (let i = 0; i < modules.length; i++) {
+        if (expandedModules[i] === null) {
+            const expanded = expandCompact(modules[i]);
+            const migrated = migrateToLatest(expanded);
+            if (!migrated.ok) return { ok: false, errors: migrated.errors };
+        }
+    }
+    const result = await checkMultiModule(expandedModules as EdictModule[]);
     if (!result.ok || !result.mergedModule) {
         return { ok: false, errors: result.errors };
     }
@@ -277,7 +310,9 @@ export async function handleExport(
     metadata: { name?: string; version?: string; description?: string; author?: string }
 ): Promise<ExportResult> {
     const expanded = expandCompact(ast);
-    const checkResult = await check(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const checkResult = await check(migrated.ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -414,23 +449,25 @@ export async function handlePatch(
 ): Promise<PatchResult> {
     // Step 0: Expand compact format on base AST and patch values
     const expandedBase = expandCompact(baseAst);
+    const migratedBase = migrateToLatest(expandedBase);
+    if (!migratedBase.ok) return { ok: false, errors: migratedBase.errors };
     const expandedPatches = patches.map((p) => ({
         ...p,
         value: p.value !== undefined ? expandCompact(p.value) : p.value,
     }));
 
     // Step 1: Apply patches
-    const patchResult = applyPatches(expandedBase, expandedPatches);
+    const patchResult = applyPatches(migratedBase.ast, expandedPatches);
     if (!patchResult.ok) {
         return { ok: false, errors: patchResult.errors };
     }
 
     // Step 2: Check — use incremental checking if base AST is a valid module
-    const baseValidation = validate(expandedBase);
+    const baseValidation = validate(migratedBase.ast);
     if (baseValidation.ok) {
         // Incremental: only re-verify contracts for changed definitions
         const incrResult = await incrementalCheck(
-            expandedBase as EdictModule,
+            migratedBase.ast as EdictModule,
             patchResult.ast as EdictModule,
         );
         if (!incrResult.ok) {
@@ -482,7 +519,8 @@ export function handleVersion(): VersionResult {
     }
     return {
         version: cachedVersion!,
-        schemaVersion: "1.0",
+        schemaVersion: CURRENT_SCHEMA_VERSION,
+        supportedSchemaVersions: ["1.0", "1.1"],
         builtins: Array.from(BUILTIN_FUNCTIONS.keys()),
         features: {
             contracts: true,
@@ -497,6 +535,7 @@ export function handleVersion(): VersionResult {
             wasmInterop: true,
             explain: true,
             replay: true,
+            schemaMigrations: true,
         },
         limits: {
             z3TimeoutMs: 5000,
@@ -515,12 +554,14 @@ export interface LintResult {
 
 export function handleLint(ast: unknown): LintResult {
     const expanded = expandCompact(ast);
-    const validation = validate(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const validation = validate(migrated.ast);
     if (!validation.ok) {
         return { ok: false, errors: validation.errors };
     }
 
-    const module = expanded as import("../ast/nodes.js").EdictModule;
+    const module = migrated.ast as import("../ast/nodes.js").EdictModule;
     const warnings = lint(module);
     return { ok: true, warnings };
 }
@@ -541,11 +582,23 @@ export async function handleCompose(
     moduleId: string = "mod-composed-001",
     runCheck: boolean = false,
 ): Promise<ComposeHandlerResult> {
-    // Expand compact format on each fragment
-    const expandedFragments = fragments.map((f) => expandCompact(f)) as EdictFragment[];
+    // Expand compact format on each fragment and migrate
+    const expandedFragments = fragments.map((f) => {
+        const expanded = expandCompact(f);
+        const migrated = migrateToLatest(expanded);
+        if (!migrated.ok) return null;
+        return migrated.ast;
+    });
+    for (let i = 0; i < fragments.length; i++) {
+        if (expandedFragments[i] === null) {
+            const expanded = expandCompact(fragments[i]);
+            const migrated = migrateToLatest(expanded);
+            if (!migrated.ok) return { ok: false, errors: migrated.errors };
+        }
+    }
 
     // Compose fragments into a module
-    const result = compose(expandedFragments, moduleName, moduleId);
+    const result = compose(expandedFragments as EdictFragment[], moduleName, moduleId);
     if (!result.ok) {
         return { ok: false, errors: result.errors };
     }
@@ -583,7 +636,9 @@ export async function handleDebug(
 ): Promise<DebugHandlerResult> {
     // Full pipeline: expand → check → compile(debugMode) → runDebug
     const expanded = expandCompact(ast);
-    const checkResult = await check(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const checkResult = await check(migrated.ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -627,7 +682,9 @@ export interface GenerateTestsHandlerResult {
 
 export async function handleGenerateTests(ast: unknown): Promise<GenerateTestsHandlerResult> {
     const expanded = expandCompact(ast);
-    const checkResult = await check(expanded);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, errors: migrated.errors };
+    const checkResult = await check(migrated.ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }

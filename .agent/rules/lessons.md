@@ -175,3 +175,9 @@ if (url.endsWith(".ts")) {
 - **Problem**: Free-form strings are a human-centric pattern (prose = ambiguity). Matching strings to ASTs requires brittle parsing logic that can't be derived from existing types.
 - **Solution**: Make invariants structured — reuse existing `Expression` and `SemanticAssertionKind` types. Matching becomes structural comparison (JSON.stringify), zero hand-written parsing.
 - **Pattern**: When designing new metadata fields, always ask: "Can this reuse an existing type?" If yes, the validation and matching logic comes for free from the schema and existing infrastructure.
+
+## 28. Automation-First in Proposals — Never Default to Manual
+- **Context**: Versioned schema migration was initially designed with hand-written migration transforms (MigrationOp arrays), when the JSON schema is already auto-generated from TypeScript types.
+- **Problem**: Proposing hand-written transforms violates automation-first. The user had to ask "can we automate this?" — the agent should have identified this opportunity proactively.
+- **Solution**: Diff stored schema snapshots at build time to auto-generate migration ops. Zero manual migration authoring.
+- **Rule**: When proposing ANY new system, always ask: "Is there an existing artifact (schema, types, config, AST) that this can be derived from?" If yes, design the system to derive from that source of truth automatically. Never propose hand-written code when a derivation is possible. This check must happen BEFORE presenting the plan, not after user feedback.

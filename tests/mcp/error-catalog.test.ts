@@ -65,6 +65,9 @@ const ALL_ERROR_TYPES = [
     "duplicate_module_name",
     // Runtime errors
     "missing_external_module",
+    // Migration errors
+    "migration_failed",
+    "unsupported_schema_version",
 ];
 
 describe("handleErrorCatalog", () => {
@@ -103,7 +106,7 @@ describe("handleErrorCatalog", () => {
     });
 
     it("every entry has a valid pipeline_stage", () => {
-        const validStages = ["validator", "resolver", "type_checker", "complexity_checker", "effect_checker", "contract_verifier", "codegen", "patch", "lint"];
+        const validStages = ["validator", "resolver", "type_checker", "complexity_checker", "effect_checker", "contract_verifier", "codegen", "patch", "lint", "migration"];
         for (const entry of catalog.errors) {
             expect(validStages, `invalid pipeline_stage: ${entry.pipeline_stage} for ${entry.type}`).toContain(entry.pipeline_stage);
         }
