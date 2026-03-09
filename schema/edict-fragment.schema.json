@@ -160,6 +160,10 @@
             "$ref": "#/definitions/Contract"
           }
         },
+        "constraints": {
+          "description": "Bounds on token complexity and program size to prevent runaway agents.",
+          "$ref": "#/definitions/ComplexityConstraints"
+        },
         "body": {
           "type": "array",
           "items": {
@@ -1272,6 +1276,28 @@
       "required": [
         "condition",
         "id",
+        "kind"
+      ]
+    },
+    "ComplexityConstraints": {
+      "description": "Bounds on token complexity and program size to prevent runaway agents.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "constraints"
+        },
+        "maxAstNodes": {
+          "type": "number"
+        },
+        "maxCallDepth": {
+          "type": "number"
+        },
+        "maxBranches": {
+          "type": "number"
+        }
+      },
+      "required": [
         "kind"
       ]
     },

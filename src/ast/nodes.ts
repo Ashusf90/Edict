@@ -40,6 +40,7 @@ export interface EdictModule {
     name: string;
     imports: Import[];
     definitions: Definition[];
+    budget?: ComplexityConstraints;
 }
 
 /**
@@ -88,6 +89,7 @@ export interface FunctionDef {
     effects: Effect[];
     returnType?: TypeExpr;
     contracts: Contract[];
+    constraints?: ComplexityConstraints;
     body: Expression[];
 }
 
@@ -174,6 +176,16 @@ export interface Contract {
     kind: "pre" | "post";
     id: string;
     condition: Expression;
+}
+
+/**
+ * Bounds on token complexity and program size to prevent runaway agents.
+ */
+export interface ComplexityConstraints {
+    kind: "constraints";
+    maxAstNodes?: number;
+    maxCallDepth?: number;
+    maxBranches?: number;
 }
 
 // =============================================================================
@@ -493,6 +505,7 @@ export const ALL_VALID_KINDS = [
     "post",
     "arm",
     "field_init",
+    "constraints",
     ...VALID_EXPRESSION_KINDS,
     ...VALID_TYPE_KINDS,
     ...VALID_PATTERN_KINDS,

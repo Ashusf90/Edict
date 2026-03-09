@@ -12,7 +12,7 @@ export interface ErrorCatalogEntry {
     /** Discriminator string (e.g., "type_mismatch") */
     type: string;
     /** Pipeline stage that produces this error */
-    pipeline_stage: "validator" | "resolver" | "type_checker" | "effect_checker" | "contract_verifier" | "codegen" | "patch" | "lint";
+    pipeline_stage: "validator" | "resolver" | "type_checker" | "complexity_checker" | "effect_checker" | "contract_verifier" | "codegen" | "patch" | "lint";
     /** All fields present on this error (excluding the `error` discriminator) */
     fields: { name: string; type: string }[];
     /** Minimal AST that triggers this error */
@@ -444,6 +444,52 @@ export function buildErrorCatalog(): ErrorCatalog {
                     { kind: "record", id: "rec-001", name: "Point", fields: [{ kind: "field", id: "fld-x-005", name: "x", type: { kind: "basic", name: "Int" } }, { kind: "field", id: "fld-y-005", name: "y", type: { kind: "basic", name: "Int" } }] },
                     { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "named", name: "Point" }, contracts: [], body: [{ kind: "record_expr", id: "rl-001", name: "Point", fields: [{ kind: "field_init", name: "x", value: { kind: "literal", id: "lit-001", value: 1 } }, { kind: "field_init", name: "y", value: { kind: "literal", id: "lit-002", value: 2 } }] }] },
                 ],
+            },
+        },
+
+        // =====================================================================
+        // Phase 2c — Complexity checking errors
+        // =====================================================================
+        {
+            type: "function_complexity_exceeded",
+            pipeline_stage: "complexity_checker",
+            fields: [
+                { name: "nodeId", type: "string" },
+                { name: "functionName", type: "string" },
+                { name: "metric", type: "\"maxAstNodes\" | \"maxCallDepth\" | \"maxBranches\"" },
+                { name: "actual", type: "number" },
+                { name: "limit", type: "number" },
+            ],
+            example_cause: {
+                kind: "module",
+                name: "test",
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], constraints: { kind: "constraints", maxAstNodes: 2 }, body: [{ kind: "binop", id: "bin-001", op: "+", left: { kind: "literal", id: "lit-1", value: 1 }, right: { kind: "literal", id: "lit-2", value: 2 } }] }],
+            },
+            example_fix: {
+                kind: "module",
+                name: "test",
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], constraints: { kind: "constraints", maxAstNodes: 10 }, body: [{ kind: "binop", id: "bin-001", op: "+", left: { kind: "literal", id: "lit-1", value: 1 }, right: { kind: "literal", id: "lit-2", value: 2 } }] }],
+            },
+        },
+        {
+            type: "module_complexity_exceeded",
+            pipeline_stage: "complexity_checker",
+            fields: [
+                { name: "metric", type: "\"maxAstNodes\" | \"maxCallDepth\" | \"maxBranches\"" },
+                { name: "actual", type: "number" },
+                { name: "limit", type: "number" },
+            ],
+            example_cause: {
+                kind: "module",
+                name: "test",
+                budget: { kind: "constraints", maxAstNodes: 2 },
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 1 }] }],
+            },
+            example_fix: {
+                kind: "module",
+                name: "test",
+                budget: { kind: "constraints", maxAstNodes: 10 },
+                definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 1 }] }],
             },
         },
 

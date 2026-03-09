@@ -44,6 +44,9 @@ export type StructuredError =
     | NotAFunctionError
     | UnknownFieldError
     | MissingRecordFieldsError
+    // Phase 2c — complexity checking errors
+    | FunctionComplexityExceededError
+    | ModuleComplexityExceededError
     // Phase 3 — effect checking errors
     | EffectViolationError
     | EffectInPureError
@@ -418,6 +421,48 @@ export function missingRecordFields(
     const err: MissingRecordFieldsError = { error: "missing_record_fields", nodeId, recordName, missingFields };
     if (suggestion) err.suggestion = suggestion;
     return err;
+}
+
+// =============================================================================
+// Phase 2c — Complexity checking errors
+// =============================================================================
+
+export interface FunctionComplexityExceededError {
+    error: "function_complexity_exceeded";
+    nodeId: string;
+    functionName: string;
+    metric: "maxAstNodes" | "maxCallDepth" | "maxBranches";
+    actual: number;
+    limit: number;
+}
+
+export interface ModuleComplexityExceededError {
+    error: "module_complexity_exceeded";
+    metric: "maxAstNodes" | "maxCallDepth" | "maxBranches";
+    actual: number;
+    limit: number;
+}
+
+// =============================================================================
+// Phase 2c error constructors
+// =============================================================================
+
+export function functionComplexityExceeded(
+    nodeId: string,
+    functionName: string,
+    metric: "maxAstNodes" | "maxCallDepth" | "maxBranches",
+    actual: number,
+    limit: number,
+): FunctionComplexityExceededError {
+    return { error: "function_complexity_exceeded", nodeId, functionName, metric, actual, limit };
+}
+
+export function moduleComplexityExceeded(
+    metric: "maxAstNodes" | "maxCallDepth" | "maxBranches",
+    actual: number,
+    limit: number,
+): ModuleComplexityExceededError {
+    return { error: "module_complexity_exceeded", metric, actual, limit };
 }
 
 // =============================================================================

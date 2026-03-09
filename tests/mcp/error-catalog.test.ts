@@ -29,6 +29,9 @@ const ALL_ERROR_TYPES = [
     "not_a_function",
     "unknown_field",
     "missing_record_fields",
+    // Phase 2c — Complexity checking
+    "function_complexity_exceeded",
+    "module_complexity_exceeded",
     // Phase 3 — Effect checking
     "effect_violation",
     "effect_in_pure",
@@ -89,7 +92,7 @@ describe("handleErrorCatalog", () => {
     });
 
     it("every entry has a valid pipeline_stage", () => {
-        const validStages = ["validator", "resolver", "type_checker", "effect_checker", "contract_verifier", "codegen", "patch", "lint"];
+        const validStages = ["validator", "resolver", "type_checker", "complexity_checker", "effect_checker", "contract_verifier", "codegen", "patch", "lint"];
         for (const entry of catalog.errors) {
             expect(validStages, `invalid pipeline_stage: ${entry.pipeline_stage} for ${entry.type}`).toContain(entry.pipeline_stage);
         }

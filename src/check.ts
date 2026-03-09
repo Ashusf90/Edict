@@ -8,6 +8,7 @@ import type { StructuredError, AnalysisDiagnostic, VerificationCoverage } from "
 import { validate } from "./validator/validate.js";
 import { resolve } from "./resolver/resolve.js";
 import { typeCheck, type TypedModuleInfo } from "./checker/check.js";
+import { complexityCheck } from "./checker/complexity.js";
 import { effectCheck } from "./effects/effect-check.js";
 import { contractVerify } from "./contracts/verify.js";
 import type { EdictModule } from "./ast/nodes.js";
@@ -55,6 +56,12 @@ export async function check(ast: unknown): Promise<CheckResult> {
     const { errors: typeErrors, typeInfo } = typeCheck(module);
     if (typeErrors.length > 0) {
         return { ok: false, errors: typeErrors };
+    }
+
+    // Phase 2c — Complexity checking
+    const complexityErrors = complexityCheck(module);
+    if (complexityErrors.length > 0) {
+        return { ok: false, errors: complexityErrors, typeInfo };
     }
 
     // Phase 3 — Effect checking
