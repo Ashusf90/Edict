@@ -47,6 +47,7 @@ export const IO_BUILTINS: BuiltinDef[] = [
     {
         name: "env",
         type: { kind: "fn_type", params: [STRING_TYPE], effects: ["reads"], returnType: STRING_TYPE },
+        nondeterministic: true,
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (namePtr: number): number => {
@@ -58,6 +59,7 @@ export const IO_BUILTINS: BuiltinDef[] = [
     {
         name: "args",
         type: { kind: "fn_type", params: [], effects: ["reads"], returnType: STRING_TYPE },
+        nondeterministic: true,
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (): number => {

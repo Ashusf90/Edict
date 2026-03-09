@@ -15,6 +15,8 @@ import { NodeHostAdapter } from "../codegen/node-host-adapter.js";
 import type { RuntimeState, HostContext } from "./host-helpers.js";
 import type binaryen from "binaryen";
 
+import type { ReplayEntry } from "../codegen/replay-types.js";
+
 // Re-export types so consumers can import from registry or builtin-types
 export type { BuiltinDef, BuiltinImpl } from "./builtin-types.js";
 import type { BuiltinDef } from "./builtin-types.js";
@@ -107,6 +109,41 @@ export function getBuiltin(name: string): BuiltinFunction | undefined {
 }
 
 // =============================================================================
+// Replay log mode — controls record/replay behavior for nondeterministic builtins
+// =============================================================================
+
+/** Record mode: log nondeterministic host calls. */
+export type ReplayLogRecord = { mode: "record"; entries: ReplayEntry[] };
+/** Replay mode: return pre-recorded values. */
+export type ReplayLogReplay = { mode: "replay"; entries: ReplayEntry[]; cursor: { i: number } };
+/** Combined replay log type. */
+export type ReplayLog = ReplayLogRecord | ReplayLogReplay;
+
+/**
+ * Wrap a host function for record or replay mode.
+ * - Record: calls the real function and logs the result.
+ * - Replay: skips the real function and returns the recorded result.
+ */
+function wrapForReplay(name: string, fn: Function, log: ReplayLog): Function {
+    if (log.mode === "record") {
+        return (...args: unknown[]) => {
+            const result = fn(...args);
+            log.entries.push({ kind: name, args, result });
+            return result;
+        };
+    } else {
+        return (..._args: unknown[]) => {
+            if (log.cursor.i >= log.entries.length) {
+                throw new Error(`replay_token_exhausted: expected "${name}" at position ${log.cursor.i}`);
+            }
+            const entry = log.entries[log.cursor.i]!;
+            log.cursor.i++;
+            return entry.result;
+        };
+    }
+}
+
+// =============================================================================
 // Host import factory — derives host imports from registry
 // =============================================================================
 
@@ -115,14 +152,19 @@ export function getBuiltin(name: string): BuiltinFunction | undefined {
  * Iterates all host-kind builtins in the registry and builds a single
  * flat { host: { ... } } object.
  *
+ * When a replayLog is provided, builtins tagged `nondeterministic: true`
+ * are automatically wrapped to record or replay their calls.
+ *
  * @param state — mutable runtime state shared across all host functions.
  *                `state.instance` must be set after `WebAssembly.instantiate()`
  *                but before calling any exported WASM function.
  * @param adapter — optional platform-specific adapter. Defaults to NodeHostAdapter.
+ * @param replayLog — optional record/replay log for nondeterministic builtins.
  */
 export function createHostImports(
     state: RuntimeState,
     adapter?: EdictHostAdapter,
+    replayLog?: ReplayLog,
 ): Record<string, Record<string, unknown>> {
     const hostAdapter = adapter ?? new NodeHostAdapter(state.sandboxDir);
     const ctx: HostContext = {
@@ -135,7 +177,12 @@ export function createHostImports(
     const hostFunctions: Record<string, unknown> = {};
     for (const def of ALL_BUILTINS) {
         if (def.impl.kind === "host") {
-            hostFunctions[def.name] = def.impl.factory(ctx);
+            let fn = def.impl.factory(ctx);
+            // Auto-wrap nondeterministic builtins for record/replay
+            if (def.nondeterministic && replayLog) {
+                fn = wrapForReplay(def.name, fn, replayLog);
+            }
+            hostFunctions[def.name] = fn;
         }
     }
 

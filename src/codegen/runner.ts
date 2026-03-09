@@ -10,8 +10,12 @@
 
 import { Worker } from "node:worker_threads";
 import { createHostImports } from "../builtins/registry.js";
+import type { ReplayLog } from "../builtins/registry.js";
 import { type RuntimeState, EdictOomError, getHeapUsage } from "../builtins/host-helpers.js";
 import type { EdictHostAdapter } from "./host-adapter.js";
+import type { ReplayToken, ReplayEntry } from "./replay-types.js";
+import { createRecordingAdapter } from "./recording-adapter.js";
+import { createReplayAdapter } from "./replay-adapter.js";
 
 /* eslint-disable @typescript-eslint/no-namespace */
 // Minimal WebAssembly type declarations for Node.js runtime
@@ -49,6 +53,10 @@ export interface RunLimits {
     adapter?: EdictHostAdapter;
     /** External WASM modules keyed by import namespace (base64-encoded). */
     externalModules?: Record<string, string>;
+    /** When true, record all non-deterministic host responses and return a ReplayToken. */
+    record?: boolean;
+    /** When provided, replay from this token instead of calling real host functions. */
+    replayToken?: ReplayToken;
 }
 
 export interface RunResult {
@@ -64,6 +72,8 @@ export interface RunResult {
     limitInfo?: { timeoutMs?: number; maxMemoryMb?: number };
     /** Heap bytes consumed by the program's allocations (only set on success) */
     heapUsed?: number;
+    /** Replay token containing all recorded non-deterministic responses (only when record: true) */
+    replayToken?: ReplayToken;
 }
 
 /**
@@ -108,7 +118,7 @@ export async function run(
             try {
                 const runner = await import(url);
                 const wasmBytes = new Uint8Array(workerData.wasm);
-                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir, allowedHosts: workerData.allowedHosts, externalModules: workerData.externalModules });
+                const result = await runner.runDirect(wasmBytes, workerData.entryFn, { sandboxDir: workerData.sandboxDir, allowedHosts: workerData.allowedHosts, externalModules: workerData.externalModules, record: workerData.record, replayToken: workerData.replayToken });
                 parentPort.postMessage({ type: "result", data: result });
             } catch (e) {
                 parentPort.postMessage({
@@ -127,6 +137,8 @@ export async function run(
                 sandboxDir: limits.sandboxDir,
                 allowedHosts: limits.allowedHosts,
                 externalModules: limits.externalModules,
+                record: limits.record,
+                replayToken: limits.replayToken,
             },
             // Register tsx ESM loader so the worker can import .ts files (vitest/dev)
             execArgv: ["--import", "tsx"],
@@ -205,8 +217,49 @@ export async function runDirect(
     entryFn: string = "main",
     limits: RunLimits = {},
 ): Promise<RunResult> {
+    // Set up recording or replay infrastructure
+    const adapterEntries: ReplayEntry[] = [];
+    const builtinEntries: ReplayEntry[] = [];
+    let replayLog: ReplayLog | undefined;
+    let effectiveAdapter: EdictHostAdapter | undefined = limits.adapter;
+
+    if (limits.replayToken) {
+        // Replay mode: split token entries into adapter and builtin entries
+        // Adapter entries go to the replay adapter, builtin entries go to the replay log
+        const adapterReplayEntries: ReplayEntry[] = [];
+        const builtinReplayEntries: ReplayEntry[] = [];
+        for (const entry of limits.replayToken.responses) {
+            // Adapter methods are: fetch, readFile, writeFile, env, args, sha256, md5, hmac
+            // Builtin entries come from nondeterministic domain builtins
+            if (["fetch", "readFile", "writeFile", "env", "args", "sha256", "md5", "hmac", "exit"].includes(entry.kind)) {
+                adapterReplayEntries.push(entry);
+            } else {
+                builtinReplayEntries.push(entry);
+            }
+        }
+        effectiveAdapter = createReplayAdapter(adapterReplayEntries, { i: 0 });
+        replayLog = { mode: "replay", entries: builtinReplayEntries, cursor: { i: 0 } };
+    } else if (limits.record) {
+        // Record mode: wrap adapter with recording proxy, set up builtin recording
+        replayLog = { mode: "record", entries: builtinEntries };
+        // Adapter recording is handled by createRecordingAdapter — it wraps whatever
+        // adapter is used (default NodeHostAdapter is created inside createHostImports
+        // if none provided, so we need to handle this carefully)
+    }
+
     const state: RuntimeState = { outputParts: [], instance: null, sandboxDir: limits.sandboxDir, allowedHosts: limits.allowedHosts };
-    const importObject = createHostImports(state, limits.adapter);
+
+    // When recording, wrap the adapter with a recording proxy
+    if (limits.record && !limits.replayToken) {
+        // We need to get the real adapter first, then wrap it
+        // createHostImports will use NodeHostAdapter if none provided
+        // So we'll provide a recording adapter wrapper
+        const { NodeHostAdapter } = await import("./node-host-adapter.js");
+        const realAdapter = limits.adapter ?? new NodeHostAdapter(limits.sandboxDir);
+        effectiveAdapter = createRecordingAdapter(realAdapter, adapterEntries);
+    }
+
+    const importObject = createHostImports(state, effectiveAdapter, replayLog);
 
     // Instantiate external WASM modules and merge their exports into the import object
     if (limits.externalModules) {
@@ -309,6 +362,13 @@ export async function runDirect(
         exitCode,
         returnValue,
         ...(heapUsed !== undefined && heapUsed > 0 ? { heapUsed } : {}),
+        // Attach replay token when recording
+        ...(limits.record && !limits.replayToken ? {
+            replayToken: {
+                responses: [...adapterEntries, ...builtinEntries],
+                recordedAt: new Date().toISOString(),
+            },
+        } : {}),
     };
 }
 

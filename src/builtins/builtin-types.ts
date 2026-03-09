@@ -15,6 +15,12 @@ export interface BuiltinDef {
     type: FunctionType;
     /** Implementation: host-imported or WASM-native. */
     impl: BuiltinImpl;
+    /**
+     * Whether this builtin's output depends on external state (time, random, IO).
+     * Required for host builtins with "reads" effect — enforced by test.
+     * When true, createHostImports auto-wraps the factory for record/replay.
+     */
+    nondeterministic?: boolean;
 }
 
 export type BuiltinImpl =

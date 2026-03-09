@@ -243,6 +243,9 @@ export type {
 } from "./codegen/codegen.js";
 export { run, runDirect } from "./codegen/runner.js";
 export type { RunResult, RunLimits } from "./codegen/runner.js";
+export type { ReplayToken, ReplayEntry } from "./codegen/replay-types.js";
+export { createRecordingAdapter } from "./codegen/recording-adapter.js";
+export { createReplayAdapter, ReplayExhaustedError } from "./codegen/replay-adapter.js";
 export { compileAndRun } from "./compile.js";
 export type {
     CompileAndRunResult,

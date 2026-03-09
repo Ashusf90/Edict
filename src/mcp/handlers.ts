@@ -14,6 +14,7 @@ import { check } from "../check.js";
 import { compile } from "../codegen/codegen.js";
 import { run, runDebug } from "../codegen/runner.js";
 import type { RunLimits } from "../codegen/runner.js";
+import type { ReplayToken } from "../codegen/replay-types.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
 import type { StructuredError, AnalysisDiagnostic, VerificationCoverage } from "../errors/structured-errors.js";
 import { applyPatches, type AstPatch } from "../patch/apply.js";
@@ -115,6 +116,7 @@ export interface RunResult {
     returnValue?: number;
     error?: "execution_timeout" | "execution_oom";
     limitInfo?: { timeoutMs?: number; maxMemoryMb?: number };
+    replayToken?: ReplayToken;
 }
 
 export interface VersionResult {
@@ -224,12 +226,36 @@ export async function handleCompileMulti(modules: unknown[]): Promise<CompileRes
     return { ok: true, wasm: base64 };
 }
 
-export async function handleRun(wasmBase64: string, limits?: RunLimits, externalModules?: Record<string, string>): Promise<RunResult> {
+export async function handleRun(wasmBase64: string, limits?: RunLimits, externalModules?: Record<string, string>, record?: boolean): Promise<RunResult> {
     const wasmBytes = new Uint8Array(Buffer.from(wasmBase64, "base64"));
     const runLimits: RunLimits = { ...limits };
     if (externalModules) {
         runLimits.externalModules = externalModules;
     }
+    if (record) {
+        runLimits.record = true;
+    }
+    const result = await run(wasmBytes, "main", runLimits);
+    return {
+        output: result.output,
+        exitCode: result.exitCode,
+        returnValue: result.returnValue,
+        error: result.error,
+        limitInfo: result.limitInfo,
+        ...(result.replayToken ? { replayToken: result.replayToken } : {}),
+    };
+}
+
+/**
+ * Replay a WASM module using a previously recorded replay token.
+ * All non-deterministic host responses are replayed from the token.
+ */
+export async function handleReplay(wasmBase64: string, replayToken: ReplayToken, limits?: { timeoutMs?: number }): Promise<RunResult> {
+    const wasmBytes = new Uint8Array(Buffer.from(wasmBase64, "base64"));
+    const runLimits: RunLimits = {
+        ...limits,
+        replayToken,
+    };
     const result = await run(wasmBytes, "main", runLimits);
     return {
         output: result.output,
@@ -470,6 +496,7 @@ export function handleVersion(): VersionResult {
             testBridge: true,
             wasmInterop: true,
             explain: true,
+            replay: true,
         },
         limits: {
             z3TimeoutMs: 5000,

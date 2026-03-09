@@ -19,6 +19,7 @@ import { exportTool } from "./export.js";
 import { importSkillTool } from "./import_skill.js";
 import { generateTestsTool } from "./generate_tests.js";
 import { explainTool } from "./explain.js";
+import { replayTool } from "./replay.js";
 
 /** All registered MCP tools. Add new tools by creating a file and adding to this array. */
 export const ALL_TOOLS: EdictMcpTool[] = [
@@ -38,4 +39,5 @@ export const ALL_TOOLS: EdictMcpTool[] = [
     importSkillTool,
     generateTestsTool,
     explainTool,
+    replayTool,
 ];
