@@ -113,7 +113,10 @@ export type {
     IntentInvariant,
     ExpressionInvariant,
     SemanticInvariant,
+    ApprovalGate,
+    ApprovalScope,
 } from "./ast/nodes.js";
+export { VALID_APPROVAL_SCOPES } from "./ast/nodes.js";
 
 // ---------------------------------------------------------------------------
 // Type Expressions: all type annotation node types
@@ -183,6 +186,8 @@ export type {
     // Migration errors
     MigrationFailedError,
     UnsupportedSchemaVersionError,
+    // Approval errors
+    ApprovalPropagationMissingError,
 } from "./errors/structured-errors.js";
 
 // ---------------------------------------------------------------------------
@@ -235,6 +240,8 @@ export {
     // Migration errors
     migrationFailed,
     unsupportedSchemaVersion,
+    // Approval errors
+    approvalPropagationMissing,
 } from "./errors/structured-errors.js";
 
 // ---------------------------------------------------------------------------
@@ -299,6 +306,7 @@ export type {
     EmptyBodyWarning,
     RedundantEffectWarning,
     IntentUnverifiedInvariantWarning,
+    ApprovalMissingOnIoWarning,
 } from "./lint/warnings.js";
 export {
     unusedVariable,
@@ -308,6 +316,7 @@ export {
     emptyBody,
     redundantEffect,
     intentUnverifiedInvariant,
+    approvalMissingOnIo,
 } from "./lint/warnings.js";
 
 // ---------------------------------------------------------------------------

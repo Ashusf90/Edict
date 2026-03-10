@@ -51,6 +51,7 @@ import {
     missingExternalModule,
     migrationFailed,
     unsupportedSchemaVersion,
+    approvalPropagationMissing,
 } from "./structured-errors.js";
 
 // =============================================================================
@@ -124,6 +125,8 @@ export const ERROR_REGISTRY: ErrorRegistryEntry[] = [
                                                                    makeWithOptionals: () => effectViolation("n", "fn", ["io"], "cs", "callee", dummySuggestion) },
     { type: "effect_in_pure",         stage: "effect_checker",     make: () => effectInPure("n", "fn", "cs", "callee", ["io"]),
                                                                    makeWithOptionals: () => effectInPure("n", "fn", "cs", "callee", ["io"], dummySuggestion) },
+    { type: "approval_propagation_missing", stage: "effect_checker", make: () => approvalPropagationMissing("n", "fn", "cs", "callee", { scope: "per_call", description: "wire_transfer" }),
+                                                                   makeWithOptionals: () => approvalPropagationMissing("n", "fn", "cs", "callee", { scope: "per_call", description: "wire_transfer" }, dummySuggestion) },
 
     // Phase 4 — Contract verification
     { type: "contract_failure",       stage: "contract_verifier",  make: () => contractFailure("n", "c", "fn", "post", { x: 0 }) },

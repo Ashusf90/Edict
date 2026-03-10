@@ -22,7 +22,9 @@ export type LintWarning =
     | IntentUnverifiedInvariantWarning
     | ConfidenceBelowThresholdWarning
     | LowConfidenceOutputWarning
-    | LiteralProvenanceWarning;
+    | LiteralProvenanceWarning
+    | StaleDataWarning
+    | ApprovalMissingOnIoWarning;
 
 // =============================================================================
 // Individual warning types
@@ -125,6 +127,23 @@ export interface LiteralProvenanceWarning {
     nodeId: string;
     functionName: string;
     declaredSource: string;
+}
+
+export interface StaleDataWarning {
+    warning: "stale_data_used";
+    severity: "warning";
+    nodeId: string;
+    functionName: string;
+    paramName: string;
+    declaredMaxAge: string;
+}
+
+export interface ApprovalMissingOnIoWarning {
+    warning: "approval_missing_on_io";
+    severity: "warning";
+    nodeId: string;
+    functionName: string;
+    effects: Effect[];
 }
 
 // =============================================================================
@@ -264,5 +283,37 @@ export function literalProvenance(
         nodeId,
         functionName,
         declaredSource,
+    };
+}
+
+/** Create a warning when a pure function accepts a fresh-typed parameter — pure functions cannot re-fetch stale data. */
+export function staleDataUsed(
+    nodeId: string,
+    functionName: string,
+    paramName: string,
+    declaredMaxAge: string,
+): StaleDataWarning {
+    return {
+        warning: "stale_data_used",
+        severity: "warning",
+        nodeId,
+        functionName,
+        paramName,
+        declaredMaxAge,
+    };
+}
+
+/** Create a warning when an IO-effectful function lacks an approval gate. */
+export function approvalMissingOnIo(
+    nodeId: string,
+    functionName: string,
+    effects: Effect[],
+): ApprovalMissingOnIoWarning {
+    return {
+        warning: "approval_missing_on_io",
+        severity: "warning",
+        nodeId,
+        functionName,
+        effects,
     };
 }

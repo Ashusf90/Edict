@@ -43,9 +43,25 @@ Run the razor on every proposed change:
 
 **Any violation is an automatic blocker. Fix it before proceeding.**
 
+### 3. Design Elegance
+
+Before validating completeness, challenge the design itself:
+
+| Check | Question |
+|---|---|
+| **Single Responsibility** | Does each data structure have one clear concept? Two fields doing what one could do is a red flag. |
+| **Merge Points** | Are operations scattered across multiple return sites? Consolidate to one exit point per concern. |
+| **Magic Values** | Does the design introduce sentinel strings ("unknown", "derived") that could be eliminated by a structural change? |
+| **Duality** | Are there two fields that overlap (e.g., `source` + `chain`)? If one can be derived from the other, merge them. |
+| **One-Sided Preservation** | When mixing typed and untyped values, does the design preserve existing information without fabricating synthetic markers? |
+
+> Ask: **"Knowing everything I know about this design, is there a simpler shape?"**
+
+If the answer reveals a better shape, redesign before proceeding. Don't optimize a suboptimal structure.
+
 ---
 
-### 3. Completeness Check
+### 4. Completeness Check
 
 Verify the document covers all mandatory sections. Check items relevant to the document type:
 
@@ -61,7 +77,7 @@ Verify the document covers all mandatory sections. Check items relevant to the d
 
 ---
 
-### 4. Technical Accuracy
+### 5. Technical Accuracy
 
 For each proposed change, verify against the actual codebase:
 
@@ -75,7 +91,7 @@ Use `grep_search`, `view_file_outline`, and `view_code_item` to spot-check at le
 
 ---
 
-### 5. Risk & Edge Case Scan
+### 6. Risk & Edge Case Scan
 
 Ask yourself these questions:
 
@@ -88,7 +104,7 @@ Ask yourself these questions:
 
 ---
 
-### 6. Clarity & Actionability
+### 7. Clarity & Actionability
 
 - [ ] Someone unfamiliar with the codebase could implement this from the plan alone
 - [ ] No vague language ("maybe", "if needed", "consider") — replace with decisions
@@ -97,7 +113,7 @@ Ask yourself these questions:
 
 ---
 
-### 7. Produce Findings Table
+### 8. Produce Findings Table
 
 Append a `## Self-Review Findings` section to the document:
 
@@ -120,7 +136,7 @@ If no issues found, append:
 
 ---
 
-### 8. Update the Plan
+### 9. Update the Plan
 
 Apply all fixes inline in the document. Don't just list findings — actually fix the plan text.
 

@@ -1,0 +1,138 @@
+{
+    "kind": "module",
+    "id": "mod-provenance-chains-001",
+    "name": "provenance_chains",
+    "schemaVersion": "1.1",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-combine-prices-001",
+            "name": "combine_prices",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-coinbase-001",
+                    "name": "coinbase_price",
+                    "type": {
+                        "kind": "provenance",
+                        "base": { "kind": "basic", "name": "Int" },
+                        "sources": ["api:coinbase"]
+                    }
+                },
+                {
+                    "kind": "param",
+                    "id": "param-binance-001",
+                    "name": "binance_price",
+                    "type": {
+                        "kind": "provenance",
+                        "base": { "kind": "basic", "name": "Int" },
+                        "sources": ["api:binance"]
+                    }
+                }
+            ],
+            "returnType": {
+                "kind": "provenance",
+                "base": { "kind": "basic", "name": "Int" },
+                "sources": ["api:binance", "api:coinbase"]
+            },
+            "effects": ["pure"],
+            "contracts": [
+                {
+                    "kind": "post",
+                    "id": "contract-nonneg-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "post-cond-001",
+                        "op": ">=",
+                        "left": { "kind": "ident", "id": "post-result-001", "name": "result" },
+                        "right": { "kind": "literal", "id": "post-zero-001", "value": 0 }
+                    }
+                }
+            ],
+            "body": [
+                {
+                    "kind": "binop",
+                    "id": "binop-add-001",
+                    "op": "+",
+                    "left": { "kind": "ident", "id": "expr-coinbase-001", "name": "coinbase_price" },
+                    "right": { "kind": "ident", "id": "expr-binance-001", "name": "binance_price" }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-compute-avg-001",
+            "name": "compute_average",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-sum-001",
+                    "name": "total",
+                    "type": {
+                        "kind": "provenance",
+                        "base": { "kind": "basic", "name": "Int" },
+                        "sources": ["api:binance", "api:coinbase"]
+                    }
+                }
+            ],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "effects": ["pure"],
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "binop",
+                    "id": "binop-div-001",
+                    "op": "/",
+                    "left": { "kind": "ident", "id": "expr-total-001", "name": "total" },
+                    "right": { "kind": "literal", "id": "lit-two-001", "value": 2 }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "effects": ["pure"],
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-cb-001",
+                    "name": "cb_price",
+                    "value": { "kind": "literal", "id": "lit-cb-001", "value": 50000 }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-bn-001",
+                    "name": "bn_price",
+                    "value": { "kind": "literal", "id": "lit-bn-001", "value": 49800 }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-combined-001",
+                    "name": "combined",
+                    "value": {
+                        "kind": "call",
+                        "id": "call-combine-001",
+                        "fn": { "kind": "ident", "id": "fn-ref-combine-001", "name": "combine_prices" },
+                        "args": [
+                            { "kind": "ident", "id": "arg-cb-001", "name": "cb_price" },
+                            { "kind": "ident", "id": "arg-bn-001", "name": "bn_price" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-avg-001",
+                    "fn": { "kind": "ident", "id": "fn-ref-avg-001", "name": "compute_average" },
+                    "args": [
+                        { "kind": "ident", "id": "arg-combined-001", "name": "combined" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

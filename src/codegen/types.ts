@@ -44,6 +44,10 @@ export function edictTypeToWasm(type: TypeExpr): binaryen.Type {
         // Provenance types erase to their underlying base type at runtime — zero cost
         return edictTypeToWasm(type.base);
     }
+    if (type.kind === "fresh") {
+        // Freshness types erase to their underlying base type at runtime — zero cost
+        return edictTypeToWasm(type.base);
+    }
     if (type.kind === "capability") {
         // Capability tokens erase completely at runtime — phantom i32 param (zero cost)
         return binaryen.i32;

@@ -392,7 +392,7 @@ function _typeToString(type: import("../ast/types.js").TypeExpr): string {
         case "unit_type": return `${type.base}<${type.unit}>`;
         case "refined": return `{ ${type.variable}: ${_typeToString(type.base)} | ... }`;
         case "confidence": return `Confidence<${_typeToString(type.base)}, ${type.confidence}>`;
-        case "provenance": return `Provenance<${_typeToString(type.base)}, "${type.source}">`;
+        case "provenance": return `Provenance<${_typeToString(type.base)}, [${type.sources.map(s => `"${s}"`).join(", ")}]>`;
         case "capability": return `Capability<${type.permissions.map(p => `"${p}"`).join(", ")}>`;
         case "fn_type": return `(${type.params.map(_typeToString).join(", ")}) -> ${_typeToString(type.returnType)}`;
         case "named": return type.name;
@@ -542,6 +542,7 @@ export function handleVersion(): VersionResult {
             confidenceTypes: true,
             provenanceTypes: true,
             capabilityTokens: true,
+            approvalGates: true,
         },
         limits: {
             z3TimeoutMs: 5000,

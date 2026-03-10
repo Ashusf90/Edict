@@ -35,7 +35,7 @@ src/
 └── errors/        # Structured error types
 
 tests/             # 1713 tests across 100 files
-examples/          # 34 example programs as JSON ASTs
+examples/          # 37 example programs as JSON ASTs
 schema/            # Auto-generated JSON Schema
 ```
 

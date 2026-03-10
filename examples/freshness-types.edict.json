@@ -1,0 +1,96 @@
+{
+  "kind": "module",
+  "id": "mod-freshness-001",
+  "name": "freshness_demo",
+  "schemaVersion": "1.1",
+  "imports": [],
+  "definitions": [
+    {
+      "kind": "fn",
+      "id": "fn-fetch-price-001",
+      "name": "fetch_price",
+      "params": [],
+      "effects": ["io"],
+      "returnType": {
+        "kind": "fresh",
+        "base": { "kind": "basic", "name": "Int" },
+        "maxAge": "5m"
+      },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "literal",
+          "id": "lit-price-001",
+          "value": 100
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-process-001",
+      "name": "process_price",
+      "params": [
+        {
+          "kind": "param",
+          "id": "param-price-001",
+          "name": "price",
+          "type": {
+            "kind": "fresh",
+            "base": { "kind": "basic", "name": "Int" },
+            "maxAge": "5m"
+          }
+        }
+      ],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "binop",
+          "id": "binop-multiply-001",
+          "op": "*",
+          "left": {
+            "kind": "ident",
+            "id": "id-price-001",
+            "name": "price"
+          },
+          "right": {
+            "kind": "literal",
+            "id": "lit-two-001",
+            "value": 2
+          }
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-main-001",
+      "name": "main",
+      "params": [],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-price-001",
+          "name": "price",
+          "value": {
+            "kind": "call",
+            "id": "call-fetch-001",
+            "fn": { "kind": "ident", "id": "id-fetch-001", "name": "fetch_price" },
+            "args": []
+          }
+        },
+        {
+          "kind": "call",
+          "id": "call-process-001",
+          "fn": { "kind": "ident", "id": "id-process-001", "name": "process_price" },
+          "args": [
+            { "kind": "ident", "id": "id-price-arg-001", "name": "price" }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -28,6 +28,31 @@ export const VALID_EFFECTS: readonly Effect[] = [
 ] as const;
 
 // =============================================================================
+// Approval Gates
+// =============================================================================
+
+/**
+ * Approval scope controls how often approval must be re-obtained.
+ */
+export type ApprovalScope = "per_call" | "per_session" | "per_module";
+
+export const VALID_APPROVAL_SCOPES: readonly ApprovalScope[] = [
+    "per_call",
+    "per_session",
+    "per_module",
+] as const;
+
+/**
+ * Approval gate on a function — requires explicit host approval before execution.
+ * Propagates through call chains: if a callee requires approval, the caller must too.
+ */
+export interface ApprovalGate {
+    required: boolean;
+    scope: ApprovalScope;
+    description: string;  // machine-readable tag, e.g. "wire_transfer", "delete_data"
+}
+
+// =============================================================================
 // Top-Level
 // =============================================================================
 
@@ -107,6 +132,7 @@ export interface FunctionDef {
     contracts: Contract[];
     constraints?: ComplexityConstraints;
     intent?: IntentDeclaration;
+    approval?: ApprovalGate;
     blame?: BlameAnnotation;
     body: Expression[];
 }
@@ -563,6 +589,7 @@ export const VALID_TYPE_KINDS = [
     "confidence",
     "provenance",
     "capability",
+    "fresh",
 ] as const;
 
 export const VALID_PATTERN_KINDS = [

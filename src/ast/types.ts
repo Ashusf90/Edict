@@ -19,7 +19,8 @@ export type TypeExpr =
     | TupleType
     | ConfidenceType
     | ProvenanceType
-    | CapabilityType;
+    | CapabilityType
+    | FreshnessType;
 
 /**
  * Primitive types.
@@ -121,7 +122,7 @@ export interface ConfidenceType {
 export interface ProvenanceType {
     kind: "provenance";
     base: TypeExpr;
-    source: string; // "api:coinbase", "user_input", "literal", "derived", etc.
+    sources: string[]; // sorted, deduplicated union of all contributing source tags
 }
 
 /**
@@ -133,6 +134,18 @@ export interface ProvenanceType {
 export interface CapabilityType {
     kind: "capability";
     permissions: string[]; // ["net:smtp", "secret:api_key"], hierarchical
+}
+
+/**
+ * Freshness-typed value — tracks temporal validity at the type level.
+ * Erased after type checking (zero runtime cost). Structurally transparent:
+ * Fresh<T, "5m"> is assignable to/from T.
+ * maxAge is a duration string: "30s", "5m", "1h", "200ms".
+ */
+export interface FreshnessType {
+    kind: "fresh";
+    base: TypeExpr;
+    maxAge: string; // duration: "30s", "5m", "1h", "200ms"
 }
 
 // Circular import workaround: these are defined in nodes.ts but needed here.

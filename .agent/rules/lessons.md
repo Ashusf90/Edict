@@ -214,3 +214,12 @@ if (url.endsWith(".ts")) {
 - **Better approach**: Propagate `provenance` through the existing `BuiltinFunction` interface (which the checker already imports via `BUILTIN_FUNCTIONS`). The registry's map derivation step handles the propagation.
 - **Rule**: When adding metadata that a consumer needs, first check if there's an existing derived interface the consumer already imports. Extending that interface is always more elegant than creating a separate lookup map with a new import.
 
+## 35. Test Fixture ID Collisions in Multi-Expression Chains
+- **Context**: Writing chain propagation tests with `letExpr("sum", binop("+", ...))` followed by `letExpr("doubled", binop("*", ident("sum"), ...))`. Both `binop` and `ident("sum")` calls generated default IDs `"binop-001"` and `"id-sum-001"` — duplicating IDs from the first let's value expression.
+- **Rule**: In test fixtures with multiple sub-expressions that share helper functions (e.g. two `binop()` calls), always pass explicit unique IDs to avoid collisions. Default IDs only work for single-expression test cases.
+
+## 36. Review for Design Shape, Not Just Correctness
+- **Context**: Implemented provenance chains with `source` + `chain` duality plus `"unknown"` sentinel, passed all correctness checks, but user challenged elegance. The `/review` workflow validated correctness and completeness but never questioned whether the data model was the right *shape*.
+- **Root cause**: The review workflow treated design elegance as optional self-reflection rather than a mandatory gate. Correctness ≠ elegance.
+- **Fix**: Added a Design Elegance step (step 3) to `/review` workflow with specific checks: single responsibility, merge point consolidation, magic value elimination, duality detection, and one-sided preservation.
+- **Rule**: After validating critical rules compliance, always ask: "Is there a simpler shape?" Two fields doing what one could do, magic strings, and scattered merge points are design smells.

@@ -79,6 +79,9 @@ export function typesEqual(a: TypeExpr, b: TypeExpr, env: TypeEnv): boolean {
             if (rb.kind !== "capability") return false;
             if (ra.permissions.length !== rb.permissions.length) return false;
             return ra.permissions.every((p, i) => p === rb.permissions[i]);
+
+        case "fresh":
+            return rb.kind === "fresh" && typesEqual(ra.base, rb.base, env);
     }
 }
 
@@ -94,6 +97,9 @@ export function resolveType(type: TypeExpr, env: TypeEnv): TypeExpr {
         resolved = resolveType(resolved.base, env);
     }
     if (resolved.kind === "provenance") {
+        resolved = resolveType(resolved.base, env);
+    }
+    if (resolved.kind === "fresh") {
         resolved = resolveType(resolved.base, env);
     }
     return resolved;

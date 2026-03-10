@@ -18,6 +18,8 @@ import {
     confidenceBelowThreshold,
     lowConfidenceOutput,
     literalProvenance,
+    staleDataUsed,
+    approvalMissingOnIo,
     type LintWarning,
     type SuggestedSplit,
 } from "./warnings.js";
@@ -53,6 +55,8 @@ export function lint(module: EdictModule): LintWarning[] {
     checkBlameConfidence(module, warnings);
     checkConfidenceOutputs(module, warnings);
     checkProvenanceLiterals(module, warnings);
+    checkFreshnessOnPure(module, warnings);
+    checkApprovalOnIo(module, warnings);
 
     return warnings;
 }
@@ -694,15 +698,67 @@ function checkProvenanceLiterals(module: EdictModule, warnings: LintWarning[]): 
         if (def.kind !== "fn") continue;
         if (!def.returnType || def.returnType.kind !== "provenance") continue;
 
-        const source = def.returnType.source;
-        // "literal" and "derived" sources are exempt — they're honest about origin
-        if (source === "literal" || source === "derived") continue;
+        const sources = def.returnType.sources;
+        // sources containing only "literal" or "derived" are exempt
+        const claimedSources = sources.filter(s => s !== "literal" && s !== "derived");
+        if (claimedSources.length === 0) continue;
 
         // Check if body's last expression is a bare literal
         if (def.body.length === 0) continue;
         const lastExpr = def.body[def.body.length - 1]!;
         if (lastExpr.kind === "literal") {
-            warnings.push(literalProvenance(def.id, def.name, source));
+            warnings.push(literalProvenance(def.id, def.name, claimedSources[0]!));
         }
     }
 }
+
+// =============================================================================
+// Freshness — stale data warning for pure functions
+// =============================================================================
+
+/**
+ * Check functions that declare fresh-typed parameters but are pure.
+ * A pure function has no mechanism to re-fetch stale data, so accepting
+ * a Fresh<T> parameter in a pure context is suspicious — the caller should
+ * handle freshness, or the function should declare an io effect.
+ */
+function checkFreshnessOnPure(module: EdictModule, warnings: LintWarning[]): void {
+    for (const def of module.definitions) {
+        if (def.kind !== "fn") continue;
+        // Only warn for pure functions
+        if (!def.effects.includes("pure") || def.effects.includes("io")) continue;
+
+        for (const param of def.params) {
+            if (param.type && param.type.kind === "fresh") {
+                warnings.push(staleDataUsed(
+                    def.id,
+                    def.name,
+                    param.name,
+                    param.type.maxAge,
+                ));
+            }
+        }
+    }
+}
+
+// =============================================================================
+// Approval gates — IO functions without approval
+// =============================================================================
+
+/**
+ * Check functions that have IO effects but don't declare an approval gate.
+ * A function that performs IO without explicit approval is suspicious —
+ * the host has no mechanism to authorize the operation.
+ * Skip main (entry point) since it's the top-level orchestrator.
+ */
+function checkApprovalOnIo(module: EdictModule, warnings: LintWarning[]): void {
+    for (const def of module.definitions) {
+        if (def.kind !== "fn") continue;
+        if (def.name === "main") continue; // entry point exempt
+        if (!def.effects.includes("io")) continue;
+        if (def.approval?.required) continue; // already has approval
+
+        warnings.push(approvalMissingOnIo(def.id, def.name, def.effects));
+    }
+}
+

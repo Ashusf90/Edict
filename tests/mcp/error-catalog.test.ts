@@ -36,6 +36,7 @@ const ALL_ERROR_TYPES = [
     // Phase 3 — Effect checking
     "effect_violation",
     "effect_in_pure",
+    "approval_propagation_missing",
     // Phase 4 — Contract verification
     "contract_failure",
     "verification_timeout",
@@ -59,6 +60,7 @@ const ALL_ERROR_TYPES = [
     "oversized_function",
     "empty_body",
     "redundant_effect",
+    "approval_missing_on_io",
     // Multi-module errors
     "circular_import",
     "unresolved_module",

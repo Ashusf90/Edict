@@ -21,7 +21,7 @@ const FLOAT_TYPE: TypeExpr = { kind: "basic", name: "Float" };
 const BOOL_TYPE: TypeExpr = { kind: "basic", name: "Bool" };
 
 function provenanceType(base: TypeExpr, source: string): ProvenanceType {
-    return { kind: "provenance", base, source };
+    return { kind: "provenance", base, sources: [source] };
 }
 
 function mod(defs: EdictModule["definitions"]): EdictModule {
@@ -475,7 +475,7 @@ describe("provenance types — host function auto-annotation", () => {
             expect(inferredType).toBeDefined();
             expect(inferredType!.kind).toBe("provenance");
             if (inferredType!.kind === "provenance") {
-                expect(inferredType!.source).toBe("io:random");
+                expect(inferredType!.sources).toEqual(["io:random"]);
                 expect(inferredType!.base).toEqual(INT_TYPE);
             }
         });
@@ -532,7 +532,7 @@ describe("provenance types — host function auto-annotation", () => {
             expect(inferredType).toBeDefined();
             expect(inferredType!.kind).toBe("provenance");
             if (inferredType!.kind === "provenance") {
-                expect(inferredType!.source).toBe("io:http");
+                expect(inferredType!.sources).toEqual(["io:http"]);
                 expect(inferredType!.base).toEqual(RESULT_STRING_TYPE);
             }
         });
@@ -554,7 +554,7 @@ describe("provenance types — host function auto-annotation", () => {
             expect(inferredType).toBeDefined();
             expect(inferredType!.kind).toBe("provenance");
             if (inferredType!.kind === "provenance") {
-                expect(inferredType!.source).toBe("io:clock");
+                expect(inferredType!.sources).toEqual(["io:clock"]);
                 expect(inferredType!.base).toEqual(INT64_TYPE);
             }
         });
@@ -578,7 +578,7 @@ describe("provenance types — host function auto-annotation", () => {
             expect(inferredType).toBeDefined();
             expect(inferredType!.kind).toBe("provenance");
             if (inferredType!.kind === "provenance") {
-                expect(inferredType!.source).toBe("io:env");
+                expect(inferredType!.sources).toEqual(["io:env"]);
             }
         });
 
@@ -606,3 +606,329 @@ describe("provenance types — host function auto-annotation", () => {
     });
 });
 
+// =============================================================================
+// Provenance chains — union-of-sources tracking (Issue #116)
+// =============================================================================
+
+describe("provenance chains — type checker", () => {
+    describe("binary ops — sources propagation", () => {
+        it("two provenance operands produce merged sources", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", provenanceType(INT_TYPE, "api:coinbase")),
+                    param("b", provenanceType(INT_TYPE, "api:binance")),
+                ], [
+                    letExpr("sum", binop("+", ident("a"), ident("b"))),
+                    ident("sum"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const sumType = tc.typeInfo.inferredLetTypes.get("let-sum-001");
+            expect(sumType).toBeDefined();
+            expect(sumType!.kind).toBe("provenance");
+            if (sumType!.kind === "provenance") {
+                expect(sumType!.sources).toEqual(["api:binance", "api:coinbase"]);
+            }
+        });
+
+        it("one provenance + one bare preserves provenance sources as-is", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", provenanceType(INT_TYPE, "api:coinbase")),
+                    param("b", INT_TYPE),
+                ], [
+                    letExpr("sum", binop("+", ident("a"), ident("b"))),
+                    ident("sum"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const sumType = tc.typeInfo.inferredLetTypes.get("let-sum-001");
+            expect(sumType).toBeDefined();
+            expect(sumType!.kind).toBe("provenance");
+            if (sumType!.kind === "provenance") {
+                expect(sumType!.sources).toEqual(["api:coinbase"]);
+            }
+        });
+
+        it("two bare operands produce no chain (no provenance)", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", INT_TYPE),
+                    param("b", INT_TYPE),
+                ], [
+                    letExpr("sum", binop("+", ident("a"), ident("b"))),
+                    ident("sum"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const sumType = tc.typeInfo.inferredLetTypes.get("let-sum-001");
+            expect(sumType).toBeDefined();
+            expect(sumType!.kind).toBe("basic");
+        });
+
+        it("same source on both sides deduplicates", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", provenanceType(INT_TYPE, "api:coinbase")),
+                    param("b", provenanceType(INT_TYPE, "api:coinbase")),
+                ], [
+                    letExpr("sum", binop("+", ident("a"), ident("b"))),
+                    ident("sum"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const sumType = tc.typeInfo.inferredLetTypes.get("let-sum-001");
+            expect(sumType).toBeDefined();
+            expect(sumType!.kind).toBe("provenance");
+            if (sumType!.kind === "provenance") {
+                expect(sumType!.sources).toEqual(["api:coinbase"]);
+            }
+        });
+
+        it("subtraction preserves chain", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", provenanceType(INT_TYPE, "api:x")),
+                    param("b", provenanceType(INT_TYPE, "api:y")),
+                ], [
+                    letExpr("diff", binop("-", ident("a"), ident("b"), "binop-diff-001")),
+                    ident("diff", "id-diff-001"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const diffType = tc.typeInfo.inferredLetTypes.get("let-diff-001");
+            expect(diffType).toBeDefined();
+            expect(diffType!.kind).toBe("provenance");
+            if (diffType!.kind === "provenance") {
+                expect(diffType!.sources).toEqual(["api:x", "api:y"]);
+            }
+        });
+
+        it("chain-bearing result erases for return type compatibility", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", provenanceType(INT_TYPE, "api:coinbase")),
+                    param("b", provenanceType(INT_TYPE, "api:binance")),
+                ], [
+                    binop("+", ident("a"), ident("b")),
+                ], INT_TYPE),  // declared return Int — should be compatible with derived Provenance
+            ]);
+            const result = checkModule(m);
+            expect(result.errors).toHaveLength(0);
+        });
+    });
+
+    describe("if-then-else — chain merging", () => {
+        it("merges chains from both branches", () => {
+            const m = mod([
+                fn("main", [
+                    param("cond", BOOL_TYPE),
+                    param("a", provenanceType(INT_TYPE, "api:x")),
+                    param("b", provenanceType(INT_TYPE, "api:y")),
+                ], [
+                    letExpr("result", {
+                        kind: "if",
+                        id: "if-001",
+                        condition: ident("cond", "id-cond-001"),
+                        then: [ident("a", "id-a-then-001")],
+                        else: [ident("b", "id-b-else-001")],
+                    } as Expression),
+                    ident("result", "id-result-001"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const resultType = tc.typeInfo.inferredLetTypes.get("let-result-001");
+            expect(resultType).toBeDefined();
+            expect(resultType!.kind).toBe("provenance");
+            if (resultType!.kind === "provenance") {
+                expect(resultType!.sources).toEqual(["api:x", "api:y"]);
+            }
+        });
+
+        it("one provenance branch + one bare branch preserves provenance", () => {
+            const m = mod([
+                fn("main", [
+                    param("cond", BOOL_TYPE),
+                    param("a", provenanceType(INT_TYPE, "api:x")),
+                    param("b", INT_TYPE),
+                ], [
+                    letExpr("result", {
+                        kind: "if",
+                        id: "if-002",
+                        condition: ident("cond", "id-cond-002"),
+                        then: [ident("a", "id-a-then-002")],
+                        else: [ident("b", "id-b-else-002")],
+                    } as Expression),
+                    ident("result", "id-result-002"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const resultType = tc.typeInfo.inferredLetTypes.get("let-result-001");
+            expect(resultType).toBeDefined();
+            expect(resultType!.kind).toBe("provenance");
+            if (resultType!.kind === "provenance") {
+                expect(resultType!.sources).toEqual(["api:x"]);
+            }
+        });
+    });
+
+    describe("let bindings — chain preservation", () => {
+        it("chain is preserved through let binding", () => {
+            const m = mod([
+                fn("main", [
+                    param("a", provenanceType(INT_TYPE, "api:coinbase")),
+                    param("b", provenanceType(INT_TYPE, "api:binance")),
+                ], [
+                    letExpr("sum", binop("+", ident("a"), ident("b"))),
+                    letExpr("doubled", binop("*",
+                        ident("sum", "id-sum-002"),
+                        literal(2, "lit-2-001"),
+                    "binop-mul-001"), undefined, "let-doubled-001"),
+                    ident("doubled", "id-doubled-001"),
+                ], INT_TYPE),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            // sum should have chain from both sources
+            const sumType = tc.typeInfo.inferredLetTypes.get("let-sum-001");
+            expect(sumType).toBeDefined();
+            expect(sumType!.kind).toBe("provenance");
+
+            // doubled should also have provenance (from sum * literal — one-sided preserves)
+            const doubledType = tc.typeInfo.inferredLetTypes.get("let-doubled-001");
+            expect(doubledType).toBeDefined();
+            expect(doubledType!.kind).toBe("provenance");
+            if (doubledType!.kind === "provenance") {
+                expect(doubledType!.sources).toContain("api:coinbase");
+                expect(doubledType!.sources).toContain("api:binance");
+            }
+        });
+    });
+
+    describe("builtin auto-annotation — initial chain", () => {
+        it("builtin provenance includes initial chain array", () => {
+            const m = mod([
+                fn("main", [], [
+                    letExpr("x", call("randomInt", [literal(0, "lit-min-chain-001"), literal(100, "lit-max-chain-001")])),
+                    ident("x"),
+                ], INT_TYPE, ["reads"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-x-001");
+            expect(inferredType).toBeDefined();
+            expect(inferredType!.kind).toBe("provenance");
+            if (inferredType!.kind === "provenance") {
+                expect(inferredType!.sources).toEqual(["io:random"]);
+            }
+        });
+    });
+});
+
+// =============================================================================
+// Provenance chains — lint warnings
+// =============================================================================
+
+describe("provenance — lint with sources", () => {
+    it("literal_provenance still works with sources array", () => {
+        const m = mod([
+            fn("main", [
+                param("a", provenanceType(INT_TYPE, "api:coinbase")),
+            ], [
+                literal(42),
+            ], provenanceType(INT_TYPE, "api:coinbase")),
+        ]);
+
+        const vr = validate(m);
+        expect(vr.ok).toBe(true);
+        const warnings = lint(m);
+
+        const litWarnings = warnings.filter(w => w.warning === "literal_provenance");
+        expect(litWarnings.length).toBe(1);
+    });
+
+    it("no literal_provenance for derived sources", () => {
+        const m = mod([
+            fn("main", [
+                param("a", provenanceType(INT_TYPE, "api:coinbase")),
+            ], [
+                ident("a"),
+            ], {
+                kind: "provenance",
+                base: INT_TYPE,
+                sources: ["derived"],
+            } as ProvenanceType),
+        ]);
+
+        const vr = validate(m);
+        expect(vr.ok).toBe(true);
+        const warnings = lint(m);
+
+        const litWarnings = warnings.filter(w => w.warning === "literal_provenance");
+        expect(litWarnings.length).toBe(0);
+    });
+
+    it("no literal_provenance for multi-source provenance when body doesn't end in literal", () => {
+        const m = mod([
+            fn("main", [
+                param("a", provenanceType(INT_TYPE, "api:coinbase")),
+            ], [
+                ident("a"),
+            ], {
+                kind: "provenance",
+                base: INT_TYPE,
+                sources: ["api:coinbase", "api:binance"],
+            } as ProvenanceType),
+        ]);
+
+        const vr = validate(m);
+        expect(vr.ok).toBe(true);
+        const warnings = lint(m);
+
+        const litWarnings = warnings.filter(w => w.warning === "literal_provenance");
+        expect(litWarnings.length).toBe(0);
+    });
+});

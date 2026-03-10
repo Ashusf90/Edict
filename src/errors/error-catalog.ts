@@ -296,6 +296,10 @@ const ERROR_EXAMPLES: Record<string, ExamplePair> = {
         cause: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "helper", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 42 }] }] },
         fix: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "helper", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 42 }] }] },
     },
+    approval_missing_on_io: {
+        cause: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "sender", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
+        fix: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "sender", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "send_data" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
+    },
 
     // =========================================================================
     // Multi-module errors
@@ -371,6 +375,20 @@ const ERROR_EXAMPLES: Record<string, ExamplePair> = {
         cause: { kind: "module", name: "test", definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "unit_type", base: "Int", unit: "meters" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "unit_type", base: "Int", unit: "kg" } }], effects: ["pure"], returnType: { kind: "unit_type", base: "Int", unit: "meters" }, contracts: [], body: [{ kind: "binop", id: "binop-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] }] },
         fix: { kind: "module", name: "test", definitions: [{ kind: "fn", id: "fn-001", name: "main", params: [{ kind: "param", id: "p-001", name: "a", type: { kind: "unit_type", base: "Int", unit: "meters" } }, { kind: "param", id: "p-002", name: "b", type: { kind: "unit_type", base: "Int", unit: "meters" } }], effects: ["pure"], returnType: { kind: "unit_type", base: "Int", unit: "meters" }, contracts: [], body: [{ kind: "binop", id: "binop-001", op: "+", left: { kind: "ident", id: "id-001", name: "a" }, right: { kind: "ident", id: "id-002", name: "b" } }] }] },
     },
+
+    // =========================================================================
+    // Phase 3 — Approval propagation
+    // =========================================================================
+    approval_propagation_missing: {
+        cause: { kind: "module", name: "test", definitions: [
+            { kind: "fn", id: "fn-001", name: "transfer", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "wire_transfer" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] },
+            { kind: "fn", id: "fn-002", name: "process", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-001", name: "transfer" }, args: [] }] },
+        ] },
+        fix: { kind: "module", name: "test", definitions: [
+            { kind: "fn", id: "fn-001", name: "transfer", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "wire_transfer" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] },
+            { kind: "fn", id: "fn-002", name: "process", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "wire_transfer" }, body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-001", name: "transfer" }, args: [] }] },
+        ] },
+    },
 };
 
 // =============================================================================
@@ -390,6 +408,7 @@ const LINT_WARNINGS: LintMeta[] = [
     { type: "oversized_function", stage: "lint", fields: [{ name: "nodeId", type: "string" }, { name: "functionName", type: "string" }, { name: "expressionCount", type: "number" }, { name: "threshold", type: "number" }] },
     { type: "empty_body",         stage: "lint", fields: [{ name: "nodeId", type: "string" }, { name: "functionName", type: "string" }] },
     { type: "redundant_effect",   stage: "lint", fields: [{ name: "nodeId", type: "string" }, { name: "functionName", type: "string" }, { name: "redundantEffects", type: "Effect[]" }, { name: "requiredEffects", type: "Effect[]" }, { name: "suggestion", type: "FixSuggestion?" }] },
+    { type: "approval_missing_on_io", stage: "lint", fields: [{ name: "nodeId", type: "string" }, { name: "functionName", type: "string" }, { name: "effects", type: "Effect[]" }] },
 ];
 
 // =============================================================================

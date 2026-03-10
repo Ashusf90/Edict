@@ -164,6 +164,9 @@
             },
             {
               "$ref": "#/definitions/CapabilityType"
+            },
+            {
+              "$ref": "#/definitions/FreshnessType"
             }
           ]
         },
@@ -180,6 +183,10 @@
         "intent": {
           "description": "Structured intent — what the function is trying to accomplish.\nAgents use this for re-synthesis, blame tracking, and specification diffing.\nInvariants reuse Expression and SemanticAssertion types for automated matching.",
           "$ref": "#/definitions/IntentDeclaration"
+        },
+        "approval": {
+          "description": "Approval gate on a function — requires explicit host approval before execution.\nPropagates through call chains: if a callee requires approval, the caller must too.",
+          "$ref": "#/definitions/ApprovalGate"
         },
         "blame": {
           "description": "Structured blame / provenance annotation.\nTracks which agent produced a module or function, when, and with what confidence.",
@@ -254,6 +261,9 @@
             },
             {
               "$ref": "#/definitions/CapabilityType"
+            },
+            {
+              "$ref": "#/definitions/FreshnessType"
             }
           ]
         }
@@ -343,6 +353,9 @@
         },
         {
           "$ref": "#/definitions/CapabilityType"
+        },
+        {
+          "$ref": "#/definitions/FreshnessType"
         }
       ]
     },
@@ -551,6 +564,9 @@
             },
             {
               "$ref": "#/definitions/CapabilityType"
+            },
+            {
+              "$ref": "#/definitions/FreshnessType"
             }
           ]
         }
@@ -672,14 +688,17 @@
         "base": {
           "$ref": "#/definitions/TypeExpr"
         },
-        "source": {
-          "type": "string"
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
         "base",
         "kind",
-        "source"
+        "sources"
       ]
     },
     "CapabilityType": {
@@ -700,6 +719,27 @@
       "required": [
         "kind",
         "permissions"
+      ]
+    },
+    "FreshnessType": {
+      "description": "Freshness-typed value — tracks temporal validity at the type level.\nErased after type checking (zero runtime cost). Structurally transparent:\nFresh<T, \"5m\"> is assignable to/from T.\nmaxAge is a duration string: \"30s\", \"5m\", \"1h\", \"200ms\".",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "fresh"
+        },
+        "base": {
+          "$ref": "#/definitions/TypeExpr"
+        },
+        "maxAge": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "base",
+        "kind",
+        "maxAge"
       ]
     },
     "Identifier": {
@@ -911,6 +951,9 @@
             },
             {
               "$ref": "#/definitions/CapabilityType"
+            },
+            {
+              "$ref": "#/definitions/FreshnessType"
             }
           ]
         },
@@ -1598,6 +1641,35 @@
         "kind",
         "target"
       ]
+    },
+    "ApprovalGate": {
+      "description": "Approval gate on a function — requires explicit host approval before execution.\nPropagates through call chains: if a callee requires approval, the caller must too.",
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "scope": {
+          "$ref": "#/definitions/ApprovalScope"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "required",
+        "scope"
+      ]
+    },
+    "ApprovalScope": {
+      "description": "Approval scope controls how often approval must be re-obtained.",
+      "enum": [
+        "per_call",
+        "per_module",
+        "per_session"
+      ],
+      "type": "string"
     },
     "BlameAnnotation": {
       "description": "Structured blame / provenance annotation.\nTracks which agent produced a module or function, when, and with what confidence.",

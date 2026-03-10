@@ -329,7 +329,7 @@ function inferBinop(
 
     const op = expr.op;
 
-    // Logical operators: and, or, implies
+    // Logical operators: and, or, implies → Bool (no provenance propagation)
     if (op === "and" || op === "or" || op === "implies") {
         if (!isBool(leftType)) {
             errors.push(typeMismatch(expr.id, BOOL_TYPE, leftType));
@@ -340,7 +340,7 @@ function inferBinop(
         return BOOL_TYPE;
     }
 
-    // Comparison operators: ==, !=, <, >, <=, >=
+    // Comparison operators: ==, !=, <, >, <=, >= → Bool (no provenance propagation)
     if (op === "==" || op === "!=" || op === "<" || op === ">" || op === "<=" || op === ">=") {
         if (!typesEqual(leftType, rightType, env)) {
             emitNumericMismatch(expr.id, leftType, rightType, errors);
@@ -348,32 +348,40 @@ function inferBinop(
         return BOOL_TYPE;
     }
 
-    // Arithmetic: +, -, *, /, %
+    // Value-carrying ops: +, -, *, /, %
+    // Compute the raw result type, then apply provenance merge once at the end.
+    let resultType: TypeExpr | null = null;
+
     if (op === "+") {
         // + works on numeric types AND strings
-        if (isString(leftType) && isString(rightType)) return STRING_TYPE;
+        if (isString(leftType) && isString(rightType)) {
+            resultType = STRING_TYPE;
+        } else if (isNumeric(leftType, env) && isNumeric(rightType, env)) {
+            if (!typesEqual(leftType, rightType, env)) {
+                emitNumericMismatch(expr.id, leftType, rightType, errors);
+                return UNKNOWN_TYPE;
+            }
+            resultType = resolveType(leftType, env);
+        } else {
+            errors.push(typeMismatch(expr.id, UNKNOWN_TYPE, leftType));
+            return UNKNOWN_TYPE;
+        }
+    } else {
+        // -, *, /, % — numeric only
         if (isNumeric(leftType, env) && isNumeric(rightType, env)) {
             if (!typesEqual(leftType, rightType, env)) {
                 emitNumericMismatch(expr.id, leftType, rightType, errors);
                 return UNKNOWN_TYPE;
             }
-            return leftType;
-        }
-        errors.push(typeMismatch(expr.id, UNKNOWN_TYPE, leftType)); // Unknown since both numeric/String are valid expected
-        return UNKNOWN_TYPE;
-    }
-
-    // -, *, /, % — numeric only
-    if (isNumeric(leftType, env) && isNumeric(rightType, env)) {
-        if (!typesEqual(leftType, rightType, env)) {
-            emitNumericMismatch(expr.id, leftType, rightType, errors);
+            resultType = resolveType(leftType, env);
+        } else {
+            errors.push(typeMismatch(expr.id, UNKNOWN_TYPE, leftType));
             return UNKNOWN_TYPE;
         }
-        return leftType;
     }
 
-    errors.push(typeMismatch(expr.id, UNKNOWN_TYPE, leftType)); // Expected numeric
-    return UNKNOWN_TYPE;
+    // Single provenance merge point for all value-carrying ops
+    return mergeProvenance(leftType, rightType, resultType);
 }
 
 /**
@@ -465,7 +473,7 @@ function inferCall(
     if (expr.fn.kind === "ident") {
         const builtin = BUILTIN_FUNCTIONS.get(expr.fn.name);
         if (builtin?.provenance) {
-            return { kind: "provenance", base: resolved.returnType, source: builtin.provenance };
+            return { kind: "provenance", base: resolved.returnType, sources: [builtin.provenance] };
         }
     }
     return resolved.returnType;
@@ -489,7 +497,7 @@ function inferIf(
                 errors.push(typeMismatch(expr.id, thenType, elseType));
             }
         }
-        return thenType;
+        return mergeProvenance(thenType, elseType, resolveType(thenType, env));
     }
 
     // No else → Option<thenType>
@@ -995,6 +1003,35 @@ function isNumeric(type: TypeExpr, env: TypeEnv): boolean {
     }
     if (resolved.kind === "unit_type") return true;
     return false;
+}
+
+// =============================================================================
+// Provenance helpers
+// =============================================================================
+
+/**
+ * Merge provenance from two expression types.
+ * - Neither has provenance → return base unchanged
+ * - Only one has provenance → preserve it as-is (no "unknown" injection)
+ * - Both have provenance → merge sources arrays (sorted, deduplicated)
+ */
+function mergeProvenance(
+    leftType: TypeExpr,
+    rightType: TypeExpr,
+    mergedBase: TypeExpr,
+): TypeExpr {
+    const lp = leftType.kind === "provenance" ? leftType : null;
+    const rp = rightType.kind === "provenance" ? rightType : null;
+
+    if (!lp && !rp) return mergedBase;
+    if (lp && !rp) return { kind: "provenance", base: mergedBase, sources: lp.sources };
+    if (!lp && rp) return { kind: "provenance", base: mergedBase, sources: rp.sources };
+
+    // Both sides have provenance — merge sources
+    const merged = new Set<string>();
+    for (const s of lp!.sources) merged.add(s);
+    for (const s of rp!.sources) merged.add(s);
+    return { kind: "provenance", base: mergedBase, sources: [...merged].sort() };
 }
 
 

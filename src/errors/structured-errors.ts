@@ -77,7 +77,9 @@ export type StructuredError =
     | MigrationFailedError
     | UnsupportedSchemaVersionError
     // Capability errors
-    | CapabilityMissingError;
+    | CapabilityMissingError
+    // Approval errors
+    | ApprovalPropagationMissingError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -926,4 +928,35 @@ export function capabilityMissing(
     suggestion?: FixSuggestion,
 ): CapabilityMissingError {
     return { error: "capability_missing", nodeId, required, available, ...(suggestion ? { suggestion } : {}) };
+}
+
+// =============================================================================
+// Approval errors
+// =============================================================================
+
+export interface ApprovalPropagationMissingError {
+    error: "approval_propagation_missing";
+    nodeId: string | null;
+    functionName: string;
+    callSiteNodeId: string | null;
+    calleeName: string;
+    calleeApproval: { scope: string; description: string };
+    suggestion?: FixSuggestion;
+}
+
+/** Emit when a function calls an approval-gated callee without being approval-gated itself. */
+export function approvalPropagationMissing(
+    nodeId: string | null,
+    functionName: string,
+    callSiteNodeId: string | null,
+    calleeName: string,
+    calleeApproval: { scope: string; description: string },
+    suggestion?: FixSuggestion,
+): ApprovalPropagationMissingError {
+    const err: ApprovalPropagationMissingError = {
+        error: "approval_propagation_missing",
+        nodeId, functionName, callSiteNodeId, calleeName, calleeApproval,
+    };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
 }
