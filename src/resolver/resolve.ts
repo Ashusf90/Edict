@@ -312,6 +312,9 @@ function resolveTypeExpr(
         case "tuple":
             for (const el of type.elements) resolveTypeExpr(el, scope, errors);
             break;
+        case "confidence":
+            resolveTypeExpr(type.base, scope, errors);
+            break;
         case "basic":
         case "unit_type":
             // No names to resolve

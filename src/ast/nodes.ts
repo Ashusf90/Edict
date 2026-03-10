@@ -559,6 +559,7 @@ export const VALID_TYPE_KINDS = [
     "fn_type",
     "named",
     "tuple",
+    "confidence",
 ] as const;
 
 export const VALID_PATTERN_KINDS = [

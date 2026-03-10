@@ -62,6 +62,7 @@ export const KIND_MAP: Record<string, string> = {
     ref: "refined",
     ft: "fn_type",
     n: "named",
+    cf: "confidence",
     // tup: "tuple",  -- already mapped above
 
     // Pattern kinds

@@ -2,7 +2,7 @@
 // Edict AST Type Expressions
 // =============================================================================
 // Every possible type in the Edict type system.
-// Types are compile-time only — unit types are erased after type checking.
+// Types are compile-time only — unit types and confidence types are erased after type checking.
 
 /**
  * Union of all type expressions in Edict.
@@ -16,7 +16,8 @@ export type TypeExpr =
     | RefinedType
     | FunctionType
     | NamedType
-    | TupleType;
+    | TupleType
+    | ConfidenceType;
 
 /**
  * Primitive types.
@@ -97,6 +98,17 @@ export interface NamedType {
 export interface TupleType {
     kind: "tuple";
     elements: TypeExpr[];
+}
+
+/**
+ * Confidence-typed value — tracks LLM uncertainty at the type level.
+ * Erased after type checking (zero runtime cost). Structurally transparent:
+ * Confidence<T, 0.9> is assignable to/from T.
+ */
+export interface ConfidenceType {
+    kind: "confidence";
+    base: TypeExpr;
+    confidence: number; // 0.0–1.0
 }
 
 // Circular import workaround: these are defined in nodes.ts but needed here.

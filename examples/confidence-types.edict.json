@@ -1,0 +1,94 @@
+{
+  "kind": "module",
+  "id": "mod-confidence-001",
+  "name": "confidence_types_demo",
+  "minConfidence": 0.7,
+  "imports": [],
+  "definitions": [
+    {
+      "kind": "fn",
+      "id": "fn-classify-001",
+      "name": "classify",
+      "params": [
+        {
+          "kind": "param",
+          "id": "param-score-001",
+          "name": "score",
+          "type": {
+            "kind": "confidence",
+            "base": { "kind": "basic", "name": "Int" },
+            "confidence": 0.9
+          }
+        }
+      ],
+      "returnType": {
+        "kind": "confidence",
+        "base": { "kind": "basic", "name": "Int" },
+        "confidence": 0.85
+      },
+      "effects": ["pure"],
+      "contracts": [
+        {
+          "kind": "post",
+          "id": "contract-classify-post-001",
+          "condition": {
+            "kind": "binop",
+            "id": "binop-post-001",
+            "op": ">=",
+            "left": { "kind": "ident", "id": "id-result-001", "name": "result" },
+            "right": { "kind": "literal", "id": "lit-zero-001", "value": 0 }
+          }
+        }
+      ],
+      "body": [
+        {
+          "kind": "if",
+          "id": "if-classify-001",
+          "condition": {
+            "kind": "binop",
+            "id": "binop-gt-001",
+            "op": ">",
+            "left": { "kind": "ident", "id": "id-score-001", "name": "score" },
+            "right": { "kind": "literal", "id": "lit-50-001", "value": 50 }
+          },
+          "then": [
+            { "kind": "literal", "id": "lit-1-001", "value": 1 }
+          ],
+          "else": [
+            { "kind": "literal", "id": "lit-0-001", "value": 0 }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-main-001",
+      "name": "main",
+      "params": [],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "effects": ["pure"],
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-input-001",
+          "name": "input",
+          "type": {
+            "kind": "confidence",
+            "base": { "kind": "basic", "name": "Int" },
+            "confidence": 0.9
+          },
+          "value": { "kind": "literal", "id": "lit-75-001", "value": 75 }
+        },
+        {
+          "kind": "call",
+          "id": "call-classify-001",
+          "fn": { "kind": "ident", "id": "id-classify-001", "name": "classify" },
+          "args": [
+            { "kind": "ident", "id": "id-input-001", "name": "input" }
+          ]
+        }
+      ]
+    }
+  ]
+}

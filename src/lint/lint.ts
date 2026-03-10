@@ -16,6 +16,7 @@ import {
     decompositionSuggested,
     intentUnverifiedInvariant,
     confidenceBelowThreshold,
+    lowConfidenceOutput,
     type LintWarning,
     type SuggestedSplit,
 } from "./warnings.js";
@@ -49,6 +50,7 @@ export function lint(module: EdictModule): LintWarning[] {
     checkDecomposition(module, warnings);
     checkIntentConsistency(module, warnings);
     checkBlameConfidence(module, warnings);
+    checkConfidenceOutputs(module, warnings);
 
     return warnings;
 }
@@ -642,6 +644,33 @@ function checkBlameConfidence(module: EdictModule, warnings: LintWarning[]): voi
                 def.id,
                 def.name,
                 def.blame.confidence,
+                threshold,
+            ));
+        }
+    }
+}
+
+// =============================================================================
+// Confidence-typed output — minConfidence threshold enforcement
+// =============================================================================
+
+/**
+ * Check functions whose return type is a ConfidenceType against the module's
+ * minConfidence threshold. Warns when the return confidence is too low.
+ */
+function checkConfidenceOutputs(module: EdictModule, warnings: LintWarning[]): void {
+    const threshold = module.minConfidence;
+    if (threshold === undefined) return;
+
+    for (const def of module.definitions) {
+        if (def.kind !== "fn") continue;
+        if (!def.returnType || def.returnType.kind !== "confidence") continue;
+
+        if (def.returnType.confidence < threshold) {
+            warnings.push(lowConfidenceOutput(
+                def.id,
+                def.name,
+                def.returnType.confidence,
                 threshold,
             ));
         }

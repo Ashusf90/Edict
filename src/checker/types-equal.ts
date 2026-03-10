@@ -68,6 +68,9 @@ export function typesEqual(a: TypeExpr, b: TypeExpr, env: TypeEnv): boolean {
             // After erasure this is already handled by resolveForComparison
             // But if both are refined, compare bases
             return rb.kind === "refined" && typesEqual(ra.base, rb.base, env);
+
+        case "confidence":
+            return rb.kind === "confidence" && typesEqual(ra.base, rb.base, env);
     }
 }
 
@@ -77,6 +80,9 @@ export function typesEqual(a: TypeExpr, b: TypeExpr, env: TypeEnv): boolean {
 export function resolveType(type: TypeExpr, env: TypeEnv): TypeExpr {
     let resolved = env.resolveAlias(type);
     if (resolved.kind === "refined") {
+        resolved = resolveType(resolved.base, env);
+    }
+    if (resolved.kind === "confidence") {
         resolved = resolveType(resolved.base, env);
     }
     return resolved;

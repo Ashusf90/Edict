@@ -36,6 +36,10 @@ export function edictTypeToWasm(type: TypeExpr): binaryen.Type {
         // Unit types erase to their underlying base type at runtime — zero cost
         return type.base === "Float" ? binaryen.f64 : binaryen.i32;
     }
+    if (type.kind === "confidence") {
+        // Confidence types erase to their underlying base type at runtime — zero cost
+        return edictTypeToWasm(type.base);
+    }
     // Fallback for anything else
     return binaryen.i32;
 }

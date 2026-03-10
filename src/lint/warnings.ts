@@ -20,7 +20,8 @@ export type LintWarning =
     | RedundantEffectWarning
     | DecompositionSuggestedWarning
     | IntentUnverifiedInvariantWarning
-    | ConfidenceBelowThresholdWarning;
+    | ConfidenceBelowThresholdWarning
+    | LowConfidenceOutputWarning;
 
 // =============================================================================
 // Individual warning types
@@ -106,6 +107,15 @@ export interface ConfidenceBelowThresholdWarning {
     name: string;
     actual: number;
     required: number;
+}
+
+export interface LowConfidenceOutputWarning {
+    warning: "low_confidence_output";
+    severity: "warning";
+    nodeId: string;
+    functionName: string;
+    returnConfidence: number;
+    minConfidence: number;
 }
 
 // =============================================================================
@@ -213,5 +223,22 @@ export function confidenceBelowThreshold(
         name,
         actual,
         required,
+    };
+}
+
+/** Create a warning when a function's return type confidence is below the module's minConfidence threshold. */
+export function lowConfidenceOutput(
+    nodeId: string,
+    functionName: string,
+    returnConfidence: number,
+    minConfidence: number,
+): LowConfidenceOutputWarning {
+    return {
+        warning: "low_confidence_output",
+        severity: "warning",
+        nodeId,
+        functionName,
+        returnConfidence,
+        minConfidence,
     };
 }
