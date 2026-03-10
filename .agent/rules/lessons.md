@@ -203,3 +203,8 @@ if (url.endsWith(".ts")) {
 - **Root cause**: Only `isNumeric()` calls `resolveType()`. `isBool`/`isString` are raw kind checks.
 - **Rule**: Never auto-wrap all literals with type-level wrappers. Type wrappers (Confidence, Provenance) must be explicitly annotated, not auto-inferred. If you ever need implicit inference for a new type wrapper, first fix `isBool`/`isString` to use `resolveType`.
 
+## 33. Hierarchical Permission Subsumption — Broader Satisfies Narrower
+- **Context**: Implementing capability tokens with hierarchical permissions (e.g., `net:smtp` is scoped from `net`).
+- **Problem**: Initially wrote `available.startsWith(required + ":")` — which let `net:smtp` (narrow) satisfy `net` (broad). This is an escalation, the exact opposite of correct behavior.
+- **Correct rule**: `required.startsWith(available + ":")` — the **available** permission must be a **prefix** of the required one (i.e., broader). Having `net` implies you can do `net:smtp`, not the reverse.
+- **Pattern**: In any hierarchical permission/scope system, always verify the subsumption direction with a concrete example: "Does having SMTP-only access let me do ANY network operation?" If the answer is no, the available must be the broader prefix.

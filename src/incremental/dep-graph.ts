@@ -170,8 +170,10 @@ function collectTypeDeps(type: TypeExpr, deps: Set<string>, allNames: Set<string
             collectTypeDeps(type.base, deps, allNames);
             break;
         case "confidence":
+        case "provenance":
             collectTypeDeps(type.base, deps, allNames);
             break;
+        case "capability":
         // basic, unit_type — no named-type dependencies
     }
 }

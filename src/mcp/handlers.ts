@@ -393,6 +393,7 @@ function _typeToString(type: import("../ast/types.js").TypeExpr): string {
         case "refined": return `{ ${type.variable}: ${_typeToString(type.base)} | ... }`;
         case "confidence": return `Confidence<${_typeToString(type.base)}, ${type.confidence}>`;
         case "provenance": return `Provenance<${_typeToString(type.base)}, "${type.source}">`;
+        case "capability": return `Capability<${type.permissions.map(p => `"${p}"`).join(", ")}>`;
         case "fn_type": return `(${type.params.map(_typeToString).join(", ")}) -> ${_typeToString(type.returnType)}`;
         case "named": return type.name;
         case "tuple": return `(${type.elements.map(_typeToString).join(", ")})`;
@@ -540,6 +541,7 @@ export function handleVersion(): VersionResult {
             schemaMigrations: true,
             confidenceTypes: true,
             provenanceTypes: true,
+            capabilityTokens: true,
         },
         limits: {
             z3TimeoutMs: 5000,

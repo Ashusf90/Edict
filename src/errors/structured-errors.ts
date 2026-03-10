@@ -75,7 +75,9 @@ export type StructuredError =
     | MissingExternalModuleError
     // Migration errors
     | MigrationFailedError
-    | UnsupportedSchemaVersionError;
+    | UnsupportedSchemaVersionError
+    // Capability errors
+    | CapabilityMissingError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -902,4 +904,26 @@ export function unsupportedSchemaVersion(
     supportedRange: { min: string; max: string },
 ): UnsupportedSchemaVersionError {
     return { error: "unsupported_schema_version", version, supportedRange };
+}
+
+// =============================================================================
+// Capability errors
+// =============================================================================
+
+export interface CapabilityMissingError {
+    error: "capability_missing";
+    nodeId: string | null;
+    required: string[];      // permissions required by the callee
+    available: string[];     // permissions available at the call site
+    suggestion?: FixSuggestion;
+}
+
+/** Emit when a function call requires capability permissions the caller doesn't have. */
+export function capabilityMissing(
+    nodeId: string | null,
+    required: string[],
+    available: string[],
+    suggestion?: FixSuggestion,
+): CapabilityMissingError {
+    return { error: "capability_missing", nodeId, required, available, ...(suggestion ? { suggestion } : {}) };
 }

@@ -1,0 +1,155 @@
+{
+  "kind": "module",
+  "id": "mod-cap-demo",
+  "name": "capability_tokens_demo",
+  "schemaVersion": "1.1",
+  "capabilities": ["net:smtp", "secret:api_key"],
+  "imports": [
+    {
+      "kind": "import",
+      "id": "imp-host",
+      "module": "host",
+      "names": ["smtp_send"],
+      "types": {
+        "smtp_send": {
+          "kind": "fn_type",
+          "params": [
+            { "kind": "basic", "name": "String" },
+            { "kind": "basic", "name": "String" }
+          ],
+          "effects": ["io"],
+          "returnType": { "kind": "basic", "name": "Int" }
+        }
+      }
+    }
+  ],
+  "definitions": [
+    {
+      "kind": "fn",
+      "id": "fn-send-email",
+      "name": "send_email",
+      "intent": {
+        "goal": "send_email_via_smtp",
+        "inputs": ["cap", "to", "body"],
+        "outputs": ["result"],
+        "invariants": []
+      },
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-cap",
+          "name": "cap",
+          "type": {
+            "kind": "capability",
+            "permissions": ["net:smtp", "secret:api_key"]
+          }
+        },
+        {
+          "kind": "param",
+          "id": "p-to",
+          "name": "to",
+          "type": { "kind": "basic", "name": "String" }
+        },
+        {
+          "kind": "param",
+          "id": "p-body",
+          "name": "body",
+          "type": { "kind": "basic", "name": "String" }
+        }
+      ],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "call",
+          "id": "call-smtp",
+          "fn": { "kind": "ident", "id": "i-smtp", "name": "smtp_send" },
+          "args": [
+            { "kind": "ident", "id": "i-to2", "name": "to" },
+            { "kind": "ident", "id": "i-body2", "name": "body" }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-notify-user",
+      "name": "notify_user",
+      "intent": {
+        "goal": "send_notification_email",
+        "inputs": ["token", "email"],
+        "outputs": ["result"],
+        "invariants": []
+      },
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-cap2",
+          "name": "token",
+          "type": {
+            "kind": "capability",
+            "permissions": ["net:smtp", "secret:api_key"]
+          }
+        },
+        {
+          "kind": "param",
+          "id": "p-email",
+          "name": "email",
+          "type": { "kind": "basic", "name": "String" }
+        }
+      ],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "call",
+          "id": "call-send",
+          "fn": { "kind": "ident", "id": "i-send", "name": "send_email" },
+          "args": [
+            { "kind": "ident", "id": "i-token", "name": "token" },
+            { "kind": "ident", "id": "i-email", "name": "email" },
+            { "kind": "literal", "id": "l-body", "value": "You have a notification" }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-main",
+      "name": "main",
+      "intent": {
+        "goal": "orchestrate_notifications",
+        "inputs": ["cap"],
+        "outputs": ["result"],
+        "invariants": []
+      },
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-main-cap",
+          "name": "cap",
+          "type": {
+            "kind": "capability",
+            "permissions": ["net:smtp", "secret:api_key"]
+          }
+        }
+      ],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "call",
+          "id": "call-notify",
+          "fn": { "kind": "ident", "id": "i-notify", "name": "notify_user" },
+          "args": [
+            { "kind": "ident", "id": "i-cap-pass", "name": "cap" },
+            { "kind": "literal", "id": "l-email", "value": "admin@example.com" }
+          ]
+        }
+      ]
+    }
+  ]
+}

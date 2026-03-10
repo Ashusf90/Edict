@@ -544,6 +544,190 @@ describe("type checker — invalid programs", () => {
     });
 });
 
+describe("type checker — capability tokens", () => {
+    it("accepts capability passthrough — function receives and forwards capability", () => {
+        const { errors } = typeCheck(mod({
+            definitions: [
+                {
+                    kind: "fn", id: "fn-send", name: "send_email",
+                    params: [
+                        { kind: "param", id: "p-cap", name: "cap", type: { kind: "capability", permissions: ["net:smtp"] } },
+                        { kind: "param", id: "p-to", name: "to", type: { kind: "basic", name: "String" } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{ kind: "literal", id: "l-1", value: true }],
+                },
+                {
+                    kind: "fn", id: "fn-main", name: "notifier",
+                    params: [
+                        { kind: "param", id: "p-cap2", name: "token", type: { kind: "capability", permissions: ["net:smtp"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{
+                        kind: "call", id: "c-1",
+                        fn: { kind: "ident", id: "i-send", name: "send_email" },
+                        args: [
+                            { kind: "ident", id: "i-cap", name: "token" },
+                            { kind: "literal", id: "l-to", value: "test@example.com" },
+                        ],
+                    }],
+                },
+            ],
+        }));
+        expect(errors).toEqual([]);
+    });
+
+    it("accepts capability subsumption — broader net satisfies narrower net:smtp requirement", () => {
+        const { errors } = typeCheck(mod({
+            definitions: [
+                {
+                    kind: "fn", id: "fn-needs-smtp", name: "needs_smtp",
+                    params: [
+                        { kind: "param", id: "p-cap", name: "cap", type: { kind: "capability", permissions: ["net:smtp"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{ kind: "literal", id: "l-1", value: true }],
+                },
+                {
+                    kind: "fn", id: "fn-caller", name: "caller",
+                    params: [
+                        { kind: "param", id: "p-cap2", name: "net_cap", type: { kind: "capability", permissions: ["net"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{
+                        kind: "call", id: "c-1",
+                        fn: { kind: "ident", id: "i-fn", name: "needs_smtp" },
+                        args: [{ kind: "ident", id: "i-cap", name: "net_cap" }],
+                    }],
+                },
+            ],
+        }));
+        expect(errors).toEqual([]);
+    });
+
+    it("rejects call when required capability is missing", () => {
+        const { errors } = typeCheck(mod({
+            definitions: [
+                {
+                    kind: "fn", id: "fn-priv", name: "privileged",
+                    params: [
+                        { kind: "param", id: "p-cap", name: "cap", type: { kind: "capability", permissions: ["fs:write"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{ kind: "literal", id: "l-1", value: true }],
+                },
+                {
+                    kind: "fn", id: "fn-caller", name: "caller",
+                    params: [],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{
+                        kind: "call", id: "c-1",
+                        fn: { kind: "ident", id: "i-fn", name: "privileged" },
+                        args: [{ kind: "literal", id: "l-str", value: "not_a_capability" }],
+                    }],
+                },
+            ],
+        }));
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some(e => e.error === "capability_missing")).toBe(true);
+    });
+
+    it("rejects capability escalation — narrower permissions cannot satisfy broader requirement", () => {
+        const { errors } = typeCheck(mod({
+            definitions: [
+                {
+                    kind: "fn", id: "fn-broad", name: "needs_broad_net",
+                    params: [
+                        { kind: "param", id: "p-cap", name: "cap", type: { kind: "capability", permissions: ["net", "fs"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{ kind: "literal", id: "l-1", value: true }],
+                },
+                {
+                    kind: "fn", id: "fn-caller", name: "caller",
+                    params: [
+                        { kind: "param", id: "p-cap2", name: "cap", type: { kind: "capability", permissions: ["net:smtp"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{
+                        kind: "call", id: "c-1",
+                        fn: { kind: "ident", id: "i-fn", name: "needs_broad_net" },
+                        args: [{ kind: "ident", id: "i-cap", name: "cap" }],
+                    }],
+                },
+            ],
+        }));
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some(e => e.error === "capability_missing")).toBe(true);
+        // With correct subsumption: net:smtp (narrow) cannot satisfy net (broad)
+        // so BOTH "net" and "fs" are unsatisfied
+        const capErr = errors.find(e => e.error === "capability_missing") as any;
+        expect(capErr.required).toContain("net");
+        expect(capErr.required).toContain("fs");
+    });
+
+    it("validates module-level capabilities — main params satisfied by module.capabilities", () => {
+        const { errors } = typeCheck(mod({
+            capabilities: ["net:smtp", "fs:read"],
+            definitions: [{
+                kind: "fn", id: "fn-main", name: "main",
+                params: [
+                    { kind: "param", id: "p-cap", name: "net_cap", type: { kind: "capability", permissions: ["net:smtp"] } },
+                ],
+                effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [],
+                body: [{ kind: "literal", id: "l-1", value: 0 }],
+            }],
+        }));
+        expect(errors).toEqual([]);
+    });
+
+    it("rejects main capability params not declared in module.capabilities", () => {
+        const { errors } = typeCheck(mod({
+            capabilities: ["net:smtp"],
+            definitions: [{
+                kind: "fn", id: "fn-main", name: "main",
+                params: [
+                    { kind: "param", id: "p-cap", name: "cap", type: { kind: "capability", permissions: ["fs:write"] } },
+                ],
+                effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [],
+                body: [{ kind: "literal", id: "l-1", value: 0 }],
+            }],
+        }));
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some(e => e.error === "capability_missing")).toBe(true);
+        const capErr = errors.find(e => e.error === "capability_missing") as any;
+        expect(capErr.required).toContain("fs:write");
+        expect(capErr.available).toContain("net:smtp");
+    });
+
+    it("accepts multi-permission capability — broader available satisfies narrower requirements", () => {
+        const { errors } = typeCheck(mod({
+            definitions: [
+                {
+                    kind: "fn", id: "fn-multi", name: "needs_multi",
+                    params: [
+                        { kind: "param", id: "p-cap", name: "cap", type: { kind: "capability", permissions: ["net:smtp", "fs:read"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{ kind: "literal", id: "l-1", value: true }],
+                },
+                {
+                    kind: "fn", id: "fn-caller", name: "caller",
+                    params: [
+                        { kind: "param", id: "p-cap2", name: "cap", type: { kind: "capability", permissions: ["net", "fs", "secret"] } },
+                    ],
+                    effects: ["io"], returnType: { kind: "basic", name: "Bool" }, contracts: [],
+                    body: [{
+                        kind: "call", id: "c-1",
+                        fn: { kind: "ident", id: "i-fn", name: "needs_multi" },
+                        args: [{ kind: "ident", id: "i-cap", name: "cap" }],
+                    }],
+                },
+            ],
+        }));
+        expect(errors).toEqual([]);
+    });
+});
 describe("type checker — unknown propagation", () => {
     it("does not error when imported (unknown) function is called", () => {
         const { errors } = typeCheck(mod({

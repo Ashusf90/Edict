@@ -25,6 +25,7 @@ import {
     unknownEnum,
     unknownVariant,
     missingRecordFields,
+    capabilityMissing,
     type FixSuggestion,
 } from "../errors/structured-errors.js";
 import { findCandidates } from "../resolver/levenshtein.js";
@@ -110,6 +111,10 @@ export function typeCheck(module: EdictModule): TypeCheckResult {
             // record, enum, type — no body to type-check
         }
     }
+
+    // Module-level capability verification:
+    // Check that main's capability-typed params are covered by module.capabilities
+    checkModuleCapabilities(module, errors);
 
     return { errors, typeInfo };
 }
@@ -942,6 +947,24 @@ function checkExpectedType(
     errors: StructuredError[],
 ): void {
     if (isUnknown(actual) || isUnknown(expected)) return;
+
+    // Capability subsumption check:
+    // When expected type is capability, actual must also be capability with subsumable permissions
+    if (expected.kind === "capability") {
+        if (actual.kind !== "capability") {
+            errors.push(capabilityMissing(nodeId, expected.permissions, []));
+            return;
+        }
+        // Check subsumption: each required permission must be satisfied by at least one available permission
+        const unsatisfied = expected.permissions.filter(
+            req => !actual.permissions.some(avail => capabilitySubsumes(avail, req)),
+        );
+        if (unsatisfied.length > 0) {
+            errors.push(capabilityMissing(nodeId, unsatisfied, actual.permissions));
+        }
+        return;
+    }
+
     if (!typesEqual(actual, expected, env)) {
         const suggestion: FixSuggestion | undefined = nodeId
             ? { nodeId, field: "type", value: expected }
@@ -978,3 +1001,47 @@ function inferLiteralPatternType(value: number | string | boolean): TypeExpr {
     return UNKNOWN_TYPE;
 }
 
+// =============================================================================
+// Capability helpers
+// =============================================================================
+
+/**
+ * Check if capability `available` subsumes requirement `required`.
+ * Broader permissions satisfy narrower requirements:
+ *   "net" (available) satisfies "net:smtp" (required) — general access implies specific access.
+ *   "net:smtp" (available) does NOT satisfy "net" (required) — SMTP-only doesn't imply full network.
+ * Exact match always satisfies.
+ */
+function capabilitySubsumes(available: string, required: string): boolean {
+    if (available === required) return true;
+    // available "net" satisfies required "net:smtp" if available is a prefix of required
+    // (having broader access implies you can do the specific thing)
+    if (required.startsWith(available + ":")) return true;
+    return false;
+}
+
+/**
+ * Module-level capability verification.
+ * If `main` has capability-typed params, each required permission must be
+ * declared in module.capabilities (or subsumed by one).
+ */
+function checkModuleCapabilities(
+    module: EdictModule,
+    errors: StructuredError[],
+): void {
+    const mainFn = module.definitions.find(d => d.kind === "fn" && d.name === "main");
+    if (!mainFn || mainFn.kind !== "fn") return;
+
+    const moduleCapabilities = module.capabilities ?? [];
+
+    for (const param of mainFn.params) {
+        if (param.type?.kind === "capability") {
+            const unsatisfied = param.type.permissions.filter(
+                req => !moduleCapabilities.some(avail => capabilitySubsumes(avail, req)),
+            );
+            if (unsatisfied.length > 0) {
+                errors.push(capabilityMissing(param.id, unsatisfied, moduleCapabilities));
+            }
+        }
+    }
+}

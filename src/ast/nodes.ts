@@ -55,6 +55,7 @@ export interface EdictModule {
     budget?: ComplexityConstraints;
     blame?: BlameAnnotation;
     minConfidence?: number;
+    capabilities?: string[];  // host-provided permissions: ["net:smtp", "fs:read"]
 }
 
 /**
@@ -561,6 +562,7 @@ export const VALID_TYPE_KINDS = [
     "tuple",
     "confidence",
     "provenance",
+    "capability",
 ] as const;
 
 export const VALID_PATTERN_KINDS = [

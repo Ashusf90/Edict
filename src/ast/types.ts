@@ -18,7 +18,8 @@ export type TypeExpr =
     | NamedType
     | TupleType
     | ConfidenceType
-    | ProvenanceType;
+    | ProvenanceType
+    | CapabilityType;
 
 /**
  * Primitive types.
@@ -121,6 +122,17 @@ export interface ProvenanceType {
     kind: "provenance";
     base: TypeExpr;
     source: string; // "api:coinbase", "user_input", "literal", "derived", etc.
+}
+
+/**
+ * Capability token — compile-time verified, unforgeable permission.
+ * Not a type wrapper (unlike confidence/provenance). Capabilities ARE the type.
+ * Erased at codegen (zero runtime cost). The host mints them; agents cannot forge them.
+ * Permissions are hierarchical: "net:smtp" subsumes "net:smtp:max_10" via prefix matching.
+ */
+export interface CapabilityType {
+    kind: "capability";
+    permissions: string[]; // ["net:smtp", "secret:api_key"], hierarchical
 }
 
 // Circular import workaround: these are defined in nodes.ts but needed here.

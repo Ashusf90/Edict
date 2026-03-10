@@ -52,7 +52,7 @@ Host capabilities available through adapters: filesystem (sandboxed), HTTP, cryp
 
 ```bash
 npm install
-npm test          # 1665 tests across 99 files
+npm test          # 1697 tests across 100 files
 npm run mcp       # start MCP server (stdio transport)
 ```
 
@@ -76,7 +76,7 @@ Supported platforms: `linux/amd64`, `linux/arm64`.
 |---|---|
 | `edict_schema` | Returns the full AST JSON Schema — the spec for how to write programs |
 | `edict_version` | Returns compiler version and capability info |
-| `edict_examples` | Returns 33 example programs as JSON ASTs |
+| `edict_examples` | Returns 34 example programs as JSON ASTs |
 | `edict_validate` | Validates AST structure (field names, types, node kinds) |
 | `edict_check` | Full pipeline: validate → resolve names → type check → effect check → verify contracts |
 | `edict_compile` | Compiles a checked AST to WASM (returns base64-encoded binary) |
@@ -194,8 +194,8 @@ src/
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 
-tests/             # 1665 tests across 99 files
-examples/          # 33 example programs (⭐→⭐⭐⭐ difficulty in README)
+tests/             # 1697 tests across 100 files
+examples/          # 34 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```
 

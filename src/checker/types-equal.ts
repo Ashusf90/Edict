@@ -74,6 +74,11 @@ export function typesEqual(a: TypeExpr, b: TypeExpr, env: TypeEnv): boolean {
 
         case "provenance":
             return rb.kind === "provenance" && typesEqual(ra.base, rb.base, env);
+
+        case "capability":
+            if (rb.kind !== "capability") return false;
+            if (ra.permissions.length !== rb.permissions.length) return false;
+            return ra.permissions.every((p, i) => p === rb.permissions[i]);
     }
 }
 

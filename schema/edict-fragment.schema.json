@@ -161,6 +161,9 @@
             },
             {
               "$ref": "#/definitions/ProvenanceType"
+            },
+            {
+              "$ref": "#/definitions/CapabilityType"
             }
           ]
         },
@@ -248,6 +251,9 @@
             },
             {
               "$ref": "#/definitions/ProvenanceType"
+            },
+            {
+              "$ref": "#/definitions/CapabilityType"
             }
           ]
         }
@@ -334,6 +340,9 @@
         },
         {
           "$ref": "#/definitions/ProvenanceType"
+        },
+        {
+          "$ref": "#/definitions/CapabilityType"
         }
       ]
     },
@@ -539,6 +548,9 @@
             },
             {
               "$ref": "#/definitions/ProvenanceType"
+            },
+            {
+              "$ref": "#/definitions/CapabilityType"
             }
           ]
         }
@@ -668,6 +680,26 @@
         "base",
         "kind",
         "source"
+      ]
+    },
+    "CapabilityType": {
+      "description": "Capability token — compile-time verified, unforgeable permission.\nNot a type wrapper (unlike confidence/provenance). Capabilities ARE the type.\nErased at codegen (zero runtime cost). The host mints them; agents cannot forge them.\nPermissions are hierarchical: \"net:smtp\" subsumes \"net:smtp:max_10\" via prefix matching.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "capability"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "permissions"
       ]
     },
     "Identifier": {
@@ -876,6 +908,9 @@
             },
             {
               "$ref": "#/definitions/ProvenanceType"
+            },
+            {
+              "$ref": "#/definitions/CapabilityType"
             }
           ]
         },
