@@ -208,3 +208,9 @@ if (url.endsWith(".ts")) {
 - **Problem**: Initially wrote `available.startsWith(required + ":")` — which let `net:smtp` (narrow) satisfy `net` (broad). This is an escalation, the exact opposite of correct behavior.
 - **Correct rule**: `required.startsWith(available + ":")` — the **available** permission must be a **prefix** of the required one (i.e., broader). Having `net` implies you can do `net:smtp`, not the reverse.
 - **Pattern**: In any hierarchical permission/scope system, always verify the subsumption direction with a concrete example: "Does having SMTP-only access let me do ANY network operation?" If the answer is no, the available must be the broader prefix.
+
+## 34. Prefer Existing Data Channels Over Separate Maps
+- **Context**: Adding provenance metadata to builtins. Initial approach created a separate `BUILTIN_PROVENANCE: Map<string, string>` with a new `ALL_BUILTINS` import in the checker.
+- **Better approach**: Propagate `provenance` through the existing `BuiltinFunction` interface (which the checker already imports via `BUILTIN_FUNCTIONS`). The registry's map derivation step handles the propagation.
+- **Rule**: When adding metadata that a consumer needs, first check if there's an existing derived interface the consumer already imports. Extending that interface is always more elegant than creating a separate lookup map with a new import.
+

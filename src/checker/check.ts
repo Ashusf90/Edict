@@ -461,6 +461,13 @@ function inferCall(
         inferExpr(expr.args[i]!, env, errors, typeInfo);
     }
 
+    // Auto-annotate provenance for builtins with a provenance source tag
+    if (expr.fn.kind === "ident") {
+        const builtin = BUILTIN_FUNCTIONS.get(expr.fn.name);
+        if (builtin?.provenance) {
+            return { kind: "provenance", base: resolved.returnType, source: builtin.provenance };
+        }
+    }
     return resolved.returnType;
 }
 

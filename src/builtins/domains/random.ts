@@ -11,6 +11,7 @@ export const RANDOM_BUILTINS: BuiltinDef[] = [
         name: "randomInt",
         type: { kind: "fn_type", params: [INT_TYPE, INT_TYPE], effects: ["reads"], returnType: INT_TYPE },
         nondeterministic: true,
+        provenance: "io:random",
         impl: {
             kind: "host",
             factory: () => (min: number, max: number): number => {
@@ -31,6 +32,7 @@ export const RANDOM_BUILTINS: BuiltinDef[] = [
         name: "randomFloat",
         type: { kind: "fn_type", params: [], effects: ["reads"], returnType: FLOAT_TYPE },
         nondeterministic: true,
+        provenance: "io:random",
         impl: {
             kind: "host",
             factory: () => (): number => {
@@ -44,6 +46,7 @@ export const RANDOM_BUILTINS: BuiltinDef[] = [
         name: "randomUuid",
         type: { kind: "fn_type", params: [], effects: ["reads"], returnType: STRING_TYPE },
         nondeterministic: true,
+        provenance: "io:random",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (): number => {

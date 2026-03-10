@@ -50,6 +50,8 @@ export interface BuiltinFunction {
     type: FunctionType;
     /** WASM import: [module, base] names */
     wasmImport: [string, string];
+    /** Provenance source tag — auto-wraps return type in ProvenanceType at the checker level */
+    provenance?: string;
 }
 
 // =============================================================================
@@ -91,7 +93,11 @@ function deriveWasmImport(def: BuiltinDef): [string, string] {
  * Same API as the old BUILTIN_FUNCTIONS in builtins.ts.
  */
 export const BUILTIN_FUNCTIONS: ReadonlyMap<string, BuiltinFunction> = new Map(
-    ALL_BUILTINS.map(b => [b.name, { type: b.type, wasmImport: deriveWasmImport(b) }])
+    ALL_BUILTINS.map(b => [b.name, {
+        type: b.type,
+        wasmImport: deriveWasmImport(b),
+        ...(b.provenance ? { provenance: b.provenance } : {}),
+    }])
 );
 
 /**

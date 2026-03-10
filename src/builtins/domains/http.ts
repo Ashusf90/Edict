@@ -40,6 +40,7 @@ export const HTTP_BUILTINS: BuiltinDef[] = [
     {
         name: "httpGet",
         type: { kind: "fn_type", params: [STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+        provenance: "io:http",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (urlPtr: number): number => fetchWithChecks(ctx, urlPtr, "GET"),
@@ -48,6 +49,7 @@ export const HTTP_BUILTINS: BuiltinDef[] = [
     {
         name: "httpPost",
         type: { kind: "fn_type", params: [STRING_TYPE, STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+        provenance: "io:http",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (urlPtr: number, bodyPtr: number): number => fetchWithChecks(ctx, urlPtr, "POST", bodyPtr),
@@ -56,6 +58,7 @@ export const HTTP_BUILTINS: BuiltinDef[] = [
     {
         name: "httpPut",
         type: { kind: "fn_type", params: [STRING_TYPE, STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+        provenance: "io:http",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (urlPtr: number, bodyPtr: number): number => fetchWithChecks(ctx, urlPtr, "PUT", bodyPtr),
@@ -64,6 +67,7 @@ export const HTTP_BUILTINS: BuiltinDef[] = [
     {
         name: "httpDelete",
         type: { kind: "fn_type", params: [STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+        provenance: "io:http",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (urlPtr: number): number => fetchWithChecks(ctx, urlPtr, "DELETE"),

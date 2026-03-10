@@ -11,6 +11,7 @@ export const DATETIME_BUILTINS: BuiltinDef[] = [
         name: "now",
         type: { kind: "fn_type", params: [], effects: ["reads"], returnType: INT64_TYPE },
         nondeterministic: true,
+        provenance: "io:clock",
         impl: { kind: "host", factory: () => (): bigint => BigInt(Date.now()) },
     },
     {

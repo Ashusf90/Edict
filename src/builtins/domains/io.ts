@@ -10,6 +10,7 @@ export const IO_BUILTINS: BuiltinDef[] = [
     {
         name: "readFile",
         type: { kind: "fn_type", params: [STRING_TYPE], effects: ["io"], returnType: RESULT_STRING_TYPE },
+        provenance: "io:file",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (pathPtr: number): number => {
@@ -48,6 +49,7 @@ export const IO_BUILTINS: BuiltinDef[] = [
         name: "env",
         type: { kind: "fn_type", params: [STRING_TYPE], effects: ["reads"], returnType: STRING_TYPE },
         nondeterministic: true,
+        provenance: "io:env",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (namePtr: number): number => {
@@ -60,6 +62,7 @@ export const IO_BUILTINS: BuiltinDef[] = [
         name: "args",
         type: { kind: "fn_type", params: [], effects: ["reads"], returnType: STRING_TYPE },
         nondeterministic: true,
+        provenance: "io:env",
         impl: {
             kind: "host",
             factory: (ctx: HostContext) => (): number => {

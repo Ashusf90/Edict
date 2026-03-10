@@ -378,3 +378,231 @@ describe("provenance types — lint", () => {
         expect(lpWarnings.length).toBe(0);
     });
 });
+
+// =============================================================================
+// Host function auto-annotation — builtin provenance tagging (Issue #115)
+// =============================================================================
+
+import { BUILTIN_FUNCTIONS } from "../../src/builtins/builtins.js";
+import { ALL_BUILTINS } from "../../src/builtins/registry.js";
+
+const RESULT_STRING_TYPE: TypeExpr = {
+    kind: "result",
+    ok: { kind: "basic", name: "String" },
+    err: { kind: "basic", name: "String" },
+};
+const STRING_TYPE: TypeExpr = { kind: "basic", name: "String" };
+const INT64_TYPE: TypeExpr = { kind: "basic", name: "Int64" };
+
+function call(fnName: string, args: Expression[], id = `call-${fnName}-001`): Expression {
+    return { kind: "call", id, fn: ident(fnName, `fn-ref-${fnName}`), args };
+}
+
+function letExpr(name: string, value: Expression, type?: TypeExpr, id = `let-${name}-001`): Expression {
+    return { kind: "let", id, name, value, ...(type ? { type } : {}) } as Expression;
+}
+
+describe("provenance types — host function auto-annotation", () => {
+    describe("registry — provenance field on BuiltinDef", () => {
+        it("httpGet has provenance 'io:http'", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "httpGet");
+            expect(def?.provenance).toBe("io:http");
+        });
+
+        it("randomInt has provenance 'io:random'", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "randomInt");
+            expect(def?.provenance).toBe("io:random");
+        });
+
+        it("now has provenance 'io:clock'", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "now");
+            expect(def?.provenance).toBe("io:clock");
+        });
+
+        it("readFile has provenance 'io:file'", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "readFile");
+            expect(def?.provenance).toBe("io:file");
+        });
+
+        it("env has provenance 'io:env'", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "env");
+            expect(def?.provenance).toBe("io:env");
+        });
+
+        it("sha256 has no provenance (pure transform)", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "sha256");
+            expect(def?.provenance).toBeUndefined();
+        });
+
+        it("writeFile has no provenance (returns status)", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "writeFile");
+            expect(def?.provenance).toBeUndefined();
+        });
+
+        it("exit has no provenance (control flow)", () => {
+            const def = ALL_BUILTINS.find(b => b.name === "exit");
+            expect(def?.provenance).toBeUndefined();
+        });
+    });
+
+    describe("type checker — auto provenance wrapping", () => {
+        it("randomInt call infers Provenance<Int, 'io:random'> return type", () => {
+            const m = mod([
+                fn("main", [], [
+                    call("randomInt", [literal(0, "lit-min-001"), literal(100, "lit-max-001")]),
+                ], INT_TYPE, ["reads"]),
+            ]);
+            // randomInt returns Provenance<Int>, which erases to Int for comparison
+            const result = checkModule(m);
+            expect(result.errors).toHaveLength(0);
+        });
+
+        it("randomInt inferred let type carries provenance", () => {
+            const m = mod([
+                fn("main", [], [
+                    letExpr("x", call("randomInt", [literal(0, "lit-min-002"), literal(100, "lit-max-002")])),
+                    ident("x"),
+                ], INT_TYPE, ["reads"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            // The inferred type for the let binding should be provenance-wrapped
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-x-001");
+            expect(inferredType).toBeDefined();
+            expect(inferredType!.kind).toBe("provenance");
+            if (inferredType!.kind === "provenance") {
+                expect(inferredType!.source).toBe("io:random");
+                expect(inferredType!.base).toEqual(INT_TYPE);
+            }
+        });
+
+        it("auto-provenance is compatible with bare type annotation (erasure)", () => {
+            // let x: Int = randomInt(0, 100) — should not error
+            const m = mod([
+                fn("main", [], [
+                    letExpr("x", call("randomInt", [literal(0, "lit-min-003"), literal(100, "lit-max-003")]), INT_TYPE),
+                    ident("x"),
+                ], INT_TYPE, ["reads"]),
+            ]);
+            const result = checkModule(m);
+            expect(result.errors).toHaveLength(0);
+        });
+
+        it("pure builtins do not get provenance wrapping", () => {
+            const m = mod([
+                fn("main", [
+                    param("s", { kind: "basic", name: "String" }),
+                ], [
+                    letExpr("h", call("sha256", [ident("s")])),
+                    ident("h"),
+                ], { kind: "basic", name: "String" }, ["pure"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            // sha256 has no provenance — inferred type should be bare String
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-h-001");
+            expect(inferredType).toBeDefined();
+            expect(inferredType!.kind).toBe("basic");
+        });
+
+        it("httpGet return type carries provenance through let inference", () => {
+            const m = mod([
+                fn("main", [], [
+                    letExpr("resp", call("httpGet", [
+                        { kind: "literal", id: "lit-url-001", value: "https://api.example.com" } as Expression,
+                    ])),
+                    ident("resp"),
+                ], RESULT_STRING_TYPE, ["io"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-resp-001");
+            expect(inferredType).toBeDefined();
+            expect(inferredType!.kind).toBe("provenance");
+            if (inferredType!.kind === "provenance") {
+                expect(inferredType!.source).toBe("io:http");
+                expect(inferredType!.base).toEqual(RESULT_STRING_TYPE);
+            }
+        });
+
+        it("now return type carries provenance io:clock", () => {
+            const m = mod([
+                fn("main", [], [
+                    letExpr("t", call("now", [])),
+                    ident("t"),
+                ], INT64_TYPE, ["reads"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-t-001");
+            expect(inferredType).toBeDefined();
+            expect(inferredType!.kind).toBe("provenance");
+            if (inferredType!.kind === "provenance") {
+                expect(inferredType!.source).toBe("io:clock");
+                expect(inferredType!.base).toEqual(INT64_TYPE);
+            }
+        });
+
+        it("env return type carries provenance io:env", () => {
+            const m = mod([
+                fn("main", [], [
+                    letExpr("v", call("env", [
+                        { kind: "literal", id: "lit-env-001", value: "HOME" } as Expression,
+                    ])),
+                    ident("v"),
+                ], STRING_TYPE, ["reads"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-v-001");
+            expect(inferredType).toBeDefined();
+            expect(inferredType!.kind).toBe("provenance");
+            if (inferredType!.kind === "provenance") {
+                expect(inferredType!.source).toBe("io:env");
+            }
+        });
+
+        it("writeFile return does NOT carry provenance", () => {
+            const m = mod([
+                fn("main", [], [
+                    letExpr("r", call("writeFile", [
+                        { kind: "literal", id: "lit-path-001", value: "/tmp/test" } as Expression,
+                        { kind: "literal", id: "lit-content-001", value: "hello" } as Expression,
+                    ])),
+                    ident("r"),
+                ], RESULT_STRING_TYPE, ["io"]),
+            ]);
+            const vr = validate(m);
+            expect(vr.ok).toBe(true);
+            resolve(m);
+            const tc = typeCheck(m);
+            expect(tc.errors).toHaveLength(0);
+
+            const inferredType = tc.typeInfo.inferredLetTypes.get("let-r-001");
+            expect(inferredType).toBeDefined();
+            // writeFile has no provenance — should be bare result type
+            expect(inferredType!.kind).not.toBe("provenance");
+        });
+    });
+});
+

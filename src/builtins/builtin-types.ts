@@ -21,6 +21,12 @@ export interface BuiltinDef {
      * When true, createHostImports auto-wraps the factory for record/replay.
      */
     nondeterministic?: boolean;
+    /**
+     * Provenance source tag for return values (e.g., "io:http", "io:random").
+     * When set, the type checker auto-wraps the return type in ProvenanceType
+     * so agents get data-origin tracking without manual annotation.
+     */
+    provenance?: string;
 }
 
 export type BuiltinImpl =
