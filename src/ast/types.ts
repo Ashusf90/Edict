@@ -17,7 +17,8 @@ export type TypeExpr =
     | FunctionType
     | NamedType
     | TupleType
-    | ConfidenceType;
+    | ConfidenceType
+    | ProvenanceType;
 
 /**
  * Primitive types.
@@ -109,6 +110,17 @@ export interface ConfidenceType {
     kind: "confidence";
     base: TypeExpr;
     confidence: number; // 0.0–1.0
+}
+
+/**
+ * Provenance-typed value — tracks data origin at the type level.
+ * Erased after type checking (zero runtime cost). Structurally transparent:
+ * Provenance<T, "api:x"> is assignable to/from T.
+ */
+export interface ProvenanceType {
+    kind: "provenance";
+    base: TypeExpr;
+    source: string; // "api:coinbase", "user_input", "literal", "derived", etc.
 }
 
 // Circular import workaround: these are defined in nodes.ts but needed here.

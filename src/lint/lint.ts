@@ -17,6 +17,7 @@ import {
     intentUnverifiedInvariant,
     confidenceBelowThreshold,
     lowConfidenceOutput,
+    literalProvenance,
     type LintWarning,
     type SuggestedSplit,
 } from "./warnings.js";
@@ -51,6 +52,7 @@ export function lint(module: EdictModule): LintWarning[] {
     checkIntentConsistency(module, warnings);
     checkBlameConfidence(module, warnings);
     checkConfidenceOutputs(module, warnings);
+    checkProvenanceLiterals(module, warnings);
 
     return warnings;
 }
@@ -673,6 +675,34 @@ function checkConfidenceOutputs(module: EdictModule, warnings: LintWarning[]): v
                 def.returnType.confidence,
                 threshold,
             ));
+        }
+    }
+}
+
+// =============================================================================
+// Provenance — literal detection for suspicious provenance claims
+// =============================================================================
+
+/**
+ * Check functions that claim non-literal provenance but return a hardcoded literal.
+ * If a function's return type is Provenance<T, "api:x"> but the body ends in a
+ * literal, the provenance claim is suspicious — the agent may have hallucinated
+ * the value instead of fetching real data.
+ */
+function checkProvenanceLiterals(module: EdictModule, warnings: LintWarning[]): void {
+    for (const def of module.definitions) {
+        if (def.kind !== "fn") continue;
+        if (!def.returnType || def.returnType.kind !== "provenance") continue;
+
+        const source = def.returnType.source;
+        // "literal" and "derived" sources are exempt — they're honest about origin
+        if (source === "literal" || source === "derived") continue;
+
+        // Check if body's last expression is a bare literal
+        if (def.body.length === 0) continue;
+        const lastExpr = def.body[def.body.length - 1]!;
+        if (lastExpr.kind === "literal") {
+            warnings.push(literalProvenance(def.id, def.name, source));
         }
     }
 }

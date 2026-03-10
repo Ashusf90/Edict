@@ -21,7 +21,8 @@ export type LintWarning =
     | DecompositionSuggestedWarning
     | IntentUnverifiedInvariantWarning
     | ConfidenceBelowThresholdWarning
-    | LowConfidenceOutputWarning;
+    | LowConfidenceOutputWarning
+    | LiteralProvenanceWarning;
 
 // =============================================================================
 // Individual warning types
@@ -116,6 +117,14 @@ export interface LowConfidenceOutputWarning {
     functionName: string;
     returnConfidence: number;
     minConfidence: number;
+}
+
+export interface LiteralProvenanceWarning {
+    warning: "literal_provenance";
+    severity: "warning";
+    nodeId: string;
+    functionName: string;
+    declaredSource: string;
 }
 
 // =============================================================================
@@ -240,5 +249,20 @@ export function lowConfidenceOutput(
         functionName,
         returnConfidence,
         minConfidence,
+    };
+}
+
+/** Create a warning when a function claims non-literal provenance but returns a hardcoded literal. */
+export function literalProvenance(
+    nodeId: string,
+    functionName: string,
+    declaredSource: string,
+): LiteralProvenanceWarning {
+    return {
+        warning: "literal_provenance",
+        severity: "warning",
+        nodeId,
+        functionName,
+        declaredSource,
     };
 }

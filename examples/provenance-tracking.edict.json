@@ -1,0 +1,114 @@
+{
+    "kind": "module",
+    "id": "mod-provenance-demo-001",
+    "name": "provenance_tracking",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-fetch-price-001",
+            "name": "fetch_price",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-raw-001",
+                    "name": "raw_price",
+                    "type": {
+                        "kind": "provenance",
+                        "base": { "kind": "basic", "name": "Int" },
+                        "source": "api:coinbase"
+                    }
+                }
+            ],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "effects": ["pure"],
+            "contracts": [],
+            "body": [
+                { "kind": "ident", "id": "expr-ret-001", "name": "raw_price" }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-compute-spread-001",
+            "name": "compute_spread",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-buy-001",
+                    "name": "buy_price",
+                    "type": {
+                        "kind": "provenance",
+                        "base": { "kind": "basic", "name": "Int" },
+                        "source": "api:coinbase"
+                    }
+                },
+                {
+                    "kind": "param",
+                    "id": "param-sell-001",
+                    "name": "sell_price",
+                    "type": {
+                        "kind": "provenance",
+                        "base": { "kind": "basic", "name": "Int" },
+                        "source": "api:binance"
+                    }
+                }
+            ],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "effects": ["pure"],
+            "contracts": [
+                {
+                    "kind": "post",
+                    "id": "contract-nonneg-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "post-cond-001",
+                        "op": ">=",
+                        "left": { "kind": "ident", "id": "post-result-001", "name": "result" },
+                        "right": { "kind": "literal", "id": "post-zero-001", "value": 0 }
+                    }
+                }
+            ],
+            "body": [
+                {
+                    "kind": "binop",
+                    "id": "expr-sub-001",
+                    "op": "-",
+                    "left": { "kind": "ident", "id": "expr-buy-001", "name": "buy_price" },
+                    "right": { "kind": "ident", "id": "expr-sell-001", "name": "sell_price" }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "effects": ["pure"],
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-buy-001",
+                    "name": "buy",
+                    "value": { "kind": "literal", "id": "lit-buy-001", "value": 100 }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-sell-001",
+                    "name": "sell",
+                    "value": { "kind": "literal", "id": "lit-sell-001", "value": 95 }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-spread-001",
+                    "fn": { "kind": "ident", "id": "fn-ref-spread-001", "name": "compute_spread" },
+                    "args": [
+                        { "kind": "ident", "id": "arg-buy-001", "name": "buy" },
+                        { "kind": "ident", "id": "arg-sell-001", "name": "sell" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

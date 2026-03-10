@@ -40,6 +40,10 @@ export function edictTypeToWasm(type: TypeExpr): binaryen.Type {
         // Confidence types erase to their underlying base type at runtime — zero cost
         return edictTypeToWasm(type.base);
     }
+    if (type.kind === "provenance") {
+        // Provenance types erase to their underlying base type at runtime — zero cost
+        return edictTypeToWasm(type.base);
+    }
     // Fallback for anything else
     return binaryen.i32;
 }

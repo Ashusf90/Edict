@@ -158,6 +158,9 @@
             },
             {
               "$ref": "#/definitions/ConfidenceType"
+            },
+            {
+              "$ref": "#/definitions/ProvenanceType"
             }
           ]
         },
@@ -242,6 +245,9 @@
             },
             {
               "$ref": "#/definitions/ConfidenceType"
+            },
+            {
+              "$ref": "#/definitions/ProvenanceType"
             }
           ]
         }
@@ -325,6 +331,9 @@
         },
         {
           "$ref": "#/definitions/ConfidenceType"
+        },
+        {
+          "$ref": "#/definitions/ProvenanceType"
         }
       ]
     },
@@ -527,6 +536,9 @@
             },
             {
               "$ref": "#/definitions/ConfidenceType"
+            },
+            {
+              "$ref": "#/definitions/ProvenanceType"
             }
           ]
         }
@@ -635,6 +647,27 @@
         "base",
         "confidence",
         "kind"
+      ]
+    },
+    "ProvenanceType": {
+      "description": "Provenance-typed value — tracks data origin at the type level.\nErased after type checking (zero runtime cost). Structurally transparent:\nProvenance<T, \"api:x\"> is assignable to/from T.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "provenance"
+        },
+        "base": {
+          "$ref": "#/definitions/TypeExpr"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "base",
+        "kind",
+        "source"
       ]
     },
     "Identifier": {
@@ -840,6 +873,9 @@
             },
             {
               "$ref": "#/definitions/ConfidenceType"
+            },
+            {
+              "$ref": "#/definitions/ProvenanceType"
             }
           ]
         },

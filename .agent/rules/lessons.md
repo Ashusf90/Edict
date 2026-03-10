@@ -196,3 +196,10 @@ if (url.endsWith(".ts")) {
 - **Context**: Assumed `print` returns `Int`, but it actually returns `String` in Edict's type system.
 - **Problem**: `let` binding with explicit `Int` type annotation on `print()` result caused a type mismatch.
 - **Rule**: When using builtins in examples, omit explicit type annotations on `let` bindings and let type inference handle it, or verify the builtin's return type from `src/builtins/builtins.ts`.
+
+## 32. Type Wrapper Auto-Inference Breaks isBool/isString
+- **Context**: Planned auto-tagging all literals with `Provenance<T, "literal">` during inference.
+- **Problem**: `isBool()` and `isString()` use `type.kind === "basic"` directly without calling `resolveType()`. If literals inferred as `Provenance<Bool, "literal">`, then `true and false` would get false type errors because `isBool` returns false for non-"basic" kind.
+- **Root cause**: Only `isNumeric()` calls `resolveType()`. `isBool`/`isString` are raw kind checks.
+- **Rule**: Never auto-wrap all literals with type-level wrappers. Type wrappers (Confidence, Provenance) must be explicitly annotated, not auto-inferred. If you ever need implicit inference for a new type wrapper, first fix `isBool`/`isString` to use `resolveType`.
+

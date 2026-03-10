@@ -560,6 +560,7 @@ export const VALID_TYPE_KINDS = [
     "named",
     "tuple",
     "confidence",
+    "provenance",
 ] as const;
 
 export const VALID_PATTERN_KINDS = [

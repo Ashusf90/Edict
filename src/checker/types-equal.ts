@@ -71,6 +71,9 @@ export function typesEqual(a: TypeExpr, b: TypeExpr, env: TypeEnv): boolean {
 
         case "confidence":
             return rb.kind === "confidence" && typesEqual(ra.base, rb.base, env);
+
+        case "provenance":
+            return rb.kind === "provenance" && typesEqual(ra.base, rb.base, env);
     }
 }
 
@@ -83,6 +86,9 @@ export function resolveType(type: TypeExpr, env: TypeEnv): TypeExpr {
         resolved = resolveType(resolved.base, env);
     }
     if (resolved.kind === "confidence") {
+        resolved = resolveType(resolved.base, env);
+    }
+    if (resolved.kind === "provenance") {
         resolved = resolveType(resolved.base, env);
     }
     return resolved;
