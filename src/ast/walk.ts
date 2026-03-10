@@ -87,6 +87,10 @@ export function walkExpression(expr: Expression, visitor: AstVisitor | ((node: E
             walkExpression(expr.range.to, visitor);
             walkExpression(expr.body, visitor);
             break;
+        case "tool_call":
+            for (const f of expr.args) walkExpression(f.value, visitor);
+            if (expr.fallback) walkExpression(expr.fallback, visitor);
+            break;
         default:
             // Ensure all kinds are completely covered
             void (expr as never);

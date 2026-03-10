@@ -52,6 +52,8 @@ import {
     migrationFailed,
     unsupportedSchemaVersion,
     approvalPropagationMissing,
+    unknownTool,
+    toolArgMismatch,
 } from "./structured-errors.js";
 
 // =============================================================================
@@ -125,8 +127,8 @@ export const ERROR_REGISTRY: ErrorRegistryEntry[] = [
                                                                    makeWithOptionals: () => effectViolation("n", "fn", ["io"], "cs", "callee", dummySuggestion) },
     { type: "effect_in_pure",         stage: "effect_checker",     make: () => effectInPure("n", "fn", "cs", "callee", ["io"]),
                                                                    makeWithOptionals: () => effectInPure("n", "fn", "cs", "callee", ["io"], dummySuggestion) },
-    { type: "approval_propagation_missing", stage: "effect_checker", make: () => approvalPropagationMissing("n", "fn", "cs", "callee", { scope: "per_call", description: "wire_transfer" }),
-                                                                   makeWithOptionals: () => approvalPropagationMissing("n", "fn", "cs", "callee", { scope: "per_call", description: "wire_transfer" }, dummySuggestion) },
+    { type: "approval_propagation_missing", stage: "effect_checker", make: () => approvalPropagationMissing("n", "fn", "cs", "callee", { scope: "per_call", reason: "wire_transfer" }),
+                                                                   makeWithOptionals: () => approvalPropagationMissing("n", "fn", "cs", "callee", { scope: "per_call", reason: "wire_transfer" }, dummySuggestion) },
 
     // Phase 4 — Contract verification
     { type: "contract_failure",       stage: "contract_verifier",  make: () => contractFailure("n", "c", "fn", "post", { x: 0 }) },
@@ -159,6 +161,11 @@ export const ERROR_REGISTRY: ErrorRegistryEntry[] = [
     // Migration errors
     { type: "migration_failed",        stage: "migration",          make: () => migrationFailed("1.0", "1.1", "Op failed") },
     { type: "unsupported_schema_version", stage: "migration",       make: () => unsupportedSchemaVersion("99.0", { min: "1.0", max: "1.1" }) },
+
+    // Tool errors
+    { type: "unknown_tool",            stage: "resolver",           make: () => unknownTool("n", "bad_tool", ["good_tool"]),
+                                                                   makeWithOptionals: () => unknownTool("n", "bad_tool", ["good_tool"], dummySuggestion) },
+    { type: "tool_arg_mismatch",       stage: "type_checker",       make: () => toolArgMismatch("n", "tool", ["missing"], ["extra"], [{ arg: "a", expected: basicInt, actual: basicStr }]) },
 ];
 
 // =============================================================================

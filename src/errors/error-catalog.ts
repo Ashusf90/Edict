@@ -298,7 +298,7 @@ const ERROR_EXAMPLES: Record<string, ExamplePair> = {
     },
     approval_missing_on_io: {
         cause: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "sender", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
-        fix: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "sender", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "send_data" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
+        fix: { kind: "module", id: "mod-001", name: "test", imports: [], definitions: [{ kind: "fn", id: "fn-001", name: "sender", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", reason: "send_data" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] }] },
     },
 
     // =========================================================================
@@ -381,12 +381,36 @@ const ERROR_EXAMPLES: Record<string, ExamplePair> = {
     // =========================================================================
     approval_propagation_missing: {
         cause: { kind: "module", name: "test", definitions: [
-            { kind: "fn", id: "fn-001", name: "transfer", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "wire_transfer" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] },
+            { kind: "fn", id: "fn-001", name: "transfer", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", reason: "wire_transfer" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] },
             { kind: "fn", id: "fn-002", name: "process", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-001", name: "transfer" }, args: [] }] },
         ] },
         fix: { kind: "module", name: "test", definitions: [
-            { kind: "fn", id: "fn-001", name: "transfer", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "wire_transfer" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] },
-            { kind: "fn", id: "fn-002", name: "process", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", description: "wire_transfer" }, body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-001", name: "transfer" }, args: [] }] },
+            { kind: "fn", id: "fn-001", name: "transfer", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", reason: "wire_transfer" }, body: [{ kind: "literal", id: "lit-001", value: 1 }] },
+            { kind: "fn", id: "fn-002", name: "process", params: [], effects: ["io"], returnType: { kind: "basic", name: "Int" }, contracts: [], approval: { required: true, scope: "per_call", reason: "wire_transfer" }, body: [{ kind: "call", id: "call-001", fn: { kind: "ident", id: "id-001", name: "transfer" }, args: [] }] },
+        ] },
+    },
+
+    // =========================================================================
+    // Tool errors
+    // =========================================================================
+    unknown_tool: {
+        cause: { kind: "module", name: "test", definitions: [
+            { kind: "tool", id: "tool-001", name: "get_weather", uri: "mcp://weather/get", params: [{ kind: "param", id: "p-001", name: "city", type: { kind: "basic", name: "String" } }], returnType: { kind: "basic", name: "String" }, effects: ["io"] },
+            { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["io", "fails"], returnType: { kind: "result", ok: { kind: "basic", name: "String" }, err: { kind: "basic", name: "String" } }, contracts: [], body: [{ kind: "tool_call", id: "tc-001", tool: "get_forcast", args: [{ kind: "field_init", name: "city", value: { kind: "literal", id: "lit-001", value: "Berlin" } }] }] },
+        ] },
+        fix: { kind: "module", name: "test", definitions: [
+            { kind: "tool", id: "tool-001", name: "get_weather", uri: "mcp://weather/get", params: [{ kind: "param", id: "p-001", name: "city", type: { kind: "basic", name: "String" } }], returnType: { kind: "basic", name: "String" }, effects: ["io"] },
+            { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["io", "fails"], returnType: { kind: "result", ok: { kind: "basic", name: "String" }, err: { kind: "basic", name: "String" } }, contracts: [], body: [{ kind: "tool_call", id: "tc-001", tool: "get_weather", args: [{ kind: "field_init", name: "city", value: { kind: "literal", id: "lit-001", value: "Berlin" } }] }] },
+        ] },
+    },
+    tool_arg_mismatch: {
+        cause: { kind: "module", name: "test", definitions: [
+            { kind: "tool", id: "tool-001", name: "get_weather", uri: "mcp://weather/get", params: [{ kind: "param", id: "p-001", name: "city", type: { kind: "basic", name: "String" } }], returnType: { kind: "basic", name: "String" }, effects: ["io"] },
+            { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["io", "fails"], returnType: { kind: "result", ok: { kind: "basic", name: "String" }, err: { kind: "basic", name: "String" } }, contracts: [], body: [{ kind: "tool_call", id: "tc-001", tool: "get_weather", args: [{ kind: "field_init", name: "city", value: { kind: "literal", id: "lit-001", value: 42 } }] }] },
+        ] },
+        fix: { kind: "module", name: "test", definitions: [
+            { kind: "tool", id: "tool-001", name: "get_weather", uri: "mcp://weather/get", params: [{ kind: "param", id: "p-001", name: "city", type: { kind: "basic", name: "String" } }], returnType: { kind: "basic", name: "String" }, effects: ["io"] },
+            { kind: "fn", id: "fn-001", name: "main", params: [], effects: ["io", "fails"], returnType: { kind: "result", ok: { kind: "basic", name: "String" }, err: { kind: "basic", name: "String" } }, contracts: [], body: [{ kind: "tool_call", id: "tc-001", tool: "get_weather", args: [{ kind: "field_init", name: "city", value: { kind: "literal", id: "lit-001", value: "Berlin" } }] }] },
         ] },
     },
 };

@@ -28,6 +28,29 @@ export const VALID_EFFECTS: readonly Effect[] = [
 ] as const;
 
 // =============================================================================
+// Tool Call Infrastructure
+// =============================================================================
+
+/**
+ * Retry backoff strategy for tool calls.
+ */
+export type BackoffKind = "fixed" | "linear" | "exponential";
+
+export const VALID_BACKOFF_KINDS: readonly BackoffKind[] = [
+    "fixed",
+    "linear",
+    "exponential",
+] as const;
+
+/**
+ * Retry policy for tool calls — how often and how to back off.
+ */
+export interface RetryPolicy {
+    maxRetries: number;
+    backoff: BackoffKind;
+}
+
+// =============================================================================
 // Approval Gates
 // =============================================================================
 
@@ -49,7 +72,7 @@ export const VALID_APPROVAL_SCOPES: readonly ApprovalScope[] = [
 export interface ApprovalGate {
     required: boolean;
     scope: ApprovalScope;
-    description: string;  // machine-readable tag, e.g. "wire_transfer", "delete_data"
+    reason: string;  // machine-readable tag, e.g. "wire_transfer", "delete_data"
 }
 
 // =============================================================================
@@ -117,7 +140,8 @@ export type Definition =
     | TypeDef
     | RecordDef
     | EnumDef
-    | ConstDef;
+    | ConstDef
+    | ToolDef;
 
 /**
  * Function definition with effects, contracts, and body.
@@ -235,6 +259,22 @@ export interface ConstDef {
     blame?: BlameAnnotation;
 }
 
+/**
+ * Tool definition — declares a named external tool with a typed interface.
+ * The host provides the actual implementation at runtime.
+ * Tool names are in scope like functions; tool_call expressions reference them by name.
+ */
+export interface ToolDef {
+    kind: "tool";
+    id: string;
+    name: string;              // agent-facing name: "get_weather", "create_issue"
+    uri: string;               // tool URI: "mcp://github/create_issue"
+    params: Param[];           // typed parameters
+    returnType: TypeExpr;      // Ok payload; tool_call returns Result<returnType, String>
+    effects: Effect[];         // must include "io"; may include others
+    blame?: BlameAnnotation;
+}
+
 // =============================================================================
 // Function Components
 // =============================================================================
@@ -320,7 +360,8 @@ export type Expression =
     | BlockExpr
     | StringInterp
     | ForallExpr
-    | ExistsExpr;
+    | ExistsExpr
+    | ToolCallExpr;
 
 export interface Literal {
     kind: "literal";
@@ -543,6 +584,21 @@ export interface ExistsExpr {
     body: Expression;
 }
 
+/**
+ * Tool call expression — invokes a declared tool by name.
+ * Named args via FieldInit (same pattern as RecordExpr/EnumConstructor).
+ * Always returns Result<T, String> where T is the tool's returnType.
+ */
+export interface ToolCallExpr {
+    kind: "tool_call";
+    id: string;
+    tool: string;              // references a ToolDef.name
+    args: FieldInit[];         // named args
+    timeout?: number;          // ms
+    retryPolicy?: RetryPolicy;
+    fallback?: Expression;     // must type-check as Result<T, String>
+}
+
 // =============================================================================
 // Valid kind values — used by the validator
 // =============================================================================
@@ -553,6 +609,7 @@ export const VALID_DEFINITION_KINDS = [
     "record",
     "enum",
     "const",
+    "tool",
 ] as const;
 
 export const VALID_EXPRESSION_KINDS = [
@@ -574,6 +631,7 @@ export const VALID_EXPRESSION_KINDS = [
     "string_interp",
     "forall",
     "exists",
+    "tool_call",
 ] as const;
 
 export const VALID_TYPE_KINDS = [

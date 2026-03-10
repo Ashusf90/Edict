@@ -12,6 +12,7 @@ import type {
     Definition,
     RecordDef,
     EnumDef,
+    ToolCallExpr,
 } from "../ast/nodes.js";
 import type { TypeExpr, FunctionType } from "../ast/types.js";
 import type { StructuredError } from "../errors/structured-errors.js";
@@ -26,6 +27,7 @@ import {
     unknownVariant,
     missingRecordFields,
     capabilityMissing,
+    toolArgMismatch,
     type FixSuggestion,
 } from "../errors/structured-errors.js";
 import { findCandidates } from "../resolver/levenshtein.js";
@@ -99,6 +101,13 @@ export function typeCheck(module: EdictModule): TypeCheckResult {
         }
     }
 
+    // Build tool definitions map for named-arg checking
+    for (const def of module.definitions) {
+        if (def.kind === "tool") {
+            rootEnv.registerToolDef(def.name, def);
+        }
+    }
+
     // Type-check each definition
     for (const def of module.definitions) {
         switch (def.kind) {
@@ -148,6 +157,17 @@ function registerValueDef(def: Definition, env: TypeEnv): void {
         case "const":
             env.bind(def.name, def.type);
             break;
+        case "tool": {
+            // Register tool as a function type so inferExpr can look it up
+            const toolFnType: FunctionType = {
+                kind: "fn_type",
+                params: def.params.map((p) => p.type ?? UNKNOWN_TYPE),
+                effects: [...def.effects],
+                returnType: def.returnType ?? UNKNOWN_TYPE,
+            };
+            env.bind(def.name, toolFnType);
+            break;
+        }
     }
 }
 
@@ -296,6 +316,9 @@ function inferExpr(
         case "forall":
         case "exists":
             return inferQuantifier(expr, env, errors, typeInfo);
+
+        case "tool_call":
+            return inferToolCall(expr, env, errors, typeInfo);
     }
 }
 
@@ -948,6 +971,78 @@ function inferQuantifier(
     checkExpectedType(bodyType, BOOL_TYPE, expr.id, qEnv, errors);
 
     return BOOL_TYPE;
+}
+
+function inferToolCall(
+    expr: ToolCallExpr,
+    env: TypeEnv,
+    errors: StructuredError[],
+    typeInfo: TypedModuleInfo,
+): TypeExpr {
+    // Look up the tool's type from the env (registered during registerValueDef)
+    const toolType = env.getType(expr.tool);
+    if (!toolType || toolType.kind !== "fn_type") {
+        // If not found, resolver already emitted unknown_tool — return unknown
+        return UNKNOWN_TYPE;
+    }
+
+    // Look up ToolDef from env to get named param info
+    const toolDef = env.lookupToolDef(expr.tool);
+
+    if (toolDef) {
+        // Validate named args against params
+        const sigParamNames = new Set(toolDef.params.map(p => p.name));
+        const argNames = new Set(expr.args.map(a => a.name));
+
+        const missingArgs = toolDef.params
+            .filter(p => !argNames.has(p.name))
+            .map(p => p.name);
+        const extraArgs = expr.args
+            .filter(a => !sigParamNames.has(a.name))
+            .map(a => a.name);
+
+        // Type-check each arg against the corresponding param
+        const typeMismatches: { arg: string; expected: TypeExpr; actual: TypeExpr }[] = [];
+        for (const arg of expr.args) {
+            const param = toolDef.params.find(p => p.name === arg.name);
+            if (param && param.type) {
+                const argType = inferExpr(arg.value, env, errors, typeInfo);
+                if (!isUnknown(argType) && !isUnknown(param.type) && !typesEqual(argType, param.type, env)) {
+                    typeMismatches.push({ arg: arg.name, expected: param.type, actual: argType });
+                }
+            } else {
+                // param unknown → still infer arg for side effects
+                inferExpr(arg.value, env, errors, typeInfo);
+            }
+        }
+
+        if (missingArgs.length > 0 || extraArgs.length > 0 || typeMismatches.length > 0) {
+            errors.push(toolArgMismatch(expr.id, expr.tool, missingArgs, extraArgs, typeMismatches));
+        }
+    } else {
+        // No ToolDef, just infer args for side effects
+        for (const arg of expr.args) {
+            inferExpr(arg.value, env, errors, typeInfo);
+        }
+    }
+
+    // Return type: Result<tool.returnType, String>
+    const okType = toolType.returnType ?? UNKNOWN_TYPE;
+    const resultType: TypeExpr = {
+        kind: "result",
+        ok: okType,
+        err: STRING_TYPE,
+    };
+
+    // If fallback provided, check it matches the result type
+    if (expr.fallback) {
+        const fallbackType = inferExpr(expr.fallback, env, errors, typeInfo);
+        if (!isUnknown(fallbackType)) {
+            checkExpectedType(fallbackType, resultType, expr.fallback.id, env, errors);
+        }
+    }
+
+    return resultType;
 }
 
 // =============================================================================

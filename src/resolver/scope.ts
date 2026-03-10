@@ -15,7 +15,8 @@ export type SymbolKind =
     | "record"
     | "enum"
     | "import"
-    | "result";
+    | "result"
+    | "tool";
 
 export interface SymbolInfo {
     name: string;

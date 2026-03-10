@@ -24,7 +24,9 @@ export type LintWarning =
     | LowConfidenceOutputWarning
     | LiteralProvenanceWarning
     | StaleDataWarning
-    | ApprovalMissingOnIoWarning;
+    | ApprovalMissingOnIoWarning
+    | ToolCallNoRetryWarning
+    | ToolCallNoTimeoutWarning;
 
 // =============================================================================
 // Individual warning types
@@ -144,6 +146,20 @@ export interface ApprovalMissingOnIoWarning {
     nodeId: string;
     functionName: string;
     effects: Effect[];
+}
+
+export interface ToolCallNoRetryWarning {
+    warning: "tool_call_no_retry";
+    severity: "warning";
+    nodeId: string;
+    toolName: string;
+}
+
+export interface ToolCallNoTimeoutWarning {
+    warning: "tool_call_no_timeout";
+    severity: "warning";
+    nodeId: string;
+    toolName: string;
 }
 
 // =============================================================================
@@ -316,4 +332,14 @@ export function approvalMissingOnIo(
         functionName,
         effects,
     };
+}
+
+/** Create a warning when a tool_call expression is missing a retry policy. */
+export function toolCallNoRetry(nodeId: string, toolName: string): ToolCallNoRetryWarning {
+    return { warning: "tool_call_no_retry", severity: "warning", nodeId, toolName };
+}
+
+/** Create a warning when a tool_call expression is missing a timeout. */
+export function toolCallNoTimeout(nodeId: string, toolName: string): ToolCallNoTimeoutWarning {
+    return { warning: "tool_call_no_timeout", severity: "warning", nodeId, toolName };
 }

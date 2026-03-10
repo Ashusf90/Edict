@@ -223,3 +223,14 @@ if (url.endsWith(".ts")) {
 - **Root cause**: The review workflow treated design elegance as optional self-reflection rather than a mandatory gate. Correctness ≠ elegance.
 - **Fix**: Added a Design Elegance step (step 3) to `/review` workflow with specific checks: single responsibility, merge point consolidation, magic value elimination, duality detection, and one-sided preservation.
 - **Rule**: After validating critical rules compliance, always ask: "Is there a simpler shape?" Two fields doing what one could do, magic strings, and scattered merge points are design smells.
+
+## 37. Extract Purpose-Built Interfaces Over Synthetic Casts
+- **Context**: Call graph stored `Map<string, FunctionDef>` and created synthetic `FunctionDef` objects with `as FunctionDef` casts for builtins, imports, and tools — all entities that aren't actually functions.
+- **Problem**: `as FunctionDef` is fragile — if `FunctionDef` gains required fields, the synthetic objects break silently. It also obscures what the consumer actually needs.
+- **Solution**: Introduced `EffectSource` interface (`{ name, id, effects, approval? }`) — exactly what effect checking and lint actually consume. Eliminated all `as FunctionDef` casts.
+- **Rule**: When multiple entity types feed into the same infrastructure, don't cast them to the most common concrete type. Extract a purpose-built interface covering only the shared surface area. This is safer, self-documenting, and extensible.
+
+## 38. Distinguish Value-Level Errors From Effect-Level Errors
+- **Context**: Tool calls return `Result<T, String>` (failure as a value). Initially also added implicit `fails` effect (failure as an effect).
+- **Problem**: Double-charging callers — they must both handle the Result AND declare `fails`. If `Result` already captures the failure, the effect is redundant and forces unnecessary declarations.
+- **Rule**: If a construct wraps failures in a value type (Result, Option), don't also propagate a `fails` effect. Effects are for unhandled propagation; Result is for handled propagation. Choose one, not both.

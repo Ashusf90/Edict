@@ -40,7 +40,7 @@ export interface EffectCheckResult {
  * @returns `{ errors, diagnostics }` — effect violation errors and skipped-check diagnostics
  */
 export function effectCheck(module: EdictModule): EffectCheckResult {
-    const { graph, functionDefs, importedNames } = buildCallGraph(module);
+    const { effectSources: functionDefs, graph, importedNames } = buildCallGraph(module);
     const errors: StructuredError[] = [];
     const diagnostics: AnalysisDiagnostic[] = [];
 
@@ -134,7 +134,7 @@ export function effectCheck(module: EdictModule): EffectCheckResult {
                     value: {
                         required: true,
                         scope: callee.approval.scope,
-                        description: callee.approval.description,
+                        reason: callee.approval.reason,
                     },
                 };
                 errors.push(approvalPropagationMissing(
@@ -142,7 +142,7 @@ export function effectCheck(module: EdictModule): EffectCheckResult {
                     fnName,
                     edge.callSiteNodeId,
                     edge.calleeName,
-                    { scope: callee.approval.scope, description: callee.approval.description },
+                    { scope: callee.approval.scope, reason: callee.approval.reason },
                     suggestion,
                 ));
             }

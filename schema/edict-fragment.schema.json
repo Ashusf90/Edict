@@ -97,6 +97,9 @@
         },
         {
           "$ref": "#/definitions/ConstDef"
+        },
+        {
+          "$ref": "#/definitions/ToolDef"
         }
       ]
     },
@@ -506,6 +509,9 @@
         },
         {
           "$ref": "#/definitions/ExistsExpr"
+        },
+        {
+          "$ref": "#/definitions/ToolCallExpr"
         }
       ]
     },
@@ -1417,6 +1423,127 @@
         "variable"
       ]
     },
+    "ToolCallExpr": {
+      "description": "Tool call expression — invokes a declared tool by name.\nNamed args via FieldInit (same pattern as RecordExpr/EnumConstructor).\nAlways returns Result<T, String> where T is the tool's returnType.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "tool_call"
+        },
+        "id": {
+          "type": "string"
+        },
+        "tool": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FieldInit"
+          }
+        },
+        "timeout": {
+          "type": "number"
+        },
+        "retryPolicy": {
+          "description": "Retry policy for tool calls — how often and how to back off.",
+          "$ref": "#/definitions/RetryPolicy"
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Literal"
+            },
+            {
+              "$ref": "#/definitions/Identifier"
+            },
+            {
+              "$ref": "#/definitions/BinaryOp"
+            },
+            {
+              "$ref": "#/definitions/UnaryOp"
+            },
+            {
+              "$ref": "#/definitions/Call"
+            },
+            {
+              "$ref": "#/definitions/IfExpr"
+            },
+            {
+              "$ref": "#/definitions/LetExpr"
+            },
+            {
+              "$ref": "#/definitions/MatchExpr"
+            },
+            {
+              "$ref": "#/definitions/ArrayExpr"
+            },
+            {
+              "$ref": "#/definitions/TupleExpr"
+            },
+            {
+              "$ref": "#/definitions/RecordExpr"
+            },
+            {
+              "$ref": "#/definitions/EnumConstructor"
+            },
+            {
+              "$ref": "#/definitions/FieldAccess"
+            },
+            {
+              "$ref": "#/definitions/LambdaExpr"
+            },
+            {
+              "$ref": "#/definitions/BlockExpr"
+            },
+            {
+              "$ref": "#/definitions/StringInterp"
+            },
+            {
+              "$ref": "#/definitions/ForallExpr"
+            },
+            {
+              "$ref": "#/definitions/ExistsExpr"
+            },
+            {
+              "$ref": "#/definitions/ToolCallExpr"
+            }
+          ]
+        }
+      },
+      "required": [
+        "args",
+        "id",
+        "kind",
+        "tool"
+      ]
+    },
+    "RetryPolicy": {
+      "description": "Retry policy for tool calls — how often and how to back off.",
+      "type": "object",
+      "properties": {
+        "maxRetries": {
+          "type": "number"
+        },
+        "backoff": {
+          "$ref": "#/definitions/BackoffKind"
+        }
+      },
+      "required": [
+        "backoff",
+        "maxRetries"
+      ]
+    },
+    "BackoffKind": {
+      "description": "Retry backoff strategy for tool calls.",
+      "enum": [
+        "exponential",
+        "fixed",
+        "linear"
+      ],
+      "type": "string"
+    },
     "Contract": {
       "description": "Pre/post contract on a function.\nMust have exactly one of `condition` (manual expression) or `semantic` (pre-built assertion).\n`semantic` is only valid on `post` contracts (v1).",
       "type": "object",
@@ -1486,6 +1613,9 @@
             },
             {
               "$ref": "#/definitions/ExistsExpr"
+            },
+            {
+              "$ref": "#/definitions/ToolCallExpr"
             }
           ]
         },
@@ -1652,12 +1782,12 @@
         "scope": {
           "$ref": "#/definitions/ApprovalScope"
         },
-        "description": {
+        "reason": {
           "type": "string"
         }
       },
       "required": [
-        "description",
+        "reason",
         "required",
         "scope"
       ]
@@ -1827,6 +1957,9 @@
             },
             {
               "$ref": "#/definitions/ExistsExpr"
+            },
+            {
+              "$ref": "#/definitions/ToolCallExpr"
             }
           ]
         }
@@ -1929,6 +2062,53 @@
         "name",
         "type",
         "value"
+      ]
+    },
+    "ToolDef": {
+      "description": "Tool definition — declares a named external tool with a typed interface.\nThe host provides the actual implementation at runtime.\nTool names are in scope like functions; tool_call expressions reference them by name.",
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "tool"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Param"
+          }
+        },
+        "returnType": {
+          "$ref": "#/definitions/TypeExpr"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Effect"
+          }
+        },
+        "blame": {
+          "description": "Structured blame / provenance annotation.\nTracks which agent produced a module or function, when, and with what confidence.",
+          "$ref": "#/definitions/BlameAnnotation"
+        }
+      },
+      "required": [
+        "effects",
+        "id",
+        "kind",
+        "name",
+        "params",
+        "returnType",
+        "uri"
       ]
     }
   },

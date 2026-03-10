@@ -78,6 +78,10 @@ function collectStringExpr(expr: Expression, strings: StringTable): void {
             collectStringExpr(expr.range.to, strings);
             collectStringExpr(expr.body, strings);
             break;
+        case "tool_call":
+            for (const arg of expr.args) collectStringExpr(arg.value, strings);
+            if (expr.fallback) collectStringExpr(expr.fallback, strings);
+            break;
         // ident, array — no string literals directly
     }
 }

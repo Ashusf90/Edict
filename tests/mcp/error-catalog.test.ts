@@ -70,6 +70,9 @@ const ALL_ERROR_TYPES = [
     // Migration errors
     "migration_failed",
     "unsupported_schema_version",
+    // Tool errors
+    "unknown_tool",
+    "tool_arg_mismatch",
 ];
 
 describe("handleErrorCatalog", () => {

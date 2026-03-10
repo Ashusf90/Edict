@@ -79,7 +79,10 @@ export type StructuredError =
     // Capability errors
     | CapabilityMissingError
     // Approval errors
-    | ApprovalPropagationMissingError;
+    | ApprovalPropagationMissingError
+    // Tool errors
+    | UnknownToolError
+    | ToolArgMismatchError;
 
 // =============================================================================
 // Phase 1 — Validation errors
@@ -940,7 +943,7 @@ export interface ApprovalPropagationMissingError {
     functionName: string;
     callSiteNodeId: string | null;
     calleeName: string;
-    calleeApproval: { scope: string; description: string };
+    calleeApproval: { scope: string; reason: string };
     suggestion?: FixSuggestion;
 }
 
@@ -950,7 +953,7 @@ export function approvalPropagationMissing(
     functionName: string,
     callSiteNodeId: string | null,
     calleeName: string,
-    calleeApproval: { scope: string; description: string },
+    calleeApproval: { scope: string; reason: string },
     suggestion?: FixSuggestion,
 ): ApprovalPropagationMissingError {
     const err: ApprovalPropagationMissingError = {
@@ -959,4 +962,52 @@ export function approvalPropagationMissing(
     };
     if (suggestion) err.suggestion = suggestion;
     return err;
+}
+
+// =============================================================================
+// Tool errors
+// =============================================================================
+
+export interface UnknownToolError {
+    error: "unknown_tool";
+    nodeId: string | null;
+    toolName: string;
+    registeredTools: string[];
+    suggestion?: FixSuggestion;
+}
+
+export interface ToolArgMismatchError {
+    error: "tool_arg_mismatch";
+    nodeId: string | null;
+    toolName: string;
+    missingArgs: string[];
+    extraArgs: string[];
+    typeMismatches: { arg: string; expected: TypeExpr; actual: TypeExpr }[];
+}
+
+// =============================================================================
+// Tool error constructors
+// =============================================================================
+
+/** Emit when a tool_call references a tool name not registered in any ToolDef. */
+export function unknownTool(
+    nodeId: string | null,
+    toolName: string,
+    registeredTools: string[],
+    suggestion?: FixSuggestion,
+): UnknownToolError {
+    const err: UnknownToolError = { error: "unknown_tool", nodeId, toolName, registeredTools };
+    if (suggestion) err.suggestion = suggestion;
+    return err;
+}
+
+/** Emit when tool_call args don't match the tool's parameter signature. */
+export function toolArgMismatch(
+    nodeId: string | null,
+    toolName: string,
+    missingArgs: string[],
+    extraArgs: string[],
+    typeMismatches: { arg: string; expected: TypeExpr; actual: TypeExpr }[],
+): ToolArgMismatchError {
+    return { error: "tool_arg_mismatch", nodeId, toolName, missingArgs, extraArgs, typeMismatches };
 }

@@ -15,10 +15,11 @@ import type {
     RecordDef,
     EnumDef,
     RecordField,
+    ToolDef,
 } from "../ast/nodes.js";
 import type { TypeExpr, RefinedType } from "../ast/types.js";
 import type { StructuredError } from "../errors/structured-errors.js";
-import { undefinedReference, type FixSuggestion } from "../errors/structured-errors.js";
+import { undefinedReference, unknownTool, type FixSuggestion } from "../errors/structured-errors.js";
 import { findCandidates } from "./levenshtein.js";
 import { Scope, type SymbolInfo } from "./scope.js";
 import type { FunctionType } from "../ast/types.js";
@@ -135,6 +136,9 @@ export function resolve(module: EdictModule): StructuredError[] {
             case "enum":
                 resolveEnumDef(def, moduleScope, errors);
                 break;
+            case "tool":
+                resolveToolDef(def, moduleScope, errors);
+                break;
         }
     }
 
@@ -168,6 +172,19 @@ function defToSymbolInfo(def: Definition): SymbolInfo {
             return { name: def.name, kind: "enum", nodeId: def.id, definition: def };
         case "const":
             return { name: def.name, kind: "const", nodeId: def.id, type: def.type, definition: def };
+        case "tool":
+            return {
+                name: def.name,
+                kind: "tool",
+                nodeId: def.id,
+                type: {
+                    kind: "fn_type",
+                    params: def.params.map((p) => p.type ?? UNKNOWN_TYPE),
+                    effects: [...def.effects],
+                    returnType: def.returnType ?? UNKNOWN_TYPE,
+                } satisfies FunctionType,
+                definition: def,
+            };
     }
 }
 
@@ -268,6 +285,20 @@ function resolveEnumDef(
             resolveRecordField(field, scope, errors);
         }
     }
+}
+
+/**
+ * Resolve type references in a tool definition's params and return type.
+ */
+function resolveToolDef(
+    def: ToolDef,
+    scope: Scope,
+    errors: StructuredError[],
+): void {
+    for (const param of def.params) {
+        if (param.type) resolveTypeExpr(param.type, scope, errors);
+    }
+    if (def.returnType) resolveTypeExpr(def.returnType, scope, errors);
 }
 
 /**
@@ -490,6 +521,29 @@ function resolveExpression(
             });
             if (err) errors.push(err);
             resolveExpression(expr.body, qScope, errors);
+            break;
+        }
+
+        case "tool_call": {
+            // Check that the tool name resolves to a ToolDef
+            const sym = scope.lookup(expr.tool);
+            if (!sym || sym.kind !== "tool") {
+                const toolNames = scope.allNames().filter(n => {
+                    const s = scope.lookup(n);
+                    return s?.kind === "tool";
+                });
+                const cands = findCandidates(expr.tool, toolNames);
+                const suggestion: FixSuggestion | undefined = cands.length > 0
+                    ? { nodeId: expr.id, field: "tool", value: cands[0] }
+                    : undefined;
+                errors.push(
+                    unknownTool(expr.id, expr.tool, toolNames, suggestion),
+                );
+            }
+            // Resolve arg value expressions
+            for (const f of expr.args) resolveExpression(f.value, scope, errors);
+            // Resolve fallback if present
+            if (expr.fallback) resolveExpression(expr.fallback, scope, errors);
             break;
         }
     }

@@ -7,7 +7,8 @@
 import type {
     EdictModule,
     Expression,
-    FunctionDef,
+    Effect,
+    ApprovalGate,
 } from "../ast/nodes.js";
 import { BUILTIN_FUNCTIONS } from "../builtins/builtins.js";
 import { walkExpression } from "../ast/walk.js";
@@ -22,6 +23,18 @@ export interface CallEdge {
 }
 
 export type CallGraph = Map<string, CallEdge[]>;
+
+/**
+ * Minimal interface for anything that can source effects in the call graph.
+ * Covers user functions, builtins, typed imports, and tool definitions —
+ * without requiring synthetic FunctionDef casts.
+ */
+export interface EffectSource {
+    name: string;
+    id: string;
+    effects: Effect[];
+    approval?: ApprovalGate;
+}
 
 // =============================================================================
 // Expression Walker
@@ -51,6 +64,13 @@ export function collectCalls(exprs: Expression[]): CallEdge[] {
                         callSiteNodeId: node.id,
                     });
                 }
+                if (node.kind === "tool_call") {
+                    // Tool invocation → record edge to registered tool
+                    edges.push({
+                        calleeName: node.tool,
+                        callSiteNodeId: node.id,
+                    });
+                }
             }
         });
     }
@@ -63,65 +83,66 @@ export function collectCalls(exprs: Expression[]): CallEdge[] {
 // =============================================================================
 
 /**
- * Build the module call graph: edges per function, function defs, and imported names.
+ * Build the module call graph: edges per function, effect sources, and imported names.
  * Only walks FunctionDef.body — contracts are Z3 specs, not runtime code.
  *
  * @param module - A validated Edict module
- * @returns `{ graph, functionDefs, importedNames }` — the call graph, function definitions map, and set of imported names
+ * @returns `{ graph, effectSources, functionDefs, importedNames }`
  */
 export function buildCallGraph(module: EdictModule): {
     graph: CallGraph;
-    functionDefs: Map<string, FunctionDef>;
+    effectSources: Map<string, EffectSource>;
     importedNames: Set<string>;
+    /** @deprecated Use effectSources — kept for backward compat */
+    functionDefs: Map<string, EffectSource>;
 } {
     const graph: CallGraph = new Map();
-    const functionDefs = new Map<string, FunctionDef>();
+    const effectSources = new Map<string, EffectSource>();
     const importedNames = new Set<string>();
 
-    // Register builtins as synthetic function defs so effect checker
-    // can verify callers declare the correct effects.
+    // Register builtins
     for (const [name, builtin] of BUILTIN_FUNCTIONS) {
-        functionDefs.set(name, {
-            kind: "fn",
-            id: `builtin-${name}`,
+        effectSources.set(name, {
             name,
-            params: [],
-            returnType: builtin.type.returnType,
+            id: `builtin-${name}`,
             effects: [...builtin.type.effects],
-            contracts: [],
-            body: [],
-        } as FunctionDef);
+        });
     }
 
-    // Collect imported names — register typed imports as synthetic FunctionDefs
-    // when they declare fn_type with effects (same pattern as builtins above)
+    // Collect imported names — register typed imports with effects
     for (const imp of module.imports) {
         for (const name of imp.names) {
             const declaredType = imp.types?.[name];
             if (declaredType && declaredType.kind === "fn_type" && declaredType.effects.length > 0) {
-                // Typed import with effects — register as synthetic FunctionDef
-                // so the effect checker can verify callers declare the right effects
-                functionDefs.set(name, {
-                    kind: "fn",
-                    id: `import-${imp.module}-${name}`,
+                effectSources.set(name, {
                     name,
-                    params: [],
-                    returnType: declaredType.returnType,
+                    id: `import-${imp.module}-${name}`,
                     effects: [...declaredType.effects],
-                    contracts: [],
-                    body: [],
-                } as FunctionDef);
+                });
             } else {
-                // Untyped or pure import — effect-opaque
                 importedNames.add(name);
             }
         }
     }
 
-    // Collect function definitions
+    // Collect function definitions and tool definitions
     for (const def of module.definitions) {
         if (def.kind === "fn") {
-            functionDefs.set(def.name, def);
+            effectSources.set(def.name, {
+                name: def.name,
+                id: def.id,
+                effects: [...def.effects],
+                approval: def.approval,
+            });
+        } else if (def.kind === "tool") {
+            // Tools declare their own effects — no implicit additions.
+            // tool_call wraps results in Result<T, String>, so failures
+            // are values, not effects.
+            effectSources.set(def.name, {
+                name: def.name,
+                id: def.id,
+                effects: [...def.effects],
+            });
         }
     }
 
@@ -132,5 +153,5 @@ export function buildCallGraph(module: EdictModule): {
         }
     }
 
-    return { graph, functionDefs, importedNames };
+    return { graph, effectSources, importedNames, functionDefs: effectSources };
 }

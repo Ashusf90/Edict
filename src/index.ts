@@ -47,7 +47,7 @@ export { typesEqual, isUnknown, resolveType } from "./checker/types-equal.js";
 export { effectCheck } from "./effects/effect-check.js";
 export type { EffectCheckResult } from "./effects/effect-check.js";
 export { buildCallGraph, collectCalls } from "./effects/call-graph.js";
-export type { CallEdge, CallGraph } from "./effects/call-graph.js";
+export type { CallEdge, CallGraph, EffectSource } from "./effects/call-graph.js";
 
 // ---------------------------------------------------------------------------
 // Phase 4 — Contract Verification: Z3 SMT proving of pre/post contracts
@@ -115,6 +115,10 @@ export type {
     SemanticInvariant,
     ApprovalGate,
     ApprovalScope,
+    ToolDef,
+    ToolCallExpr,
+    RetryPolicy,
+    BackoffKind,
 } from "./ast/nodes.js";
 export { VALID_APPROVAL_SCOPES } from "./ast/nodes.js";
 
@@ -188,6 +192,9 @@ export type {
     UnsupportedSchemaVersionError,
     // Approval errors
     ApprovalPropagationMissingError,
+    // Tool errors
+    UnknownToolError,
+    ToolArgMismatchError,
 } from "./errors/structured-errors.js";
 
 // ---------------------------------------------------------------------------
@@ -242,6 +249,9 @@ export {
     unsupportedSchemaVersion,
     // Approval errors
     approvalPropagationMissing,
+    // Tool errors
+    unknownTool,
+    toolArgMismatch,
 } from "./errors/structured-errors.js";
 
 // ---------------------------------------------------------------------------
@@ -307,6 +317,8 @@ export type {
     RedundantEffectWarning,
     IntentUnverifiedInvariantWarning,
     ApprovalMissingOnIoWarning,
+    ToolCallNoRetryWarning,
+    ToolCallNoTimeoutWarning,
 } from "./lint/warnings.js";
 export {
     unusedVariable,
@@ -317,6 +329,8 @@ export {
     redundantEffect,
     intentUnverifiedInvariant,
     approvalMissingOnIo,
+    toolCallNoRetry,
+    toolCallNoTimeout,
 } from "./lint/warnings.js";
 
 // ---------------------------------------------------------------------------

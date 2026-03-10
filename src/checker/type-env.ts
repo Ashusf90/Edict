@@ -3,11 +3,12 @@
 // =============================================================================
 
 import type { TypeExpr } from "../ast/types.js";
-import type { TypeDef, RecordDef, EnumDef } from "../ast/nodes.js";
+import type { TypeDef, RecordDef, EnumDef, ToolDef } from "../ast/nodes.js";
 
 export class TypeEnv {
     private bindings: Map<string, TypeExpr> = new Map();
     private typeDefs: Map<string, TypeDef | RecordDef | EnumDef> = new Map();
+    private toolDefs: Map<string, ToolDef> = new Map();
     private parent: TypeEnv | null;
 
     constructor(parent: TypeEnv | null = null) {
@@ -32,6 +33,16 @@ export class TypeEnv {
         const local = this.typeDefs.get(name);
         if (local) return local;
         return this.parent?.lookupTypeDef(name);
+    }
+
+    registerToolDef(name: string, def: ToolDef): void {
+        this.toolDefs.set(name, def);
+    }
+
+    lookupToolDef(name: string): ToolDef | undefined {
+        const local = this.toolDefs.get(name);
+        if (local) return local;
+        return this.parent?.lookupToolDef(name);
     }
 
     /**

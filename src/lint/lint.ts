@@ -4,8 +4,8 @@
 // Non-blocking analysis pass. Runs on a validated module (post-Phase 1).
 // Returns structured warnings without blocking compilation.
 
-import type { EdictModule, Expression, FunctionDef, Effect, IntentInvariant } from "../ast/nodes.js";
-import { buildCallGraph } from "../effects/call-graph.js";
+import type { EdictModule, Expression, Effect, IntentInvariant } from "../ast/nodes.js";
+import { buildCallGraph, type EffectSource } from "../effects/call-graph.js";
 import {
     unusedVariable,
     unusedImport,
@@ -20,9 +20,12 @@ import {
     literalProvenance,
     staleDataUsed,
     approvalMissingOnIo,
+    toolCallNoRetry,
+    toolCallNoTimeout,
     type LintWarning,
     type SuggestedSplit,
 } from "./warnings.js";
+import { walkExpression } from "../ast/walk.js";
 
 // Re-export for convenience
 export type { LintWarning } from "./warnings.js";
@@ -57,6 +60,7 @@ export function lint(module: EdictModule): LintWarning[] {
     checkProvenanceLiterals(module, warnings);
     checkFreshnessOnPure(module, warnings);
     checkApprovalOnIo(module, warnings);
+    checkToolCallWarnings(module, warnings);
 
     return warnings;
 }
@@ -193,7 +197,7 @@ function recurseIntoExprForUnused(expr: Expression, warnings: LintWarning[]): vo
 // =============================================================================
 
 function checkRedundantEffects(module: EdictModule, warnings: LintWarning[]): void {
-    const { graph, functionDefs, importedNames } = buildCallGraph(module);
+    const { graph, effectSources, importedNames } = buildCallGraph(module);
 
     for (const def of module.definitions) {
         if (def.kind !== "fn") continue;
@@ -203,7 +207,7 @@ function checkRedundantEffects(module: EdictModule, warnings: LintWarning[]): vo
         if (declaredNonPure.size === 0) continue;
 
         // Compute required effects from call graph
-        const required = computeRequiredEffects(def.name, graph, functionDefs, importedNames);
+        const required = computeRequiredEffects(def.name, graph, effectSources, importedNames);
         const redundant = [...declaredNonPure].filter(e => !required.has(e));
 
         if (redundant.length > 0) {
@@ -225,7 +229,7 @@ function checkRedundantEffects(module: EdictModule, warnings: LintWarning[]): vo
 function computeRequiredEffects(
     fnName: string,
     graph: Map<string, { calleeName: string; callSiteNodeId: string | null }[]>,
-    functionDefs: Map<string, FunctionDef>,
+    functionDefs: Map<string, EffectSource>,
     importedNames: Set<string>,
 ): Set<string> {
     const required = new Set<string>();
@@ -344,6 +348,12 @@ function collectReferencedNamesFromExpr(expr: Expression, names: Set<string>): v
                 collectReferencedNamesFromExpr(part, names);
             }
             break;
+        case "tool_call":
+            for (const f of expr.args) {
+                collectReferencedNamesFromExpr(f.value, names);
+            }
+            if (expr.fallback) collectReferencedNamesFromExpr(expr.fallback, names);
+            break;
     }
 }
 
@@ -416,6 +426,12 @@ function countExprNode(expr: Expression): number {
             for (const part of expr.parts) {
                 count += countExprNode(part);
             }
+            break;
+        case "tool_call":
+            for (const f of expr.args) {
+                count += countExprNode(f.value);
+            }
+            if (expr.fallback) count += countExprNode(expr.fallback);
             break;
     }
     return count;
@@ -762,3 +778,29 @@ function checkApprovalOnIo(module: EdictModule, warnings: LintWarning[]): void {
     }
 }
 
+// =============================================================================
+// Tool call reliability warnings
+// =============================================================================
+
+/**
+ * Check tool_call expressions for missing retry policies and timeouts.
+ * These are optional but strongly recommended for production reliability.
+ */
+function checkToolCallWarnings(module: EdictModule, warnings: LintWarning[]): void {
+    for (const def of module.definitions) {
+        if (def.kind !== "fn") continue;
+
+        for (const expr of def.body) {
+            walkExpression(expr, (node) => {
+                if (node.kind === "tool_call") {
+                    if (!node.retryPolicy) {
+                        warnings.push(toolCallNoRetry(node.id, node.tool));
+                    }
+                    if (!node.timeout) {
+                        warnings.push(toolCallNoTimeout(node.id, node.tool));
+                    }
+                }
+            });
+        }
+    }
+}

@@ -229,6 +229,10 @@ interface FunctionDef {
   effects: Effect[]
   returnType?: TypeExpr       // optional — inferred from body when omitted
   contracts: Contract[]
+  constraints?: ComplexityConstraints  // per-function complexity limits
+  intent?: IntentDeclaration           // structured "what, not how" metadata
+  approval?: ApprovalGate              // requires explicit host approval before execution
+  blame?: BlameAnnotation              // error attribution metadata
   body: Expression[]
 }
 
@@ -519,11 +523,40 @@ type StructuredError =
   | DuplicateIdError
   | UnknownNodeKindError
   | MissingFieldError
+  | InvalidFieldTypeError
+  | InvalidEffectError
+  | InvalidOperatorError
+  | InvalidBasicTypeName
+  | ConflictingEffectsError
   | UndefinedReferenceError
+  | DuplicateDefinitionError
+  | UnknownRecordError
+  | UnknownEnumError
+  | UnknownVariantError
   | TypeMismatchError
+  | UnitMismatchError
+  | ArityMismatchError
+  | NotAFunctionError
+  | UnknownFieldError
+  | MissingRecordFieldsError
+  | FunctionComplexityExceededError
+  | ModuleComplexityExceededError
   | EffectViolationError
+  | EffectInPureError
+  | ApprovalPropagationMissingError
   | ContractFailureError
   | VerificationTimeoutError
+  | UndecidablePredicateError
+  | PreconditionNotMetError
+  | CapabilityMissingError
+  | WasmValidationError
+  | MissingEntryPointError
+  | CircularImportError
+  | UnresolvedModuleError
+  | DuplicateModuleNameError
+  | MissingExternalModuleError
+  | MigrationFailedError
+  | UnsupportedSchemaVersionError
 
 interface DuplicateIdError {
   error: "duplicate_id"
