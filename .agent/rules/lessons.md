@@ -234,3 +234,8 @@ if (url.endsWith(".ts")) {
 - **Context**: Tool calls return `Result<T, String>` (failure as a value). Initially also added implicit `fails` effect (failure as an effect).
 - **Problem**: Double-charging callers — they must both handle the Result AND declare `fails`. If `Result` already captures the failure, the effect is redundant and forces unnecessary declarations.
 - **Rule**: If a construct wraps failures in a value type (Result, Option), don't also propagate a `fails` effect. Effects are for unhandled propagation; Result is for handled propagation. Choose one, not both.
+
+## 39. WebAssembly.instantiate Overload Return Types
+- **Context**: `WebAssembly.instantiate()` has two overloads with different return types.
+- **Problem**: Passing `Uint8Array` returns `{ instance, module }` (InstantiateResult). Passing a compiled `WebAssembly.Module` returns `Instance` directly. Using `.instance.exports` on the Module overload silently returns `undefined`.
+- **Rule**: Always declare proper overloaded types when wrapping multi-signature APIs. Test both code paths.

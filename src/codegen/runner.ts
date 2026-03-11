@@ -33,10 +33,34 @@ declare namespace WebAssembly {
     interface InstantiateResult {
         instance: Instance;
     }
+    interface Module {
+        readonly __brand: unique symbol;
+    }
+    interface ModuleImportDescriptor {
+        module: string;
+        name: string;
+        kind: "function" | "table" | "memory" | "global" | "tag";
+    }
+    interface ModuleExportDescriptor {
+        name: string;
+        kind: "function" | "table" | "memory" | "global" | "tag";
+    }
+    // Overload 1: bytes → { instance, module }
     function instantiate(
         bufferSource: Uint8Array,
         importObject?: Record<string, Record<string, unknown>>,
     ): Promise<InstantiateResult>;
+    // Overload 2: compiled Module → Instance directly
+    function instantiate(
+        module: Module,
+        importObject?: Record<string, Record<string, unknown>>,
+    ): Promise<Instance>;
+    function compile(bufferSource: Uint8Array): Promise<Module>;
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    namespace Module {
+        function imports(module: Module): ModuleImportDescriptor[];
+        function exports(module: Module): ModuleExportDescriptor[];
+    }
 }
 
 /** Configuration for execution sandbox limits */
@@ -261,7 +285,23 @@ export async function runDirect(
 
     const importObject = createHostImports(state, effectiveAdapter, replayLog);
 
-    // Instantiate external WASM modules and merge their exports into the import object
+    // =========================================================================
+    // Two-phase external module instantiation (shared memory for String/Array)
+    // =========================================================================
+    // Phase 1 (pre-Edict): Compile each external module to inspect its imports.
+    //   - No memory import → instantiate immediately, pass exports directly (v1).
+    //   - Imports memory → defer. Use Module.exports() to discover function
+    //     names, create mutable delegates. Delegates satisfy Edict's imports.
+    // Phase 2 (post-Edict): Build a shared import object from each deferred
+    //   module's actual import declarations (namespace-agnostic). Instantiate
+    //   with Edict's memory + heap allocator, then patch delegates.
+    // =========================================================================
+
+    interface DelegateRef { fn: ((...args: unknown[]) => unknown) | null }
+    const delegateRefs = new Map<string, DelegateRef>();            // "ns.name" → ref
+    const deferredModules = new Map<string, WebAssembly.Module>();  // namespace → compiled module
+    const needsSharedMemory = new Set<string>();                    // namespaces that import memory
+
     if (limits.externalModules) {
         for (const [namespace, base64] of Object.entries(limits.externalModules)) {
             // Protect reserved namespaces — builtins take precedence
@@ -272,14 +312,43 @@ export async function runDirect(
                         ? Buffer.from(base64, "base64")
                         : Uint8Array.from(atob(base64), c => c.charCodeAt(0)),
                 );
-                const extResult = await WebAssembly.instantiate(extBytes, {});
-                const extExports: Record<string, unknown> = {};
-                for (const [key, val] of Object.entries(extResult.instance.exports)) {
-                    if (typeof val === "function") {
-                        extExports[key] = val;
+
+                // Compile once — reused for both inspection and instantiation
+                const compiled = await WebAssembly.compile(extBytes);
+                const moduleImports = WebAssembly.Module.imports(compiled);
+                const importsMemory = moduleImports.some(imp => imp.kind === "memory");
+
+                if (importsMemory) {
+                    // V2 path: needs shared memory — defer instantiation to Phase 2.
+                    // Discover exported function names from the compiled module itself
+                    // (no need to compile the Edict binary).
+                    needsSharedMemory.add(namespace);
+                    deferredModules.set(namespace, compiled);
+
+                    const moduleExports = WebAssembly.Module.exports(compiled);
+                    const nsExports: Record<string, unknown> = {};
+                    for (const exp of moduleExports) {
+                        if (exp.kind === "function") {
+                            const ref: DelegateRef = { fn: null };
+                            delegateRefs.set(`${namespace}.${exp.name}`, ref);
+                            nsExports[exp.name] = (...args: unknown[]) => {
+                                if (!ref.fn) throw new Error(`External function ${namespace}.${exp.name} not yet linked`);
+                                return ref.fn(...args);
+                            };
+                        }
                     }
+                    importObject[namespace] = nsExports;
+                } else {
+                    // V1 path: no shared memory — instantiate immediately, direct references
+                    const extInstance = await WebAssembly.instantiate(compiled, {});
+                    const nsExports: Record<string, unknown> = {};
+                    for (const [key, val] of Object.entries(extInstance.exports)) {
+                        if (typeof val === "function") {
+                            nsExports[key] = val;  // direct — no delegate overhead
+                        }
+                    }
+                    importObject[namespace] = nsExports;
                 }
-                importObject[namespace] = extExports;
             } catch (e) {
                 const msg = e instanceof Error ? e.message : String(e);
                 return {
@@ -316,6 +385,48 @@ export async function runDirect(
         };
     }
     state.instance = instance;
+
+    // Phase 2: Instantiate deferred modules with Edict's shared memory
+    if (needsSharedMemory.size > 0 && instance.exports.memory) {
+        for (const namespace of needsSharedMemory) {
+            const compiled = deferredModules.get(namespace)!;
+            try {
+                // Build shared imports dynamically from the module's actual import
+                // declarations — no hardcoded namespace assumptions.
+                const moduleImports = WebAssembly.Module.imports(compiled);
+                const sharedImports: Record<string, Record<string, unknown>> = {};
+                for (const imp of moduleImports) {
+                    if (!sharedImports[imp.module]) sharedImports[imp.module] = {};
+                    if (imp.kind === "memory") {
+                        sharedImports[imp.module]![imp.name] = instance.exports.memory;
+                    } else if (imp.kind === "function") {
+                        // Forward Edict's heap allocator exports to the external module
+                        const edictExport = instance.exports[imp.name];
+                        if (edictExport) sharedImports[imp.module]![imp.name] = edictExport;
+                    }
+                }
+
+                const extInstance = await WebAssembly.instantiate(compiled, sharedImports);
+                // Patch delegates with real functions from shared-memory instance
+                for (const [key, val] of Object.entries(extInstance.exports)) {
+                    if (typeof val === "function") {
+                        const ref = delegateRefs.get(`${namespace}.${key}`);
+                        if (ref) ref.fn = val as (...args: unknown[]) => unknown;
+                    }
+                }
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                return {
+                    output: JSON.stringify({
+                        error: "shared_memory_init_failed",
+                        module: namespace,
+                        reason: msg,
+                    }),
+                    exitCode: 1,
+                };
+            }
+        }
+    }
 
     let returnValue: number | undefined;
     let exitCode = 0;

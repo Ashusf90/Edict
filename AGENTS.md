@@ -71,7 +71,7 @@ src/
 ├── mcp/           # MCP server (tools + resources)
 └── errors/        # Structured error types
 
-tests/             # 1796 tests across 104 files
+tests/             # 1801 tests across 105 files
 examples/          # 38 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```
