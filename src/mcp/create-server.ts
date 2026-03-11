@@ -7,10 +7,14 @@
 // to tools/index.ts — no changes to this file needed.
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createRequire } from "node:module";
 
 import { ALL_TOOLS } from "./tools/index.js";
 import { ALL_RESOURCES } from "./resources/index.js";
 import { ALL_PROMPTS } from "./prompt-defs/index.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../../package.json") as { version: string };
 
 // =============================================================================
 // Server setup
@@ -19,7 +23,7 @@ import { ALL_PROMPTS } from "./prompt-defs/index.js";
 export function createEdictServer(): McpServer {
     const server = new McpServer({
         name: "edict-compiler",
-        version: "0.1.0",
+        version,
     });
 
     // -------------------------------------------------------------------------

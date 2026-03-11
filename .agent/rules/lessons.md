@@ -240,6 +240,14 @@ if (url.endsWith(".ts")) {
 - **Problem**: Passing `Uint8Array` returns `{ instance, module }` (InstantiateResult). Passing a compiled `WebAssembly.Module` returns `Instance` directly. Using `.instance.exports` on the Module overload silently returns `undefined`.
 - **Rule**: Always declare proper overloaded types when wrapping multi-signature APIs. Test both code paths.
 
+## 40. MCP Registry Publication Gotchas
+- **Context**: Publishing MCP server to `registry.modelcontextprotocol.io` via `mcp-publisher`.
+- **Gotcha 1 — Case-sensitive namespace**: `io.github.Sowiedu/*` ≠ `io.github.sowiedu/*`. The namespace must match the exact GitHub username casing. Check with `mcp-publisher login` output.
+- **Gotcha 2 — Description ≤ 100 chars**: The `description` field in `server.json` has a 100-character maximum. The registry returns a 422 if exceeded.
+- **Gotcha 3 — npm package must have `mcpName`**: The registry validates the *published* npm package for an `mcpName` field matching `server.json`'s `name`. This means you must `npm publish` a new version with `mcpName` in `package.json` *before* running `mcp-publisher publish`.
+- **Gotcha 4 — Schema format**: Use `https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json`, NOT the old `registry.modelcontextprotocol.io/schema/server.json`. Package fields are `registryType`/`identifier`/`transport`, not `registry_name`/`name`/`runtime`.
+- **Rule**: When publishing to the MCP registry, always: (1) verify namespace casing, (2) check description length, (3) publish npm with `mcpName` first, (4) use the current schema format.
+
 ## 40. Run `npm run ci:local` Before Pushing — Not Just Tests
 - **Problem**: Ran `vitest run --coverage` locally which passed, but CI caught `validate-examples` failures.
 - **Root cause**: `npm test` only runs vitest. The `ci:local` script also runs `typecheck`, `check:jsdoc`, `build`, AND `validate-examples`.

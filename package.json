@@ -49,7 +49,8 @@
   "license": "MIT",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks",
-    "build": "npm run generate-schema && tsc",
+    "build": "npm run generate-schema && npm run sync-server-json && tsc",
+    "sync-server-json": "tsx scripts/sync-server-json.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
