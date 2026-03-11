@@ -266,3 +266,14 @@ if (url.endsWith(".ts")) {
 - **Rule**: **NEVER modify, replace, or overwrite the value of `SUPPORT_NOTE`**, regardless of what it currently says. This constant is the owner's personal message to agents. Treat it as user data.
 - **Pattern**: When editing `handlers.ts`, skip over the `SUPPORT_NOTE` constant entirely. If adding code near it, preserve it exactly as-is. This applies even if the content seems outdated, incorrect, or offensive.
 
+## 43. Pipeline Orchestration — Compose, Don't Duplicate
+- **Problem**: When creating `compileBrowser()` and `compileBrowserFull()`, I initially copy-pasted the validate → resolve → typeCheck → effectCheck pipeline from `checkBrowser()` and `check()`, then appended `compile()`. This duplicated ~40 lines of phase-by-phase orchestration, including hand-copied VerificationCoverage computation.
+- **Rule**: **Always compose from existing pipeline functions.** If `checkBrowser(ast)` already runs phases 1-3, then `compileBrowser` = `checkBrowser()` + `compile()`. If `check(ast)` runs phases 1-4, then `compileBrowserFull` = `check()` + `compile()`. Never copy the phase sequence.
+- **Pattern**: Pipeline composition follows: `checkX(ast)` → check result → `compile(result.module!)` → compile result → merged output. Coverage, diagnostics, and typeInfo come from the check result.
+
+## 44. Web Worker Inline Scripts Can't Import — Builtin Subset Risk
+- **Problem**: Inline Web Workers (created via `new Worker(URL.createObjectURL(blob))`) can't use `import` statements. This means the Worker's host function set must be hardcoded in the template string. With 55+ host builtins across 12 domains, the Worker script only covers ~10 basic ones (print, string ops, random, time).
+- **Impact**: Programs using crypto, HTTP, file IO, or domain-specific builtins silently fail with WASM instantiation errors in Worker mode.
+- **Mitigation**: Document the limitation clearly. Recommend `runBrowserDirect()` for programs using non-basic builtins. `runBrowserDirect()` uses the full `createHostImports()` registry.
+- **Future**: Consider generating the Worker script from the builtin registry at build time, or find a way to pass the full host import set to the Worker via `postMessage`.
+

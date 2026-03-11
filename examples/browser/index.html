@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edict — Browser Compilation Example</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+            background: #0d1117; color: #c9d1d9;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 2rem;
+        }
+        .container { max-width: 720px; width: 100%; }
+        h1 { font-size: 1.4rem; margin-bottom: 1.5rem; color: #58a6ff; }
+        .panel {
+            background: #161b22; border: 1px solid #30363d;
+            border-radius: 8px; padding: 1.2rem; margin-bottom: 1rem;
+        }
+        .label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+        pre { white-space: pre-wrap; word-wrap: break-word; font-size: 0.85rem; line-height: 1.6; }
+        .ok { color: #3fb950; }
+        .err { color: #f85149; }
+        .info { color: #8b949e; }
+        #status { font-size: 0.9rem; padding: 0.8rem; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚡ Edict Browser Compilation</h1>
+
+    <div class="panel">
+        <div class="label">Edict Program (JSON AST)</div>
+        <pre id="source"></pre>
+    </div>
+
+    <div class="panel" id="status">Initializing…</div>
+
+    <div class="panel" id="compile-panel" style="display:none">
+        <div class="label">Compilation</div>
+        <pre id="compile-result"></pre>
+    </div>
+
+    <div class="panel" id="run-panel" style="display:none">
+        <div class="label">Execution</div>
+        <pre id="run-result"></pre>
+    </div>
+</div>
+
+<script type="module">
+// Import from the browser-full bundle (serve this file via HTTP server)
+import {
+    compileBrowser,
+    runBrowserDirect,
+} from '../../dist/browser-full.bundle.js';
+
+// The Edict program: fn main() -> Int { print("Hello from the browser!"); 2 + 3 }
+const program = {
+    kind: 'module',
+    id: 'mod-browser-demo',
+    name: 'browser_demo',
+    imports: [],
+    definitions: [{
+        kind: 'fn',
+        id: 'fn-main',
+        name: 'main',
+        params: [],
+        effects: ['io'],
+        returnType: { kind: 'basic', name: 'Int' },
+        contracts: [],
+        body: [
+            {
+                kind: 'call',
+                id: 'call-print',
+                fn: { kind: 'ident', id: 'id-print', name: 'print' },
+                args: [{ kind: 'literal', id: 'lit-hello', value: 'Hello from the browser!' }],
+            },
+            {
+                kind: 'binop',
+                id: 'binop-add',
+                op: '+',
+                left: { kind: 'literal', id: 'lit-2', value: 2 },
+                right: { kind: 'literal', id: 'lit-3', value: 3 },
+            },
+        ],
+    }],
+};
+
+// Display the source program
+document.getElementById('source').textContent = JSON.stringify(program, null, 2);
+
+const status = document.getElementById('status');
+const compilePanel = document.getElementById('compile-panel');
+const compileResult = document.getElementById('compile-result');
+const runPanel = document.getElementById('run-panel');
+const runResult = document.getElementById('run-result');
+
+try {
+    // Step 1: Compile
+    status.textContent = 'Compiling…';
+    const t0 = performance.now();
+    const compiled = compileBrowser(program);
+    const compileMs = (performance.now() - t0).toFixed(1);
+
+    compilePanel.style.display = 'block';
+
+    if (!compiled.ok) {
+        compileResult.innerHTML = `<span class="err">✗ Compilation failed</span>\n${JSON.stringify(compiled.errors, null, 2)}`;
+        status.innerHTML = '<span class="err">Compilation failed</span>';
+        throw new Error('stop');
+    }
+
+    compileResult.innerHTML =
+        `<span class="ok">✓ Compiled successfully</span> <span class="info">(${compileMs}ms)</span>\n` +
+        `<span class="info">WASM size: ${compiled.wasm.length} bytes</span>`;
+
+    // Step 2: Execute
+    status.textContent = 'Executing WASM…';
+    const t1 = performance.now();
+    const result = await runBrowserDirect(compiled.wasm);
+    const runMs = (performance.now() - t1).toFixed(1);
+
+    runPanel.style.display = 'block';
+
+    if (result.exitCode !== 0) {
+        runResult.innerHTML = `<span class="err">✗ Execution failed (exit code ${result.exitCode})</span>\n${result.output}`;
+        status.innerHTML = '<span class="err">Execution failed</span>';
+    } else {
+        runResult.innerHTML =
+            `<span class="ok">✓ Exit code: ${result.exitCode}</span> <span class="info">(${runMs}ms)</span>\n` +
+            `<span class="ok">Return value: ${result.returnValue}</span>\n` +
+            (result.output ? `<span class="info">Output: ${result.output}</span>` : '') +
+            (result.heapUsed ? `\n<span class="info">Heap used: ${result.heapUsed} bytes</span>` : '');
+
+        status.innerHTML = '<span class="ok">✓ Complete — compiled and executed in the browser</span>';
+    }
+} catch (e) {
+    if (e.message !== 'stop') {
+        status.innerHTML = `<span class="err">Error: ${e.message}</span>`;
+        console.error(e);
+    }
+}
+</script>
+</body>
+</html>

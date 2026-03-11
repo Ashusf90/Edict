@@ -19,6 +19,10 @@
     "./browser": {
       "import": "./dist/browser.js",
       "types": "./dist/browser.d.ts"
+    },
+    "./browser-full": {
+      "import": "./dist/browser-full.js",
+      "types": "./dist/browser-full.d.ts"
     }
   },
   "main": "dist/index.js",
