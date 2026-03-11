@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.10.0](https://github.com/Sowiedu/Edict/compare/v1.9.2...v1.10.0) (2026-03-11)
+
+
+### Features
+
+* browser-compatible ESM bundle with builtin-meta separation ([#75](https://github.com/Sowiedu/Edict/issues/75) Phase 1) ([3c9e742](https://github.com/Sowiedu/Edict/commit/3c9e742833be2a94f5ad12391e1efb54e9435323))
+* functional BrowserHostAdapter with pure-JS crypto, sync XHR, configurable env ([#120](https://github.com/Sowiedu/Edict/issues/120)) ([80dc1c8](https://github.com/Sowiedu/Edict/commit/80dc1c8482a4e02eb8dd6a7a5723d6b44de0255f))
+* **mcp:** add agent-facing donation/sponsorship system ([75b7d11](https://github.com/Sowiedu/Edict/commit/75b7d11f3bfb7a3eaf99398423428abb8963efbd))
+
+
+### Bug Fixes
+
+* eliminate stale version numbers across MCP server ([5ffd957](https://github.com/Sowiedu/Edict/commit/5ffd957cb0c1c0cbd68c06843638bf310b7cb76d))
+
 ## [1.9.2](https://github.com/Sowiedu/Edict/compare/v1.9.1...v1.9.2) (2026-03-11)
 
 
