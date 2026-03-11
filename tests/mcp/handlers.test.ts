@@ -420,7 +420,8 @@ describe("handleDebug", () => {
 // =============================================================================
 
 describe("handleReplay", () => {
-    it("record + replay round-trip produces same output", async () => {
+    // 3 worker spawns (compile + run-record + replay) — needs extended timeout for CI (lesson #13)
+    it("record + replay round-trip produces same output", { timeout: 45_000 }, async () => {
         const hello = JSON.parse(
             readFileSync(
                 resolve(projectRoot, "examples", "hello.edict.json"),
