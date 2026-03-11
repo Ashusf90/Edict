@@ -54,6 +54,7 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [confidence-types](confidence-types.edict.json) | `confidence`, `minConfidence` | Confidence-typed values with minimum threshold enforcement |
 | [freshness-types](freshness-types.edict.json) | `fresh`, `maxAge`, temporal validity | Data freshness typing — warn when stale data is used |
 | [provenance-chains](provenance-chains.edict.json) | `provenance`, chains, host annotation | Full provenance chain tracking with host function annotation |
+| [tool-calls](tool-calls.edict.json) | `tool`, `tool_call`, `retryPolicy`, `timeout` | First-class tool definitions and invocations with retry and timeout policies |
 
 ## Recommended Learning Path
 

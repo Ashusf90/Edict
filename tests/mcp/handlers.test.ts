@@ -263,8 +263,11 @@ describe("end-to-end roundtrip", () => {
     });
 
     it("all examples compile successfully", async () => {
+        // Examples with host-dispatched constructs (tool_call) can't emit WASM
+        const COMPILE_SKIP = new Set(["tool-calls"]);
         const examples = handleExamples();
         for (const ex of examples.examples) {
+            if (COMPILE_SKIP.has(ex.name)) continue;
             const compiled = ex.isMultiModule
                 ? await handleCompileMulti(ex.ast as unknown[])
                 : await handleCompile(ex.ast);

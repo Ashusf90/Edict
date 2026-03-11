@@ -1,0 +1,98 @@
+{
+    "kind": "module",
+    "id": "mod-tool-calls",
+    "name": "tool_calls_demo",
+    "schemaVersion": "1.1",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "tool",
+            "id": "tool-weather",
+            "name": "get_weather",
+            "uri": "mcp://weather-service/get",
+            "params": [
+                { "kind": "param", "id": "p-city", "name": "city", "type": { "kind": "basic", "name": "String" } },
+                { "kind": "param", "id": "p-unit", "name": "unit", "type": { "kind": "basic", "name": "String" } }
+            ],
+            "returnType": { "kind": "basic", "name": "String" },
+            "effects": ["io"]
+        },
+        {
+            "kind": "tool",
+            "id": "tool-issue",
+            "name": "create_issue",
+            "uri": "mcp://github/create-issue",
+            "params": [
+                { "kind": "param", "id": "p-title", "name": "title", "type": { "kind": "basic", "name": "String" } },
+                { "kind": "param", "id": "p-body", "name": "body", "type": { "kind": "basic", "name": "String" } }
+            ],
+            "returnType": { "kind": "basic", "name": "Int" },
+            "effects": ["io"]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-fetch-weather",
+            "name": "fetch_weather",
+            "params": [
+                { "kind": "param", "id": "p-fw-city", "name": "city", "type": { "kind": "basic", "name": "String" } }
+            ],
+            "effects": ["io"],
+            "returnType": { "kind": "result", "ok": { "kind": "basic", "name": "String" }, "err": { "kind": "basic", "name": "String" } },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "tool_call",
+                    "id": "tc-weather",
+                    "tool": "get_weather",
+                    "args": [
+                        { "kind": "field_init", "name": "city", "value": { "kind": "ident", "id": "id-city", "name": "city" } },
+                        { "kind": "field_init", "name": "unit", "value": { "kind": "literal", "id": "lit-unit", "value": "celsius" } }
+                    ],
+                    "timeout": 5000,
+                    "retryPolicy": {
+                        "maxRetries": 3,
+                        "backoff": "exponential"
+                    }
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main",
+            "name": "main",
+            "params": [],
+            "effects": ["io"],
+            "returnType": { "kind": "result", "ok": { "kind": "basic", "name": "Int" }, "err": { "kind": "basic", "name": "String" } },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-weather",
+                    "name": "weather_result",
+                    "value": {
+                        "kind": "call",
+                        "id": "call-fw",
+                        "fn": { "kind": "ident", "id": "id-fw", "name": "fetch_weather" },
+                        "args": [
+                            { "kind": "literal", "id": "lit-berlin", "value": "Berlin" }
+                        ]
+                    }
+                },
+                {
+                    "kind": "tool_call",
+                    "id": "tc-issue",
+                    "tool": "create_issue",
+                    "args": [
+                        { "kind": "field_init", "name": "title", "value": { "kind": "literal", "id": "lit-title", "value": "Weather Report" } },
+                        { "kind": "field_init", "name": "body", "value": { "kind": "literal", "id": "lit-body", "value": "Automated weather report generated." } }
+                    ],
+                    "timeout": 10000,
+                    "retryPolicy": {
+                        "maxRetries": 2,
+                        "backoff": "linear"
+                    }
+                }
+            ]
+        }
+    ]
+}
