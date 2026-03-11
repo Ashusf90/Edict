@@ -219,7 +219,7 @@ interface Import {
 }
 
 // Definitions
-type Definition = FunctionDef | TypeDef | RecordDef | EnumDef | ConstDef
+type Definition = FunctionDef | TypeDef | RecordDef | EnumDef | ConstDef | ToolDef
 
 interface FunctionDef {
   kind: "fn"
@@ -249,6 +249,25 @@ interface ConstDef {
   name: string
   type: TypeExpr
   value: Expression
+}
+
+// Tool definition — declares a named external tool with a typed interface.
+// The host provides the actual implementation at runtime.
+// Tool names are in scope like functions; tool_call expressions reference them by name.
+interface ToolDef {
+  kind: "tool"
+  id: string
+  name: string           // agent-facing name: "get_weather", "create_issue"
+  uri: string            // tool URI: "mcp://github/create_issue"
+  params: Param[]        // typed parameters
+  returnType: TypeExpr   // Ok payload; tool_call returns Result<returnType, String>
+  effects: Effect[]      // must include "io"; may include others
+  blame?: BlameAnnotation
+}
+
+interface RetryPolicy {
+  maxRetries: number
+  backoff: "fixed" | "linear" | "exponential"
 }
 
 // Records (structs)
@@ -309,8 +328,12 @@ type TypeExpr =
   | UnitType
   | RefinedType
   | FunctionType
-  | NamedType       // reference to a RecordDef or EnumDef
+  | NamedType         // reference to a RecordDef or EnumDef
   | TupleType
+  | ConfidenceType    // Tier 3: LLM uncertainty tracking
+  | ProvenanceType    // Tier 3: data origin tracking
+  | CapabilityType    // Tier 3: compile-time permission tokens
+  | FreshnessType     // Tier 3: temporal validity tracking
 
 interface BasicType {
   kind: "basic"
@@ -364,6 +387,38 @@ interface FunctionType {
   returnType: TypeExpr
 }
 
+// Confidence — tracks LLM uncertainty at the type level.
+// Erased after type checking. Structurally transparent: Confidence<T, 0.9> ≈ T.
+interface ConfidenceType {
+  kind: "confidence"
+  base: TypeExpr
+  confidence: number   // 0.0–1.0
+}
+
+// Provenance — tracks data origin at the type level.
+// Erased after type checking. Sources are sorted, deduplicated.
+interface ProvenanceType {
+  kind: "provenance"
+  base: TypeExpr
+  sources: string[]    // ["api:weather", "db:users"]
+}
+
+// Capability token — compile-time verified, unforgeable permission.
+// Not a type wrapper. The host mints them; agents cannot forge them.
+// Permissions are hierarchical: "net:smtp" subsumes "net:smtp:max_10".
+interface CapabilityType {
+  kind: "capability"
+  permissions: string[]  // ["net:smtp", "secret:api_key"]
+}
+
+// Freshness — tracks temporal validity at the type level.
+// Erased after type checking. maxAge is a duration string.
+interface FreshnessType {
+  kind: "fresh"
+  base: TypeExpr
+  maxAge: string       // "30s", "5m", "1h", "200ms"
+}
+
 // Expressions
 type Expression =
   | Literal
@@ -382,6 +437,9 @@ type Expression =
   | LambdaExpr
   | BlockExpr
   | StringInterp
+  | ForallExpr        // contract-only: universal quantifier
+  | ExistsExpr        // contract-only: existential quantifier
+  | ToolCallExpr      // invokes a declared ToolDef
 
 interface Literal {
   kind: "literal"
@@ -511,6 +569,39 @@ interface StringInterp {
   kind: "string_interp"
   id: string
   parts: Expression[]  // all parts must evaluate to String
+}
+
+// Universal quantifier — contract-only.
+// forall variable in [from, to): body must hold.
+// Translates to Z3 ForAll.
+interface ForallExpr {
+  kind: "forall"
+  id: string
+  variable: string
+  range: { from: Expression; to: Expression }
+  body: Expression
+}
+
+// Existential quantifier — contract-only.
+interface ExistsExpr {
+  kind: "exists"
+  id: string
+  variable: string
+  range: { from: Expression; to: Expression }
+  body: Expression
+}
+
+// Tool call expression — invokes a declared tool by name.
+// Named args via FieldInit (same pattern as RecordExpr).
+// Always returns Result<T, String> where T is the tool's returnType.
+interface ToolCallExpr {
+  kind: "tool_call"
+  id: string
+  tool: string           // references a ToolDef.name
+  args: FieldInit[]      // named args
+  timeout?: number       // ms
+  retryPolicy?: RetryPolicy
+  fallback?: Expression  // must type-check as Result<T, String>
 }
 ```
 
