@@ -47,8 +47,8 @@ function mkModule(fns: FunctionDef[]): EdictModule {
     };
 }
 
-const GATE_WIRE: ApprovalGate = { required: true, scope: "per_call", description: "wire_transfer" };
-const GATE_DELETE: ApprovalGate = { required: true, scope: "per_session", description: "delete_data" };
+const GATE_WIRE: ApprovalGate = { required: true, scope: "per_call", reason: "wire_transfer" };
+const GATE_DELETE: ApprovalGate = { required: true, scope: "per_session", reason: "delete_data" };
 
 // =============================================================================
 // Tests
@@ -77,7 +77,7 @@ describe("Approval gate propagation", () => {
         const err = approvalErrors[0] as ApprovalPropagationMissingError;
         expect(err.functionName).toBe("process");
         expect(err.calleeName).toBe("transfer");
-        expect(err.calleeApproval).toEqual({ scope: "per_call", description: "wire_transfer" });
+        expect(err.calleeApproval).toEqual({ scope: "per_call", reason: "wire_transfer" });
     });
 
     it("should pass for a 3-deep gated chain: A(gated) → B(gated) → C(gated)", () => {
@@ -142,7 +142,7 @@ describe("Approval gate propagation", () => {
         expect(err.suggestion!.value).toEqual({
             required: true,
             scope: "per_call",
-            description: "wire_transfer",
+            reason: "wire_transfer",
         });
     });
 

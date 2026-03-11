@@ -34,7 +34,7 @@ function mkModule(fns: FunctionDef[]): EdictModule {
     };
 }
 
-const GATE: ApprovalGate = { required: true, scope: "per_call", description: "wire_transfer" };
+const GATE: ApprovalGate = { required: true, scope: "per_call", reason: "wire_transfer" };
 
 // =============================================================================
 // Tests

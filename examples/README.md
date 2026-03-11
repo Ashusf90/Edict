@@ -32,6 +32,8 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [int64](int64.edict.json) | `intToInt64`, `int64ToInt`, `int64ToFloat`, `int64ToString` | 64-bit integer conversions and arithmetic |
 | [json](json.edict.json) | `enum`, `match`, nested `enum_constructor` | JSON-like data model using recursive enum variants |
 | [intent-declarations](intent-declarations.edict.json) | `intent`, `fn`, contracts | Functions with structured intent metadata |
+| [blame-tracking](blame-tracking.edict.json) | `blame`, `confidence`, annotations | Error attribution with blame annotations and confidence scores |
+| [provenance-tracking](provenance-tracking.edict.json) | `provenance`, type wrappers | Data lineage tracking at the type level |
 
 ## ⭐⭐⭐ Advanced
 
@@ -47,6 +49,11 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [string-processing](string-processing.edict.json) | multiple string builtins, `let` chains, `if` | Comprehensive string manipulation pipeline |
 | [multi-module](multi-module.edict.json) | multi-module compilation, `import`, linking | Cross-module compilation and linking |
 | [complete](complete.edict.json) | all features combined | Kitchen-sink example: records, enums, contracts, lambdas, HOFs, imports |
+| [approval-gates](approval-gates.edict.json) | `approval`, effect propagation | Approval gates on functions — compile-time approval propagation through call chains |
+| [capability-tokens](capability-tokens.edict.json) | `capabilities`, permission scoping | Capability-based permission tokens for fine-grained access control |
+| [confidence-types](confidence-types.edict.json) | `confidence`, `minConfidence` | Confidence-typed values with minimum threshold enforcement |
+| [freshness-types](freshness-types.edict.json) | `fresh`, `maxAge`, temporal validity | Data freshness typing — warn when stale data is used |
+| [provenance-chains](provenance-chains.edict.json) | `provenance`, chains, host annotation | Full provenance chain tracking with host function annotation |
 
 ## Recommended Learning Path
 

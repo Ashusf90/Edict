@@ -28,7 +28,7 @@
             "approval": {
                 "required": true,
                 "scope": "per_call",
-                "description": "wire_transfer"
+                "reason": "wire_transfer"
             },
             "body": [
                 { "kind": "ident", "id": "id-amount-ret", "name": "amount" }
@@ -47,7 +47,7 @@
             "approval": {
                 "required": true,
                 "scope": "per_call",
-                "description": "wire_transfer"
+                "reason": "wire_transfer"
             },
             "body": [
                 {
@@ -71,7 +71,7 @@
             "approval": {
                 "required": true,
                 "scope": "per_session",
-                "description": "payment_processing"
+                "reason": "payment_processing"
             },
             "body": [
                 {
