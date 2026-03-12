@@ -73,7 +73,7 @@ npx edict-lang          # start MCP server
 
 ```bash
 npm install
-npm test          # 1951 tests across 111 files
+npm test          # 1957 tests across 111 files
 npm run mcp       # start MCP server (stdio transport)
 ```
 
@@ -120,7 +120,7 @@ See [`examples/browser/index.html`](examples/browser/index.html) for a working e
 |---|---|
 | `edict_schema` | Returns the full AST JSON Schema — the spec for how to write programs |
 | `edict_version` | Returns compiler version and capability info |
-| `edict_examples` | Returns 38 example programs as JSON ASTs |
+| `edict_examples` | Returns 40 example programs as JSON ASTs |
 | `edict_validate` | Validates AST structure (field names, types, node kinds) |
 | `edict_check` | Full pipeline: validate → resolve names → type check → effect check → verify contracts |
 | `edict_compile` | Compiles a checked AST to WASM (returns base64-encoded binary) |
@@ -238,8 +238,8 @@ src/
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 
-tests/             # 1951 tests across 111 files
-examples/          # 38 example programs (⭐→⭐⭐⭐ difficulty in README)
+tests/             # 1957 tests across 111 files
+examples/          # 40 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```
 

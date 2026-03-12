@@ -301,3 +301,13 @@ if (url.endsWith(".ts")) {
 - **Problem**: Test lambdas called `print("hello")` which returns `String`, but the expected callback return type was `Int`. This caused `type_mismatch` errors in the type checker before reaching the effect logic under test.
 - **Rule**: When writing test fixtures with lambdas, use `let _ = sideEffect(); returnValue` pattern to decouple the effect call from the return type.
 
+## 48. E2E Explicit Pipeline Must Thread typeInfo Between Phases
+- **Problem**: The e2e test (`e2e-agent-loop.test.ts`) called `typeCheck(module)` → `effectCheck(module)` → `compile(module)` without passing `typeInfo` between steps. Effect-polymorphic programs need `resolvedCallSiteEffects` from typeCheck.
+- **Fix**: Thread `typeInfo` from `typeCheck` → `effectCheck(module, typeInfo)` → `compile(module, { typeInfo })`.
+- **Rule**: When adding features requiring cross-phase data, audit the e2e explicit pipeline — it manually constructs the pipeline and may miss new inter-phase dependencies.
+
+## 49. Close Issues with Comments, Not Body Overwrites
+- **Problem**: Used `issue_write(method: "update", body: "...", state: "closed")` to close #129. This replaced the original issue description with the closing summary.
+- **Fix**: Use `add_issue_comment` for the closing summary, then `issue_write(method: "update", state: "closed")` separately — or use `issue_write` without a `body` field.
+- **Rule**: Never pass `body` to `issue_write(update)` when closing an issue. The original description is the specification; the closing message is a comment.
+

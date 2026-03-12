@@ -1,0 +1,278 @@
+{
+  "kind": "module",
+  "id": "mod-compose-001",
+  "name": "effect_poly_compose",
+  "schemaVersion": "1.1",
+  "imports": [],
+  "definitions": [
+    {
+      "kind": "fn",
+      "id": "fn-pipe",
+      "name": "pipe",
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-pipe-val",
+          "name": "val",
+          "type": { "kind": "basic", "name": "Int" }
+        },
+        {
+          "kind": "param",
+          "id": "p-pipe-f",
+          "name": "f",
+          "type": {
+            "kind": "fn_type",
+            "params": [{ "kind": "basic", "name": "Int" }],
+            "effects": [{ "kind": "effect_var", "name": "E" }],
+            "returnType": { "kind": "basic", "name": "Int" }
+          }
+        },
+        {
+          "kind": "param",
+          "id": "p-pipe-g",
+          "name": "g",
+          "type": {
+            "kind": "fn_type",
+            "params": [{ "kind": "basic", "name": "Int" }],
+            "effects": [{ "kind": "effect_var", "name": "F" }],
+            "returnType": { "kind": "basic", "name": "Int" }
+          }
+        }
+      ],
+      "effects": ["pure"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-mid",
+          "name": "mid",
+          "value": {
+            "kind": "call",
+            "id": "call-pipe-f",
+            "fn": { "kind": "ident", "id": "id-pipe-f", "name": "f" },
+            "args": [{ "kind": "ident", "id": "id-pipe-val", "name": "val" }]
+          }
+        },
+        {
+          "kind": "call",
+          "id": "call-pipe-g",
+          "fn": { "kind": "ident", "id": "id-pipe-g", "name": "g" },
+          "args": [{ "kind": "ident", "id": "id-pipe-mid", "name": "mid" }]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-withDefault",
+      "name": "withDefault",
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-wd-val",
+          "name": "val",
+          "type": { "kind": "basic", "name": "Int" }
+        },
+        {
+          "kind": "param",
+          "id": "p-wd-fallback",
+          "name": "fallback",
+          "type": { "kind": "basic", "name": "Int" }
+        },
+        {
+          "kind": "param",
+          "id": "p-wd-f",
+          "name": "f",
+          "type": {
+            "kind": "fn_type",
+            "params": [{ "kind": "basic", "name": "Int" }],
+            "effects": [{ "kind": "effect_var", "name": "E" }],
+            "returnType": { "kind": "basic", "name": "Int" }
+          }
+        }
+      ],
+      "effects": ["pure"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-result",
+          "name": "result",
+          "value": {
+            "kind": "call",
+            "id": "call-wd-f",
+            "fn": { "kind": "ident", "id": "id-wd-f", "name": "f" },
+            "args": [{ "kind": "ident", "id": "id-wd-val", "name": "val" }]
+          }
+        },
+        {
+          "kind": "if",
+          "id": "if-check",
+          "condition": {
+            "kind": "binop",
+            "id": "binop-eq-zero",
+            "op": "==",
+            "left": { "kind": "ident", "id": "id-wd-result", "name": "result" },
+            "right": { "kind": "literal", "id": "l-zero", "value": 0 }
+          },
+          "then": [{ "kind": "ident", "id": "id-wd-fallback", "name": "fallback" }],
+          "else": [{ "kind": "ident", "id": "id-wd-result2", "name": "result" }]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-main",
+      "name": "main",
+      "params": [],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-piped",
+          "name": "piped",
+          "value": {
+            "kind": "call",
+            "id": "call-pipe",
+            "fn": { "kind": "ident", "id": "id-pipe", "name": "pipe" },
+            "args": [
+              { "kind": "literal", "id": "l-val-4", "value": 4 },
+              {
+                "kind": "lambda",
+                "id": "lam-add10",
+                "params": [{ "kind": "param", "id": "lam-p-a", "name": "a" }],
+                "body": [
+                  {
+                    "kind": "binop",
+                    "id": "binop-add10",
+                    "op": "+",
+                    "left": { "kind": "ident", "id": "id-a", "name": "a" },
+                    "right": { "kind": "literal", "id": "l-10", "value": 10 }
+                  }
+                ]
+              },
+              {
+                "kind": "lambda",
+                "id": "lam-mul3",
+                "params": [{ "kind": "param", "id": "lam-p-b", "name": "b" }],
+                "body": [
+                  {
+                    "kind": "binop",
+                    "id": "binop-mul3",
+                    "op": "*",
+                    "left": { "kind": "ident", "id": "id-b", "name": "b" },
+                    "right": { "kind": "literal", "id": "l-3", "value": 3 }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "let",
+          "id": "let-io-piped",
+          "name": "ioPiped",
+          "value": {
+            "kind": "call",
+            "id": "call-pipe-io",
+            "fn": { "kind": "ident", "id": "id-pipe-io", "name": "pipe" },
+            "args": [
+              { "kind": "literal", "id": "l-val-100", "value": 100 },
+              {
+                "kind": "lambda",
+                "id": "lam-log",
+                "params": [{ "kind": "param", "id": "lam-p-v", "name": "v" }],
+                "body": [
+                  {
+                    "kind": "let",
+                    "id": "let-io-discard",
+                    "name": "_",
+                    "value": {
+                      "kind": "call",
+                      "id": "call-print-v",
+                      "fn": { "kind": "ident", "id": "id-print-v", "name": "print" },
+                      "args": [
+                        {
+                          "kind": "string_interp",
+                          "id": "si-log",
+                          "parts": [
+                            { "kind": "literal", "id": "l-step1", "value": "step1: " },
+                            {
+                              "kind": "call",
+                              "id": "call-its1",
+                              "fn": { "kind": "ident", "id": "id-its1", "name": "intToString" },
+                              "args": [{ "kind": "ident", "id": "id-v1", "name": "v" }]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "kind": "binop",
+                    "id": "binop-div2",
+                    "op": "/",
+                    "left": { "kind": "ident", "id": "id-v2", "name": "v" },
+                    "right": { "kind": "literal", "id": "l-2", "value": 2 }
+                  }
+                ]
+              },
+              {
+                "kind": "lambda",
+                "id": "lam-negate",
+                "params": [{ "kind": "param", "id": "lam-p-w", "name": "w" }],
+                "body": [
+                  {
+                    "kind": "binop",
+                    "id": "binop-neg",
+                    "op": "*",
+                    "left": { "kind": "ident", "id": "id-w", "name": "w" },
+                    "right": { "kind": "literal", "id": "l-neg1", "value": -1 }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "let",
+          "id": "let-safe",
+          "name": "safe",
+          "value": {
+            "kind": "call",
+            "id": "call-withDefault",
+            "fn": { "kind": "ident", "id": "id-withDefault", "name": "withDefault" },
+            "args": [
+              { "kind": "literal", "id": "l-val-0", "value": 0 },
+              { "kind": "literal", "id": "l-fallback", "value": 42 },
+              {
+                "kind": "lambda",
+                "id": "lam-identity",
+                "params": [{ "kind": "param", "id": "lam-p-z", "name": "z" }],
+                "body": [
+                  { "kind": "ident", "id": "id-z", "name": "z" }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "binop",
+          "id": "binop-final",
+          "op": "+",
+          "left": {
+            "kind": "binop",
+            "id": "binop-final-inner",
+            "op": "+",
+            "left": { "kind": "ident", "id": "id-piped", "name": "piped" },
+            "right": { "kind": "ident", "id": "id-io-piped", "name": "ioPiped" }
+          },
+          "right": { "kind": "ident", "id": "id-safe", "name": "safe" }
+        }
+      ]
+    }
+  ]
+}

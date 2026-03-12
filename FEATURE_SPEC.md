@@ -145,6 +145,43 @@ Every function declares what it _does_ — not just what it returns. Effects are
 }
 ```
 
+#### 4.2.1 Effect Polymorphism
+
+Higher-order functions can be _effect-polymorphic_: the callee's effect depends on the callback passed by the caller. Effect variables express this in `fn_type` annotations.
+
+**Design**: Effect variables (`{ kind: "effect_var", name: "E" }`) appear only in `FunctionType` (type annotations for callback parameters), never in function definitions. The type checker unifies effect variables with the concrete effects of the lambda passed at each call site. The effect checker then uses these resolved effects to validate the caller's declared effects.
+
+**Effect variable naming**: Single uppercase ASCII letter (A–Z).
+
+**AST representation — effect-polymorphic HOF**:
+```json
+{
+  "kind": "fn",
+  "name": "apply",
+  "effects": ["pure"],
+  "params": [
+    {"name": "val", "type": {"kind": "basic", "name": "Int"}},
+    {"name": "f", "type": {
+      "kind": "fn_type",
+      "params": [{"kind": "basic", "name": "Int"}],
+      "effects": [{"kind": "effect_var", "name": "E"}],
+      "returnType": {"kind": "basic", "name": "Int"}
+    }}
+  ],
+  "returnType": {"kind": "basic", "name": "Int"},
+  "body": []
+}
+```
+
+**How it works**:
+1. `apply` declares `effects: ["pure"]` — it has no intrinsic effects
+2. The callback `f` has effect `E` (a variable)
+3. When a caller passes `lambda(x) { print(x); x }`, the type checker unifies `E → [io]`
+4. The effect checker sees the call site introduces `io` and requires the caller to declare `io`
+5. If the caller passes a pure lambda, `E → []` — no extra effects propagated
+
+**Zero codegen cost**: Effect variables are erased at code generation. WASM has no notion of effects — they are purely a compile-time safety net.
+
 ---
 
 ### 4.3 Contract System
@@ -332,8 +369,16 @@ interface Param {
   type?: TypeExpr              // optional — inferred from context (lambda args)
 }
 
-// Effects
-type Effect = "pure" | "reads" | "writes" | "io" | "fails"
+// Effects — concrete effect literals or effect variables (for polymorphism)
+type ConcreteEffect = "pure" | "reads" | "writes" | "io" | "fails"
+
+// Effect variable — placeholder for unknown effects in fn_type annotations
+interface EffectVariable {
+  kind: "effect_var"
+  name: string         // single uppercase letter: "E", "F", etc.
+}
+
+type Effect = ConcreteEffect | EffectVariable
 
 // Contracts
 interface Contract {
@@ -739,7 +784,7 @@ The complete agent interface. An MCP server exposing the Edict compiler as tools
 ```
 edict.schema()          → JSON Schema (the full AST spec)
 edict.version()         → Compiler version and capability info
-edict.examples()        → 38 example programs as AST JSON
+edict.examples()        → 40 example programs as AST JSON
 edict.validate(ast)     → StructuredError[] | "ok"
 edict.check(ast)        → StructuredError[] | "ok"         // types + effects + contracts
 edict.compile(ast)      → { wasm: Base64 } | StructuredError[]
@@ -771,7 +816,7 @@ Agent: edict.run("AGFzbQEAAAA...")
 Edict: { output: "42", exitCode: 0 }
 ```
 
-**Agent onboarding**: The agent receives the AST schema (TypeScript interfaces) and 38 example programs as part of its system prompt or MCP resource. No documentation needed — the schema _is_ the spec.
+**Agent onboarding**: The agent receives the AST schema (TypeScript interfaces) and 40 example programs as part of its system prompt or MCP resource. No documentation needed — the schema _is_ the spec.
 
 ---
 

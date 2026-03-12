@@ -571,6 +571,7 @@ export function handleVersion(): VersionResult {
             capabilityTokens: true,
             approvalGates: true,
             monomorphicContainers: true,
+            effectPolymorphism: true,
         },
         limits: {
             z3TimeoutMs: 5000,

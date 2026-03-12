@@ -30,7 +30,7 @@ Contract Verifier ── unproven? → StructuredError + counterexample → Agen
 
 **The core loop**: Agent submits AST → compiler validates → if wrong, return a `StructuredError` with enough context for the agent to self-repair → agent fixes → resubmit.
 
-**Agent onboarding**: The agent receives the AST schema (TypeScript interfaces) and 38 example programs as part of its system prompt or MCP resource. No documentation needed — the schema *is* the spec.
+**Agent onboarding**: The agent receives the AST schema (TypeScript interfaces) and 40 example programs as part of its system prompt or MCP resource. No documentation needed — the schema *is* the spec.
 
 ---
 
@@ -196,7 +196,7 @@ interface Contract {
 ```
 edict.schema()          → JSON Schema (the full AST spec)
 edict.version()         → Compiler version and capability info
-edict.examples()        → 38 example programs as AST JSON
+edict.examples()        → 40 example programs as AST JSON
 edict.validate(ast)     → StructuredError[] | "ok"
 edict.check(ast)        → StructuredError[] | "ok"       // types + effects + contracts
 edict.compile(ast)      → { wasm: Base64 } | StructuredError[]
@@ -273,7 +273,7 @@ With the full pipeline operational, these are the open areas for further develop
 | Area | Issues | Impact |
 |---|---|---|
 | **Mid-level IR** | #89 | Introduce IR between AST and WASM for optimizations and retargetability. |
-| **Effect polymorphism** | #94 | Higher-order functions need effect variables to propagate closure effects. |
+| **Effect polymorphism** | #94 | ✅ Complete — effect variables in fn_type, inference at call sites, codegen (erased). |
 | **Edge deployment** | #77 | Deploy compiled WASM to Cloudflare Workers, Deno Deploy, etc. |
 | **Deploy pipeline** | #78 | One-step `edict_deploy` MCP tool: AST → WASM → live service. |
 | **Self-hosting** | #81 | Compile the Edict compiler itself to WASM (moonshot). |

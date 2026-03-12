@@ -1,0 +1,220 @@
+{
+  "kind": "module",
+  "id": "mod-effect-poly-001",
+  "name": "effect_polymorphism",
+  "schemaVersion": "1.1",
+  "imports": [],
+  "definitions": [
+    {
+      "kind": "fn",
+      "id": "fn-apply",
+      "name": "apply",
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-apply-val",
+          "name": "val",
+          "type": { "kind": "basic", "name": "Int" }
+        },
+        {
+          "kind": "param",
+          "id": "p-apply-f",
+          "name": "f",
+          "type": {
+            "kind": "fn_type",
+            "params": [{ "kind": "basic", "name": "Int" }],
+            "effects": [{ "kind": "effect_var", "name": "E" }],
+            "returnType": { "kind": "basic", "name": "Int" }
+          }
+        }
+      ],
+      "effects": ["pure"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "call",
+          "id": "call-apply-f",
+          "fn": { "kind": "ident", "id": "id-apply-f", "name": "f" },
+          "args": [{ "kind": "ident", "id": "id-apply-val", "name": "val" }]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-twice",
+      "name": "twice",
+      "params": [
+        {
+          "kind": "param",
+          "id": "p-twice-val",
+          "name": "val",
+          "type": { "kind": "basic", "name": "Int" }
+        },
+        {
+          "kind": "param",
+          "id": "p-twice-f",
+          "name": "f",
+          "type": {
+            "kind": "fn_type",
+            "params": [{ "kind": "basic", "name": "Int" }],
+            "effects": [{ "kind": "effect_var", "name": "E" }],
+            "returnType": { "kind": "basic", "name": "Int" }
+          }
+        }
+      ],
+      "effects": ["pure"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-first",
+          "name": "first",
+          "value": {
+            "kind": "call",
+            "id": "call-twice-f1",
+            "fn": { "kind": "ident", "id": "id-twice-f1", "name": "f" },
+            "args": [{ "kind": "ident", "id": "id-twice-val", "name": "val" }]
+          }
+        },
+        {
+          "kind": "call",
+          "id": "call-twice-f2",
+          "fn": { "kind": "ident", "id": "id-twice-f2", "name": "f" },
+          "args": [{ "kind": "ident", "id": "id-twice-first", "name": "first" }]
+        }
+      ]
+    },
+    {
+      "kind": "fn",
+      "id": "fn-main",
+      "name": "main",
+      "params": [],
+      "effects": ["io"],
+      "returnType": { "kind": "basic", "name": "Int" },
+      "contracts": [],
+      "body": [
+        {
+          "kind": "let",
+          "id": "let-pure-result",
+          "name": "pureResult",
+          "value": {
+            "kind": "call",
+            "id": "call-apply-pure",
+            "fn": { "kind": "ident", "id": "id-apply-pure", "name": "apply" },
+            "args": [
+              { "kind": "literal", "id": "l-5", "value": 5 },
+              {
+                "kind": "lambda",
+                "id": "lam-double",
+                "params": [{ "kind": "param", "id": "lam-p-x1", "name": "x" }],
+                "body": [
+                  {
+                    "kind": "binop",
+                    "id": "binop-mul",
+                    "op": "*",
+                    "left": { "kind": "ident", "id": "id-x1", "name": "x" },
+                    "right": { "kind": "literal", "id": "l-2", "value": 2 }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "let",
+          "id": "let-io-result",
+          "name": "ioResult",
+          "value": {
+            "kind": "call",
+            "id": "call-apply-io",
+            "fn": { "kind": "ident", "id": "id-apply-io", "name": "apply" },
+            "args": [
+              { "kind": "literal", "id": "l-7", "value": 7 },
+              {
+                "kind": "lambda",
+                "id": "lam-print-inc",
+                "params": [{ "kind": "param", "id": "lam-p-x2", "name": "x" }],
+                "body": [
+                  {
+                    "kind": "let",
+                    "id": "let-discard",
+                    "name": "_",
+                    "value": {
+                      "kind": "call",
+                      "id": "call-print",
+                      "fn": { "kind": "ident", "id": "id-print", "name": "print" },
+                      "args": [
+                        {
+                          "kind": "string_interp",
+                          "id": "si-msg",
+                          "parts": [
+                            { "kind": "literal", "id": "l-prefix", "value": "processing: " },
+                            {
+                              "kind": "call",
+                              "id": "call-intToString",
+                              "fn": { "kind": "ident", "id": "id-intToString", "name": "intToString" },
+                              "args": [{ "kind": "ident", "id": "id-x2", "name": "x" }]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "kind": "binop",
+                    "id": "binop-add",
+                    "op": "+",
+                    "left": { "kind": "ident", "id": "id-x3", "name": "x" },
+                    "right": { "kind": "literal", "id": "l-1", "value": 1 }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "let",
+          "id": "let-twice-result",
+          "name": "twiceResult",
+          "value": {
+            "kind": "call",
+            "id": "call-twice",
+            "fn": { "kind": "ident", "id": "id-twice", "name": "twice" },
+            "args": [
+              { "kind": "literal", "id": "l-3", "value": 3 },
+              {
+                "kind": "lambda",
+                "id": "lam-sq",
+                "params": [{ "kind": "param", "id": "lam-p-n", "name": "n" }],
+                "body": [
+                  {
+                    "kind": "binop",
+                    "id": "binop-sq",
+                    "op": "*",
+                    "left": { "kind": "ident", "id": "id-n1", "name": "n" },
+                    "right": { "kind": "ident", "id": "id-n2", "name": "n" }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "kind": "binop",
+          "id": "binop-sum",
+          "op": "+",
+          "left": {
+            "kind": "binop",
+            "id": "binop-sum-inner",
+            "op": "+",
+            "left": { "kind": "ident", "id": "id-pure-result", "name": "pureResult" },
+            "right": { "kind": "ident", "id": "id-io-result", "name": "ioResult" }
+          },
+          "right": { "kind": "ident", "id": "id-twice-result", "name": "twiceResult" }
+        }
+      ]
+    }
+  ]
+}

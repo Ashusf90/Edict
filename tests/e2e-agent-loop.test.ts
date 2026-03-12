@@ -295,11 +295,11 @@ describe("e2e agent loop: all examples through explicit pipeline", () => {
             expect(resolveErrors).toEqual([]);
 
             // Stage 2b: Type check
-            const { errors: typeErrors } = typeCheck(module);
+            const { errors: typeErrors, typeInfo } = typeCheck(module);
             expect(typeErrors).toEqual([]);
 
-            // Stage 3: Effect check
-            const { errors: effectErrors } = effectCheck(module);
+            // Stage 3: Effect check (pass typeInfo for effect-polymorphic call-site resolution)
+            const { errors: effectErrors } = effectCheck(module, typeInfo);
             expect(effectErrors).toEqual([]);
 
             // Stage 4: Contract verify (includes Z3 for examples with contracts)
@@ -308,7 +308,7 @@ describe("e2e agent loop: all examples through explicit pipeline", () => {
 
             // Stage 5: Compile to WASM (skip for host-dispatched examples)
             if (shouldCompile) {
-                const compileResult = compile(module);
+                const compileResult = compile(module, { typeInfo });
                 expect(compileResult.ok).toBe(true);
             }
         });
