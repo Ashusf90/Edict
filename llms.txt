@@ -24,6 +24,45 @@ npm install edict-lang
 npx edict-lang         # stdio transport
 ```
 
+### Quickstart: ESM Runner Script
+
+**Simple** — full pipeline in one call:
+```js
+import { readFileSync } from 'fs';
+import { compileAndRun } from 'edict-lang';
+
+const ast = JSON.parse(readFileSync('program.edict.json', 'utf-8'));
+const result = await compileAndRun(ast);
+if (!result.ok) { console.error(JSON.stringify(result.errors, null, 2)); process.exit(1); }
+process.stdout.write(result.output);
+```
+
+**Granular** — phase by phase (inspect intermediate results):
+```js
+import { readFileSync } from 'fs';
+import { validate, check, compile, run } from 'edict-lang';
+
+const ast = JSON.parse(readFileSync('program.edict.json', 'utf-8'));
+
+// Phase 1: structural validation
+const v = validate(ast);
+if (!v.ok) { console.error(JSON.stringify(v.errors, null, 2)); process.exit(1); }
+
+// Phase 2-4: resolve + typecheck + effects + contracts
+const c = await check(ast);  // async — contracts use Z3
+if (!c.ok) { console.error(JSON.stringify(c.errors, null, 2)); process.exit(1); }
+
+// Phase 5: compile to WASM (pass module + typeInfo from check)
+const compiled = compile(c.module, { typeInfo: c.typeInfo });
+if (!compiled.ok) { console.error(JSON.stringify(compiled.errors, null, 2)); process.exit(1); }
+
+// Phase 6: execute in sandbox
+const result = await run(compiled.wasm);
+process.stdout.write(result.output);
+```
+
+> **Important**: Edict is an ESM package — use `import`, not `require()`. `check()` is async (Z3 contracts). `compile()` takes the checked `module` and `typeInfo` from the check result, not the raw AST.
+
 ## MCP Tools
 
 - `edict_schema`: Returns the full AST JSON Schema (supports full/minimal/compact formats)
