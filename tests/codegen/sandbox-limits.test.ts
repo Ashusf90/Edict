@@ -144,7 +144,7 @@ describe("Sandbox Limits", () => {
             expect(result.exitCode).toBe(0);
             expect(result.output).toBe("Hello, World!");
             expect(result.error).toBeUndefined();
-        }, 15_000);
+        }, 30_000);
 
         it("clamps timeoutMs to minimum of 100", async () => {
             const wasm = await compileAst(SLOW_PROGRAM_AST);

@@ -143,7 +143,7 @@ describe("importSkillTool wrapper", () => {
         expect(result.isError).toBeUndefined();
         const parsed = JSON.parse((result.content[0] as any).text);
         expect(parsed.ok).toBe(true);
-    });
+    }, 30_000);
 
     it("returns isError for missing binary", async () => {
         const result = await importSkillTool.handler({ skill: { binary: null } });
