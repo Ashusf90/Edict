@@ -368,6 +368,40 @@ export async function handleExport(
     return { ok: true, skill: pkgResult.skill };
 }
 
+export interface PackageSkillHandlerResult {
+    ok: boolean;
+    skill?: unknown;
+    error?: string;
+}
+
+export function handlePackageSkill(
+    ast: unknown,
+    wasmBase64: string,
+    metadata?: { name?: string; version?: string; description?: string; author?: string },
+): PackageSkillHandlerResult {
+    // Expand compact format and migrate
+    const expanded = expandCompact(ast);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) return { ok: false, error: `Schema migration failed: ${JSON.stringify(migrated.errors)}` };
+
+    // Validate the module
+    const validation = validate(migrated.ast);
+    if (!validation.ok) return { ok: false, error: `Validation failed: ${JSON.stringify(validation.errors)}` };
+
+    const module = migrated.ast as EdictModule;
+
+    // Decode WASM from base64
+    const wasm = new Uint8Array(Buffer.from(wasmBase64, "base64"));
+
+    // Delegate to packageSkill
+    const result = packageSkill({ module, wasm, metadata });
+    if (!result.ok) {
+        return { ok: false, error: result.error };
+    }
+
+    return { ok: true, skill: result.skill };
+}
+
 export interface ImportSkillResult {
     ok: boolean;
     output?: string;
@@ -496,6 +530,7 @@ export function handleVersion(): VersionResult {
             approvalGates: true,
             monomorphicContainers: true,
             effectPolymorphism: true,
+            skillPackages: true,
         },
         limits: {
             z3TimeoutMs: 5000,

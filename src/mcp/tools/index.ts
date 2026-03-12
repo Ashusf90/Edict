@@ -17,6 +17,8 @@ import { composeTool } from "./compose.js";
 import { debugTool } from "./debug.js";
 import { exportTool } from "./export.js";
 import { importSkillTool } from "./import_skill.js";
+import { packageSkillTool } from "./package_skill.js";
+import { invokeSkillTool } from "./invoke_skill.js";
 import { generateTestsTool } from "./generate_tests.js";
 import { explainTool } from "./explain.js";
 import { replayTool } from "./replay.js";
@@ -38,6 +40,8 @@ export const ALL_TOOLS: EdictMcpTool[] = [
     debugTool,
     exportTool,
     importSkillTool,
+    packageSkillTool,
+    invokeSkillTool,
     generateTestsTool,
     explainTool,
     replayTool,
