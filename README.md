@@ -5,6 +5,8 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=node.js)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-8A2BE2)](https://modelcontextprotocol.io/)
 
+<a href="https://glama.ai/mcp/servers/Sowiedu/Edict"><img width="380" height="200" src="https://glama.ai/mcp/servers/Sowiedu/Edict/badge" /></a>
+
 **A programming language designed for AI agents.** No parser. No syntax. Agents produce AST directly as JSON.
 
 Edict is a statically-typed, effect-tracked programming language where the canonical program format is a JSON AST. It's purpose-built so AI agents can write, verify, and execute programs through a structured pipeline — no text parsing, no human-readable syntax, no ambiguity.
@@ -52,7 +54,7 @@ Host capabilities available through adapters: filesystem (sandboxed), HTTP, cryp
 
 ```bash
 npm install
-npm test          # 1932 tests across 109 files
+npm test          # 1934 tests across 110 files
 npm run mcp       # start MCP server (stdio transport)
 ```
 
@@ -217,7 +219,7 @@ src/
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 
-tests/             # 1932 tests across 109 files
+tests/             # 1934 tests across 110 files
 examples/          # 38 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```

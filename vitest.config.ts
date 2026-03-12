@@ -26,8 +26,12 @@ export default defineConfig({
                 "src/mcp/tools/index.ts",
                 "src/mcp/resources/index.ts",
                 "src/mcp/prompt-defs/index.ts",
-                // Browser-only stub — not testable in Node runtime
+                // Browser-only — not testable in Node runtime
                 "src/codegen/browser-host-adapter.ts",
+                // Browser WASM runner — requires browser WebAssembly API + Web Workers
+                "src/codegen/browser-runner.ts",
+                // Browser entry point re-export barrel — all exports tested at canonical source
+                "src/browser.ts",
                 // Pure types / re-export barrel — no runtime code
                 "src/builtins/builtin-types.ts",
                 "src/builtins/builtins.ts",
