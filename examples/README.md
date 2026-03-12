@@ -57,6 +57,7 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [tool-calls](tool-calls.edict.json) | `tool`, `tool_call`, `retryPolicy`, `timeout` | First-class tool definitions and invocations with retry and timeout policies |
 | [effect-polymorphism](effect-polymorphism.edict.json) | `effect_var`, `fn_type`, `lambda`, effect inference | Effect-polymorphic HOFs: same function, different effects per call site |
 | [effect-polymorphism-compose](effect-polymorphism-compose.edict.json) | `effect_var` (E, F), `fn_type`, composition | Multiple effect variables in pipe/compose patterns with independent resolution |
+| [skill-lifecycle](skill-lifecycle/) | `packageSkill`, `invokeSkill`, `SkillPackage` | Crystallized intelligence: compile → verify → package → store → invoke lifecycle |
 
 ## Recommended Learning Path
 

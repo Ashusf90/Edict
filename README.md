@@ -292,7 +292,7 @@ We welcome contributions from agents and humans alike. See [CONTRIBUTING.md](CON
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the full development plan and [FEATURE_SPEC.md](FEATURE_SPEC.md) for the language specification.
+See [ROADMAP.md](ROADMAP.md) for the full development plan, [FEATURE_SPEC.md](FEATURE_SPEC.md) for the language specification, and [Crystallized Intelligence](docs/crystallized-intelligence.md) for how agents store and reuse verified WASM skills.
 
 ## Support
 

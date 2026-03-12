@@ -315,3 +315,13 @@ if (url.endsWith(".ts")) {
 - **Problem**: Extracted `handleImportSkill` logic into standalone `invokeSkill()` with a slightly different error message. Existing `handlers.test.ts` expected the old message string.
 - **Fix**: Used the exact same error message in the new module to preserve backwards compat.
 - **Rule**: When extracting handler logic into a shared library function, copy error messages verbatim — tests often assert on exact substrings.
+
+## Edict AST Format Pitfalls When Writing Programs From Scratch
+- **Problem**: Wrote AST from memory: used `{ name: "x", type: ... }` for params (missing `kind: "param"` + `id`), `kind: "identifier"` instead of `kind: "ident"`, `fn: "functionName"` string instead of `fn: { kind: "ident", ... }` expression, and single-expression `then`/`else` instead of arrays.
+- **Fix**: Always reference an existing example (`examples/*.edict.json`) to match the exact format before writing ASTs from scratch.
+- **Rule**: Params need `kind: "param"` + `id`. Identifiers are `kind: "ident"`. `call.fn` is an expression object. `if.then`/`if.else` are arrays of expressions.
+
+## Recursive Functions With Postconditions Trigger undecidable_predicate
+- **Problem**: Added `post: result >= 0` to recursive fibonacci — Z3 verifier returned `undecidable_predicate` because the `result` identifier in recursive functions isn't fully supported.
+- **Fix**: Used only `pre` contracts for recursive functions (matching the pattern from `examples/fibonacci.edict.json`).
+- **Rule**: Avoid postconditions referencing `result` in recursive functions. The Z3 verifier may not be able to prove them.
