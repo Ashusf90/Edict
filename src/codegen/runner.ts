@@ -152,6 +152,10 @@ export async function run(
             }
         `;
 
+        // Only register tsx ESM loader when running from TypeScript source (dev/vitest).
+        // In production (.js), tsx is not needed and may not be installed.
+        const isDevMode = runnerModuleUrl.endsWith(".ts");
+
         const worker = new Worker(workerScript, {
             eval: true,
             workerData: {
@@ -164,8 +168,7 @@ export async function run(
                 record: limits.record,
                 replayToken: limits.replayToken,
             },
-            // Register tsx ESM loader so the worker can import .ts files (vitest/dev)
-            execArgv: ["--import", "tsx"],
+            ...(isDevMode ? { execArgv: ["--import", "tsx"] } : {}),
         });
 
         function settle(result: RunResult): void {

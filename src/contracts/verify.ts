@@ -286,10 +286,14 @@ async function verifyInWorker(
             }
         `;
 
+        // Only register tsx ESM loader when running from TypeScript source (dev/vitest).
+        // In production (.js), tsx is not needed and may not be installed.
+        const isDevMode = verifyModuleUrl.endsWith(".ts");
+
         const worker = new Worker(workerScript, {
             eval: true,
             workerData: { module, verifyModuleUrl, workItems },
-            execArgv: ["--import", "tsx"],
+            ...(isDevMode ? { execArgv: ["--import", "tsx"] } : {}),
         });
 
         function settle(result: VerifyFunctionResult): void {

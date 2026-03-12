@@ -47,6 +47,8 @@ export interface TypedModuleInfo {
     inferredLetTypes: Map<string, TypeExpr>;
     /** lambdaParamId → inferred type from call-site context */
     inferredLambdaParamTypes: Map<string, TypeExpr>;
+    /** string_interp part nodeId → coercion builtin name (e.g. "intToString") */
+    stringInterpCoercions: Map<string, string>;
 }
 
 export interface TypeCheckResult {
@@ -70,6 +72,7 @@ export function typeCheck(module: EdictModule): TypeCheckResult {
         inferredReturnTypes: new Map(),
         inferredLetTypes: new Map(),
         inferredLambdaParamTypes: new Map(),
+        stringInterpCoercions: new Map(),
     };
     const rootEnv = new TypeEnv();
 
@@ -944,7 +947,34 @@ function inferStringInterp(
 ): TypeExpr {
     for (const part of expr.parts) {
         const partType = inferExpr(part, env, errors, typeInfo);
-        checkExpectedType(partType, STRING_TYPE, part.id, env, errors);
+        if (isUnknown(partType)) continue;
+
+        const resolved = resolveType(partType, env);
+        if (resolved.kind === "basic") {
+            switch (resolved.name) {
+                case "String":
+                    // No coercion needed
+                    break;
+                case "Int":
+                    typeInfo.stringInterpCoercions.set(part.id, "intToString");
+                    break;
+                case "Int64":
+                    typeInfo.stringInterpCoercions.set(part.id, "int64ToString");
+                    break;
+                case "Float":
+                    typeInfo.stringInterpCoercions.set(part.id, "floatToString");
+                    break;
+                case "Bool":
+                    typeInfo.stringInterpCoercions.set(part.id, "boolToString");
+                    break;
+                default:
+                    checkExpectedType(partType, STRING_TYPE, part.id, env, errors);
+                    break;
+            }
+        } else {
+            // Non-basic types (records, enums, arrays, etc.) are not auto-coercible
+            checkExpectedType(partType, STRING_TYPE, part.id, env, errors);
+        }
     }
     return STRING_TYPE;
 }

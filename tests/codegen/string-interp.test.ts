@@ -14,7 +14,7 @@ async function compileAndRun(ast: unknown) {
     if (!checkResult.ok) {
         throw new Error(`Check failed: ${JSON.stringify(checkResult.errors)}`);
     }
-    const compileResult = compile(checkResult.module!);
+    const compileResult = compile(checkResult.module!, { typeInfo: checkResult.typeInfo });
     if (!compileResult.ok) {
         throw new Error(`Compile failed: ${compileResult.errors.join(", ")}`);
     }
@@ -146,7 +146,39 @@ describe("string_interp — type checker", () => {
         expect(checkResult.ok).toBe(true);
     });
 
-    it("emits type_mismatch when a part is not String", async () => {
+    it("auto-coerces Int parts without error", async () => {
+        const ast = {
+            kind: "module",
+            id: "mod-001",
+            name: "test",
+            imports: [],
+            definitions: [
+                {
+                    kind: "fn",
+                    id: "fn-main-001",
+                    name: "main",
+                    params: [],
+                    effects: ["pure"],
+                    returnType: { kind: "basic", name: "String" },
+                    contracts: [],
+                    body: [
+                        {
+                            kind: "string_interp",
+                            id: "si-001",
+                            parts: [
+                                { kind: "literal", id: "s1", value: "hello" },
+                                { kind: "literal", id: "i1", value: 42 },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        };
+        const checkResult = await check(ast);
+        expect(checkResult.ok).toBe(true);
+    });
+
+    it("emits type_mismatch for non-coercible types", async () => {
         const ast = {
             kind: "module",
             id: "mod-001",
@@ -166,8 +198,8 @@ describe("string_interp — type checker", () => {
                             kind: "string_interp",
                             id: "si-001",
                             parts: [
-                                { kind: "literal", id: "s1", value: "hello" },
-                                { kind: "literal", id: "i1", value: 42 },
+                                { kind: "literal", id: "s1", value: "items: " },
+                                { kind: "array", id: "arr1", elements: [{ kind: "literal", id: "a1", value: 1 }] },
                             ],
                         },
                     ],
@@ -341,5 +373,59 @@ describe("string_interp — codegen e2e", () => {
         ]);
         const result = await compileAndRun(ast);
         expect(result.output).toBe("abcde");
+    });
+});
+
+// =============================================================================
+// Auto-Coercion E2E Tests
+// =============================================================================
+
+describe("string_interp — auto-coercion e2e", () => {
+    it("auto-coerces Int part", async () => {
+        const ast = printInterpProgram([
+            { kind: "literal", id: "s1", value: "x = " },
+            { kind: "literal", id: "i1", value: 42 },
+        ]);
+        const result = await compileAndRun(ast);
+        expect(result.output).toBe("x = 42");
+    });
+
+    it("auto-coerces Float part", async () => {
+        const ast = printInterpProgram([
+            { kind: "literal", id: "s1", value: "pi = " },
+            { kind: "literal", id: "f1", value: 3.14, type: { kind: "basic", name: "Float" } },
+        ]);
+        const result = await compileAndRun(ast);
+        expect(result.output).toBe("pi = 3.14");
+    });
+
+    it("auto-coerces Bool part", async () => {
+        const ast = printInterpProgram([
+            { kind: "literal", id: "s1", value: "flag: " },
+            { kind: "literal", id: "b1", value: true },
+        ]);
+        const result = await compileAndRun(ast);
+        expect(result.output).toBe("flag: true");
+    });
+
+    it("auto-coerces mixed types", async () => {
+        const ast = printInterpProgram([
+            { kind: "literal", id: "s1", value: "a" },
+            { kind: "literal", id: "i1", value: 1 },
+            { kind: "literal", id: "s2", value: "b" },
+            { kind: "literal", id: "f1", value: 2.5, type: { kind: "basic", name: "Float" } },
+            { kind: "literal", id: "s3", value: "c" },
+            { kind: "literal", id: "b1", value: true },
+        ]);
+        const result = await compileAndRun(ast);
+        expect(result.output).toBe("a1b2.5ctrue");
+    });
+
+    it("single non-String part (Int only)", async () => {
+        const ast = printInterpProgram([
+            { kind: "literal", id: "i1", value: 99 },
+        ]);
+        const result = await compileAndRun(ast);
+        expect(result.output).toBe("99");
     });
 });

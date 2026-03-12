@@ -310,9 +310,20 @@ export function compileStringInterp(
         return mod.i32.const(empty.offset);
     }
 
+    /**
+     * Compile a single part, wrapping it in a coercion call if the type checker
+     * recorded one (e.g. intToString for Int parts).
+     */
+    const compilePart = (part: Expression): binaryen.ExpressionRef => {
+        const compiled = compileExpr(part, cc, ctx);
+        const coercionFn = cc.typeInfo?.stringInterpCoercions.get(part.id);
+        if (!coercionFn) return compiled;
+        return mod.call(coercionFn, [compiled], binaryen.i32);
+    };
+
     // Single part → compile directly (no concat needed)
     if (parts.length === 1) {
-        return compileExpr(parts[0]!, cc, ctx);
+        return compilePart(parts[0]!);
     }
 
     // Left-fold: concat(concat(concat(parts[0], parts[1]), parts[2]), ...)
@@ -321,11 +332,11 @@ export function compileStringInterp(
 
     // Compile first part, save ptr to temp local
     const accPtrIdx = ctx.addLocal(`__interp_ptr_${expr.id}`, binaryen.i32);
-    stmts.push(mod.local.set(accPtrIdx, compileExpr(parts[0]!, cc, ctx)));
+    stmts.push(mod.local.set(accPtrIdx, compilePart(parts[0]!)));
 
     // For each subsequent part, concat with accumulator
     for (let i = 1; i < parts.length; i++) {
-        const partExpr = compileExpr(parts[i]!, cc, ctx);
+        const partExpr = compilePart(parts[i]!);
 
         // Save part ptr to temp local (in case the part expression is complex)
         const tmpPartPtrIdx = ctx.addLocal(`__interp_p${i}_ptr_${expr.id}`, binaryen.i32);
