@@ -7,7 +7,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
+import { packageSkill } from "../skills/package.js";
+import { invokeSkill } from "../skills/invoke.js";
 
 import { validate } from "../validator/validate.js";
 import { check } from "../check.js";
@@ -349,83 +350,22 @@ export async function handleExport(
         return { ok: false, errors: compileResult.errors };
     }
 
-    const entryPointName = "main";
-    const entryDef = checkResult.module.definitions.find((d) => d.kind === "fn" && d.name === entryPointName);
+    // Delegate packaging to the standalone skills module
+    const pkgResult = packageSkill({
+        module: checkResult.module,
+        wasm: compileResult.wasm,
+        coverage: checkResult.coverage,
+        metadata,
+    });
 
-    if (!entryDef || entryDef.kind !== "fn") {
+    if (!pkgResult.ok) {
         return {
             ok: false,
-            errors: [{ error: "missing_entry_point", entryPointName }]
+            errors: [{ error: "missing_entry_point", entryPointName: "main" }],
         };
     }
 
-    const base64Wasm = Buffer.from(compileResult.wasm).toString("base64");
-    const wasmSize = compileResult.wasm.length;
-    const digest = "sha256:" + createHash("sha256").update(compileResult.wasm).digest("hex");
-
-    const uasfInterface: import("./uasf.js").UasfInterface = {
-        entryPoint: entryPointName,
-        params: entryDef.params.map((p) => ({
-            name: p.name,
-            type: p.type ? _typeToString(p.type) : "unknown"
-        })),
-        returns: { type: entryDef.returnType ? _typeToString(entryDef.returnType) : "unknown" },
-        effects: entryDef.effects
-    };
-
-    const isVerified = checkResult.coverage?.contracts?.skipped === 0;
-    const uasfVerification: import("./uasf.js").UasfVerification = {
-        verified: isVerified,
-        contracts: entryDef.contracts.map(c => ({
-            kind: c.kind,
-            ...(c.condition && { condition: c.condition }),
-            ...(c.semantic && { semantic: c.semantic }),
-        })),
-        provenBy: isVerified ? "z3-solver" : undefined
-    };
-
-    const skill: import("./uasf.js").UasfPackage = {
-        uasf: "1.0",
-        metadata: {
-            name: metadata.name || "unknown_skill",
-            version: metadata.version || "1.0.0",
-            description: metadata.description || "",
-            author: metadata.author || "unknown",
-            createdAt: new Date().toISOString(),
-            tags: []
-        },
-        binary: {
-            wasm: base64Wasm,
-            wasmSize: wasmSize,
-            checksum: digest
-        },
-        interface: uasfInterface,
-        verification: uasfVerification,
-        capabilities: {
-            required: entryDef.effects.includes("io") ? ["io"] : [],
-            optional: []
-        }
-    };
-
-    return { ok: true, skill };
-}
-
-function _typeToString(type: import("../ast/types.js").TypeExpr): string {
-    switch (type.kind) {
-        case "basic": return type.name;
-        case "array": return `Array<${_typeToString(type.element)}>`;
-        case "option": return `Option<${_typeToString(type.inner)}>`;
-        case "result": return `Result<${_typeToString(type.ok)}, ${_typeToString(type.err)}>`;
-        case "unit_type": return `${type.base}<${type.unit}>`;
-        case "refined": return `{ ${type.variable}: ${_typeToString(type.base)} | ... }`;
-        case "confidence": return `Confidence<${_typeToString(type.base)}, ${type.confidence}>`;
-        case "provenance": return `Provenance<${_typeToString(type.base)}, [${type.sources.map(s => `"${s}"`).join(", ")}]>`;
-        case "capability": return `Capability<${type.permissions.map(p => `"${p}"`).join(", ")}>`;
-        case "fn_type": return `(${type.params.map(_typeToString).join(", ")}) -> ${_typeToString(type.returnType)}`;
-        case "named": return type.name;
-        case "tuple": return `(${type.elements.map(_typeToString).join(", ")})`;
-        default: return "unknown";
-    }
+    return { ok: true, skill: pkgResult.skill };
 }
 
 export interface ImportSkillResult {
@@ -436,30 +376,14 @@ export interface ImportSkillResult {
 }
 
 export async function handleImportSkill(skill: any, limits?: RunLimits): Promise<ImportSkillResult> {
-    if (!skill || !skill.binary || !skill.binary.wasm) {
-        return { ok: false, error: "Invalid skill package format. Expected binary.wasm string." };
-    }
-
-    const wasmBytes = new Uint8Array(Buffer.from(skill.binary.wasm, "base64"));
-    const digest = "sha256:" + createHash("sha256").update(wasmBytes).digest("hex");
-
-    if (digest !== skill.binary.checksum) {
-        return { ok: false, error: `Checksum mismatch. Expected ${skill.binary.checksum}, but got ${digest}. The skill package may be corrupted or tampered with.` };
-    }
-
-    const entryPointName = skill.interface?.entryPoint || "main";
-
-    try {
-        const runRes = await run(wasmBytes, entryPointName, limits);
-        return {
-            ok: true,
-            output: runRes.output,
-            exitCode: runRes.exitCode,
-            error: runRes.error
-        };
-    } catch (e: any) {
-        return { ok: false, error: e.message || String(e) };
-    }
+    // Delegate to the standalone skills module
+    const result = await invokeSkill(skill, limits);
+    return {
+        ok: result.ok,
+        output: result.output,
+        exitCode: result.exitCode,
+        error: result.error,
+    };
 }
 
 export interface PatchResult {

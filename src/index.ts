@@ -380,3 +380,18 @@ export type { GeneratedTest, GenerateTestsResult } from "./contracts/generate-te
 export { migrateToLatest, applyMigration, CURRENT_SCHEMA_VERSION, MINIMUM_SCHEMA_VERSION, MIGRATION_REGISTRY } from "./migration/migrate.js";
 export type { Migration, MigrationOp, MigrationResult, MigrationSuccess, MigrationFailure } from "./migration/migrate.js";
 
+// ---------------------------------------------------------------------------
+// Skills: portable skill packaging and invocation
+// ---------------------------------------------------------------------------
+export { packageSkill, typeToString } from "./skills/package.js";
+export { invokeSkill } from "./skills/invoke.js";
+export type {
+    SkillPackage,
+    SkillMetadata,
+    PackageSkillInput,
+    PackageSkillResult,
+    PackageSkillSuccess,
+    PackageSkillFailure,
+    InvokeSkillResult,
+} from "./skills/types.js";
+

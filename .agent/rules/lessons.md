@@ -311,3 +311,7 @@ if (url.endsWith(".ts")) {
 - **Fix**: Use `add_issue_comment` for the closing summary, then `issue_write(method: "update", state: "closed")` separately — or use `issue_write` without a `body` field.
 - **Rule**: Never pass `body` to `issue_write(update)` when closing an issue. The original description is the specification; the closing message is a comment.
 
+## Preserve Exact Error Messages When Extracting to Shared Modules
+- **Problem**: Extracted `handleImportSkill` logic into standalone `invokeSkill()` with a slightly different error message. Existing `handlers.test.ts` expected the old message string.
+- **Fix**: Used the exact same error message in the new module to preserve backwards compat.
+- **Rule**: When extracting handler logic into a shared library function, copy error messages verbatim — tests often assert on exact substrings.
