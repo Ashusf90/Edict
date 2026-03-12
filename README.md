@@ -70,6 +70,29 @@ docker run -p 3000:3000 -e EDICT_TRANSPORT=http ghcr.io/sowiedu/edict
 
 Supported platforms: `linux/amd64`, `linux/arm64`.
 
+## Browser
+
+Run the Edict compiler entirely in the browser — no server required:
+
+| Bundle | Size | Phases | Use case |
+|---|---|---|---|
+| `edict-lang/browser` | 318 KB | 1–3 (validate, resolve, typecheck, effects, lint, patch) | Lightweight checking |
+| `edict-lang/browser-full` | ~14 MB | 1–5 (+ binaryen codegen, Z3 contracts, WASM execution) | Full compile & run |
+
+```javascript
+import { compileBrowser, runBrowserDirect } from 'edict-lang/browser-full';
+
+const result = compileBrowser(astJson);
+if (result.ok) {
+    const run = await runBrowserDirect(result.wasm);
+    console.log(run.output);  // "Hello, World!"
+}
+```
+
+> **Note**: ESM modules require HTTP serving. Use `npx serve .` or any static server — `file://` won't work.
+
+See [`examples/browser/index.html`](examples/browser/index.html) for a working example.
+
 ## MCP Tools
 
 | Tool | Description |

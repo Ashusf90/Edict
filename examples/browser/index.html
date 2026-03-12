@@ -49,7 +49,9 @@
 </div>
 
 <script type="module">
-// Import from the browser-full bundle (serve this file via HTTP server)
+// Edict Browser Compilation Demo
+// Serve this directory via HTTP (e.g. `npx serve .` from the repo root).
+// ESM imports don't work from file:// due to CORS restrictions.
 import {
     compileBrowser,
     runBrowserDirect,
