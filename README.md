@@ -114,6 +114,23 @@ if (result.ok) {
 
 See [`examples/browser/index.html`](examples/browser/index.html) for a working example.
 
+## QuickJS (Sandboxed Environments)
+
+The Edict compiler also runs inside [QuickJS](https://bellard.org/quickjs/) WASM — useful for sandboxed runtimes, edge workers, or embedding in other WASM applications:
+
+| Bundle | Size | Phases | Slowdown vs Node.js |
+|---|---|---|---|
+| `dist/edict-quickjs-check.js` | 357 KB | 1–3 (validate, resolve, typecheck, effects) | ~3.7x |
+
+```bash
+npm run build:quickjs    # build IIFE bundles
+npm run quickjs:test     # run feasibility benchmark
+```
+
+> **Limitation**: WASM codegen (binaryen) cannot run inside QuickJS — binaryen requires the `WebAssembly` API which QuickJS lacks. The check pipeline (phases 1–3) works fully.
+
+See [docs/quickjs-feasibility-report.md](docs/quickjs-feasibility-report.md) for full benchmarks and recommendations.
+
 ## MCP Tools
 
 | Tool | Description |

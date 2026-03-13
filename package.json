@@ -84,13 +84,16 @@
     "snapshot-schema": "tsx scripts/snapshot-schema.ts",
     "diff-schemas": "tsx scripts/diff-schemas.ts",
     "mcp": "tsx src/mcp/server.ts",
-    "benchmark": "tsx scripts/benchmark.ts"
+    "benchmark": "tsx scripts/benchmark.ts",
+    "build:quickjs": "tsx scripts/build-quickjs-bundle.ts",
+    "quickjs:test": "tsx scripts/quickjs-feasibility.ts"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@vitest/coverage-v8": "^4.0.18",
     "esbuild": "^0.25.0",
     "fast-check": "^4.5.3",
+    "quickjs-emscripten": "^0.32.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "typescript-json-schema": "^0.67.1",

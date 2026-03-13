@@ -276,7 +276,7 @@ With the full pipeline operational, these are the open areas for further develop
 | **Effect polymorphism** | #94 | ✅ Complete — effect variables in fn_type, inference at call sites, codegen (erased). |
 | **Edge deployment** | #77 | Deploy compiled WASM to Cloudflare Workers, Deno Deploy, etc. |
 | **Deploy pipeline** | #78 | One-step `edict_deploy` MCP tool: AST → WASM → live service. |
-| **Self-hosting** | #81 | Compile the Edict compiler itself to WASM (moonshot). |
+| **Self-hosting** | #81, #134 ✅ | QuickJS feasibility proven: check pipeline (phases 1–3) runs at 3.7x slowdown, 357 KB bundle. Codegen blocked by binaryen. See [report](docs/quickjs-feasibility-report.md). |
 
 ### Recently Completed
 
