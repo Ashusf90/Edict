@@ -1,5 +1,18 @@
 # Lessons Learned
 
+## Never Skip /review Workflow on Implementation Plans
+- **Problem**: Presented an implementation plan without running `/review` despite it being a critical rule in `criticalrules.md` line 117.
+- **Root cause**: Eagerness to deliver fast, treating self-review as optional rather than mandatory.
+- **Solution**: Always run `/review` exactly twice before `notify_user` with any implementation plan. No exceptions.
+- **Pattern**: The rule exists because self-review catches real issues (7 findings in this case, including a stale architectural invariant and missing error handling).
+
+## Structured Errors Use `.error` Field, Not `.kind`
+- **Problem**: Tests asserted `error.kind === "wasm_validation_error"` but the actual field name is `error.error`.
+- **Root cause**: Assumed structured errors follow the same `kind` discriminator used by AST nodes and IR nodes.
+- **Solution**: All Edict `StructuredError` types use the `error` field as their discriminator (e.g., `{ error: "wasm_validation_error", message: "..." }`). Never use `.kind` on error objects.
+- **Pattern**: Check the interface definition before writing assertions. AST nodes use `kind`, errors use `error`.
+
+
 ## Schema Walker validateValue Assumes anyOf = Object Union
 - **Problem**: `validateValue` in `schema-walker.ts` assumed all `anyOf` items are objects (`if (!isObject(value))` rejection). When `Effect` became `ConcreteEffect | EffectVariable` (string | object union), concrete string effects in `fn_type.effects` were rejected.
 - **Root cause**: The validator was designed for kind-discriminated object unions only. Mixed scalar + object unions weren't supported.

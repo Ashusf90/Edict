@@ -97,7 +97,7 @@ The compiler is infrastructure built by engineers. The language is a product con
 
 ## Architectural Invariants
 
-- **JSON AST is the only program representation** — no text, no binary, no IR
+- **JSON AST is the only external program representation** — no text syntax, no binary encoding. Internal compiler IRs (e.g. mid-level IR) are implementation details, not program formats.
 - **No lexer, no parser** — agents produce structure directly
 - **Deterministic** — same AST → same WASM → same output, always
 - **One canonical form** — exactly one way to represent each construct

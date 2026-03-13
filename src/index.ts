@@ -448,3 +448,7 @@ export type {
     IRStringInterpPart,
 } from "./ir/types.js";
 
+// ---------------------------------------------------------------------------
+// IR Codegen: compile IR expressions → WASM (parallel path to AST codegen)
+// ---------------------------------------------------------------------------
+export { compileIRExpr, irExprWasmType } from "./codegen/compile-ir-expr.js";
