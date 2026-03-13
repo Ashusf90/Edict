@@ -15,6 +15,9 @@ import {
     duplicateModuleName,
 } from "./errors/structured-errors.js";
 
+import { expandCompact } from "./compact/expand.js";
+import { migrateToLatest } from "./migration/migrate.js";
+
 // =============================================================================
 // Result type
 // =============================================================================
@@ -41,16 +44,32 @@ export interface MultiModuleCheckResult {
 /**
  * Multi-module pipeline: validate each → detect cycles → merge → check merged.
  *
- * @param modules Array of EdictModule ASTs to compile together
+ * @param modules Array of EdictModule ASTs to compile together (can be compact or older schema)
  * @returns The merged module and check results, or structured errors
  */
 export async function checkMultiModule(
-    modules: EdictModule[],
+    modules: unknown[],
 ): Promise<MultiModuleCheckResult> {
     const errors: StructuredError[] = [];
+    const expandedModules: EdictModule[] = [];
+
+    // --- Step 0: Expand compact ASTs and run schema migrations ---
+    for (const mod of modules) {
+        const expanded = expandCompact(mod);
+        const migrated = migrateToLatest(expanded);
+        if (!migrated.ok) {
+            errors.push(...migrated.errors);
+        } else {
+            expandedModules.push(migrated.ast as EdictModule);
+        }
+    }
+
+    if (errors.length > 0) {
+        return { ok: false, errors };
+    }
 
     // --- Step 1: Validate each module independently ---
-    for (const mod of modules) {
+    for (const mod of expandedModules) {
         const result = validate(mod);
         if (!result.ok) {
             errors.push(...result.errors);
@@ -65,7 +84,7 @@ export async function checkMultiModule(
     const registry = new Map<string, EdictModule>();
     const nameToIds = new Map<string, string[]>();
 
-    for (const mod of modules) {
+    for (const mod of expandedModules) {
         const existing = nameToIds.get(mod.name);
         if (existing) {
             existing.push(mod.id);
@@ -89,7 +108,7 @@ export async function checkMultiModule(
     const moduleNames = new Set(registry.keys());
 
     // Validate all cross-module imports resolve to known modules
-    for (const mod of modules) {
+    for (const mod of expandedModules) {
         for (const imp of mod.imports) {
             // Only check imports that refer to modules in this compilation set
             // External imports (e.g., "std") are preserved as-is
@@ -106,7 +125,7 @@ export async function checkMultiModule(
     }
 
     // Topological sort with cycle detection
-    const sortResult = topologicalSort(modules, moduleNames);
+    const sortResult = topologicalSort(expandedModules, moduleNames);
     if (!sortResult.ok) {
         errors.push(circularImport(sortResult.cycle!));
         return { ok: false, errors };
@@ -115,7 +134,7 @@ export async function checkMultiModule(
     const moduleOrder = sortResult.order!;
 
     // --- Step 4: Merge modules into a single virtual module ---
-    const mergedModule = mergeModules(modules, moduleNames, moduleOrder);
+    const mergedModule = mergeModules(expandedModules, moduleNames, moduleOrder);
 
     // --- Step 5: Run full pipeline on the merged module ---
     const checkResult = await check(mergedModule);

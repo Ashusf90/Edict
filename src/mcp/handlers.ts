@@ -203,10 +203,7 @@ export function handleExamples(): ExamplesResult {
 }
 
 export function handleValidate(ast: unknown): ValidateResult {
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) return { ok: false, errors: migrated.errors };
-    const result = validate(migrated.ast);
+    const result = validate(ast);
     if (result.ok) {
         return { ok: true };
     }
@@ -214,10 +211,7 @@ export function handleValidate(ast: unknown): ValidateResult {
 }
 
 export async function handleCheck(ast: unknown): Promise<CheckResult> {
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) return { ok: false, errors: migrated.errors };
-    const result = await check(migrated.ast);
+    const result = await check(ast);
     if (result.ok) {
         const res: CheckResult = { ok: true };
         if (result.diagnostics && result.diagnostics.length > 0) res.diagnostics = result.diagnostics;
@@ -230,11 +224,7 @@ export async function handleCheck(ast: unknown): Promise<CheckResult> {
 }
 
 export async function handleCompile(ast: unknown): Promise<CompileResult> {
-    // Full pipeline: expand compact format, then migrate, then check, then compile
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) return { ok: false, errors: migrated.errors };
-    const checkResult = await check(migrated.ast);
+    const checkResult = await check(ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -250,21 +240,7 @@ export async function handleCompile(ast: unknown): Promise<CompileResult> {
 }
 
 export async function handleCheckMulti(modules: unknown[]): Promise<CheckResult> {
-    const expandedModules = modules.map((m) => {
-        const expanded = expandCompact(m);
-        const migrated = migrateToLatest(expanded);
-        if (!migrated.ok) return null;
-        return migrated.ast;
-    });
-    // Check for migration failures
-    for (let i = 0; i < modules.length; i++) {
-        if (expandedModules[i] === null) {
-            const expanded = expandCompact(modules[i]);
-            const migrated = migrateToLatest(expanded);
-            if (!migrated.ok) return { ok: false, errors: migrated.errors };
-        }
-    }
-    const result = await checkMultiModule(expandedModules as EdictModule[]);
+    const result = await checkMultiModule(modules);
     if (result.ok) {
         const res: CheckResult = { ok: true };
         if (result.diagnostics && result.diagnostics.length > 0) res.diagnostics = result.diagnostics;
@@ -277,20 +253,7 @@ export async function handleCheckMulti(modules: unknown[]): Promise<CheckResult>
 }
 
 export async function handleCompileMulti(modules: unknown[]): Promise<CompileResult> {
-    const expandedModules = modules.map((m) => {
-        const expanded = expandCompact(m);
-        const migrated = migrateToLatest(expanded);
-        if (!migrated.ok) return null;
-        return migrated.ast;
-    });
-    for (let i = 0; i < modules.length; i++) {
-        if (expandedModules[i] === null) {
-            const expanded = expandCompact(modules[i]);
-            const migrated = migrateToLatest(expanded);
-            if (!migrated.ok) return { ok: false, errors: migrated.errors };
-        }
-    }
-    const result = await checkMultiModule(expandedModules as EdictModule[]);
+    const result = await checkMultiModule(modules);
     if (!result.ok || !result.mergedModule) {
         return { ok: false, errors: result.errors };
     }
@@ -354,10 +317,7 @@ export async function handleExport(
     ast: unknown,
     metadata: { name?: string; version?: string; description?: string; author?: string }
 ): Promise<ExportResult> {
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) return { ok: false, errors: migrated.errors };
-    const checkResult = await check(migrated.ast);
+    const checkResult = await check(ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -396,12 +356,11 @@ export function handlePackageSkill(
     wasmBase64: string,
     metadata?: { name?: string; version?: string; description?: string; author?: string },
 ): PackageSkillHandlerResult {
-    // Expand compact format and migrate
+    // Expand and migrate before validation
     const expanded = expandCompact(ast);
     const migrated = migrateToLatest(expanded);
     if (!migrated.ok) return { ok: false, error: `Schema migration failed: ${JSON.stringify(migrated.errors)}` };
 
-    // Validate the module
     const validation = validate(migrated.ast);
     if (!validation.ok) return { ok: false, error: `Validation failed: ${JSON.stringify(validation.errors)}` };
 
@@ -672,11 +631,8 @@ export async function handleDebug(
     ast: unknown,
     options?: { maxSteps?: number },
 ): Promise<DebugHandlerResult> {
-    // Full pipeline: expand → check → compile(debugMode) → runDebug
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) return { ok: false, errors: migrated.errors };
-    const checkResult = await check(migrated.ast);
+    // Full pipeline: check -> compile(debugMode) -> runDebug
+    const checkResult = await check(ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -719,10 +675,7 @@ export interface GenerateTestsHandlerResult {
 }
 
 export async function handleGenerateTests(ast: unknown): Promise<GenerateTestsHandlerResult> {
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) return { ok: false, errors: migrated.errors };
-    const checkResult = await check(migrated.ast);
+    const checkResult = await check(ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, errors: checkResult.errors };
     }
@@ -768,14 +721,7 @@ export async function handleDeploy(
     target: string,
     config?: DeployConfig,
 ): Promise<DeployResult> {
-    // Step 1: Full pipeline — expand → migrate → check → compile
-    const expanded = expandCompact(ast);
-    const migrated = migrateToLatest(expanded);
-    if (!migrated.ok) {
-        return { ok: false, target, errors: migrated.errors };
-    }
-
-    const checkResult = await check(migrated.ast);
+    const checkResult = await check(ast);
     if (!checkResult.ok || !checkResult.module) {
         return { ok: false, target, errors: checkResult.errors };
     }

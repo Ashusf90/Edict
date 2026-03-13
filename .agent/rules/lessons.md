@@ -348,3 +348,10 @@ if (url.endsWith(".ts")) {
 - **Symptom**: Tests passed for existing features (which don't use `callArgCoercions`) but new auto-coercion tests either compiled wrong code or produced empty output.
 - **Fix**: Always call `compile(module, { typeInfo: checkResult.typeInfo })` in test helpers.
 - **Rule**: When adding features that store data in `TypedModuleInfo`, verify ALL test helpers that call `compile()` are passing `typeInfo`. Grep for `compile(checkResult.module` without `typeInfo` to find gaps.
+
+## Input Normalization Must Flow Through Entire Function — Not Just Validation
+- **Problem**: Added `expandCompact()` + `migrateToLatest()` to `check()` and `checkBrowser()`, passed `migrated.ast` to `validate()`, but then used the original `ast` (still compact!) for all subsequent phases via `const module = ast as EdictModule`. This caused `module.imports is not iterable` since compact ASTs have `im` not `imports`.
+- **Root cause**: Copy-paste from the existing code that had `const module = ast as EdictModule` — forgot to update the reference to point to the expanded/migrated result.
+- **Fix**: Changed to `const module = migrated.ast as EdictModule` in both `check()` and `checkBrowser()`.
+- **Rule**: When adding input normalization (expand/migrate/parse) to a function, **every downstream reference** must use the normalized result, not the original parameter. Search for all occurrences of the original parameter name after the normalization point.
+- **Extended**: Handlers that call `validate()` then use the original `ast` (e.g., `handleLint`, `handlePackageSkill`) have the same bug — `validate()` expands internally but discards the result. These handlers must expand explicitly before using the AST downstream.

@@ -560,3 +560,138 @@ describe("compactSchemaReference", () => {
         expect(ref.description).toContain("Compact AST");
     });
 });
+
+// =============================================================================
+// Direct API — compact ASTs through public entry points (not MCP handlers)
+// =============================================================================
+// These tests verify the fix for the compact expansion gap: ensure that
+// check(), checkBrowser(), validate(), and checkMultiModule() all accept
+// compact ASTs directly without requiring manual expandCompact() calls.
+
+import { check } from "../../src/check.js";
+import { checkBrowser } from "../../src/check-browser.js";
+import { checkMultiModule } from "../../src/multi-module.js";
+import { validate as validateAst } from "../../src/validator/validate.js";
+
+const COMPACT_HELLO_WORLD = {
+    k: "mod",
+    i: "mod-direct-001",
+    n: "hello",
+    im: [],
+    ds: [
+        {
+            k: "fn",
+            i: "fn-main-001",
+            n: "main",
+            ps: [],
+            rt: { k: "b", n: "Int" },
+            fx: ["io"],
+            ct: [],
+            b: [
+                {
+                    k: "c",
+                    i: "call-print-001",
+                    fn: { k: "id", i: "ident-print-001", n: "println" },
+                    as: [{ k: "lit", i: "lit-hello-001", v: "Hello from direct API!" }],
+                },
+                { k: "lit", i: "lit-zero-001", v: 0 },
+            ],
+        },
+    ],
+};
+
+describe("direct API — compact AST through check()", () => {
+    it("check() accepts a compact AST and returns ok", async () => {
+        const result = await check(COMPACT_HELLO_WORLD);
+        expect(result.ok).toBe(true);
+        expect(result.errors).toEqual([]);
+        expect(result.module).toBeDefined();
+        expect(result.module!.name).toBe("hello");
+    });
+});
+
+describe("direct API — compact AST through checkBrowser()", () => {
+    it("checkBrowser() accepts a compact AST and returns ok", () => {
+        const result = checkBrowser(COMPACT_HELLO_WORLD);
+        expect(result.ok).toBe(true);
+        expect(result.errors).toEqual([]);
+        expect(result.module).toBeDefined();
+        expect(result.module!.name).toBe("hello");
+    });
+});
+
+describe("direct API — compact AST through validate()", () => {
+    it("validate() accepts a compact AST and returns ok", () => {
+        const result = validateAst(COMPACT_HELLO_WORLD);
+        expect(result.ok).toBe(true);
+    });
+});
+
+describe("direct API — compact AST through checkMultiModule()", () => {
+    it("checkMultiModule() accepts compact module ASTs and returns ok", async () => {
+        const compactLib = {
+            k: "mod",
+            i: "mod-lib-001",
+            n: "mathlib",
+            im: [],
+            ds: [
+                {
+                    k: "fn",
+                    i: "fn-double-001",
+                    n: "double",
+                    ps: [{ k: "p", i: "p-x-001", n: "x", t: { k: "b", n: "Int" } }],
+                    rt: { k: "b", n: "Int" },
+                    fx: ["pure"],
+                    ct: [],
+                    b: [
+                        {
+                            k: "bin",
+                            i: "bin-mul-001",
+                            op: "*",
+                            l: { k: "id", i: "id-x-001", n: "x" },
+                            r: { k: "lit", i: "lit-2-001", v: 2 },
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const compactApp = {
+            k: "mod",
+            i: "mod-app-001",
+            n: "app",
+            im: [
+                {
+                    k: "imp",
+                    i: "imp-001",
+                    module: "mathlib",
+                    names: ["double"],
+                },
+            ],
+            ds: [
+                {
+                    k: "fn",
+                    i: "fn-main-001",
+                    n: "main",
+                    ps: [],
+                    rt: { k: "b", n: "Int" },
+                    fx: ["pure"],
+                    ct: [],
+                    b: [
+                        {
+                            k: "c",
+                            i: "call-double-001",
+                            fn: { k: "id", i: "ident-double-001", n: "double" },
+                            as: [{ k: "lit", i: "lit-21-001", v: 21 }],
+                        },
+                    ],
+                },
+            ],
+        };
+
+        const result = await checkMultiModule([compactLib, compactApp]);
+        expect(result.ok).toBe(true);
+        expect(result.errors).toEqual([]);
+        expect(result.mergedModule).toBeDefined();
+    });
+});

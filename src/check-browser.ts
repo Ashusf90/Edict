@@ -12,6 +12,8 @@ import { typeCheck, type TypedModuleInfo } from "./checker/check.js";
 import { complexityCheck } from "./checker/complexity.js";
 import { effectCheck } from "./effects/effect-check.js";
 import type { EdictModule } from "./ast/nodes.js";
+import { expandCompact } from "./compact/expand.js";
+import { migrateToLatest } from "./migration/migrate.js";
 
 export interface CheckBrowserResult {
     ok: boolean;
@@ -35,13 +37,19 @@ export interface CheckBrowserResult {
  * @returns `{ ok, errors, module?, typeInfo?, diagnostics? }`
  */
 export function checkBrowser(ast: unknown): CheckBrowserResult {
+    const expanded = expandCompact(ast);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) {
+        return { ok: false, errors: migrated.errors };
+    }
+
     // Phase 1 — Structural validation
-    const validation = validate(ast);
+    const validation = validate(migrated.ast);
     if (!validation.ok) {
         return { ok: false, errors: validation.errors };
     }
 
-    const module = ast as EdictModule;
+    const module = migrated.ast as EdictModule;
 
     // Phase 2a — Name resolution
     const resolveErrors = resolve(module);

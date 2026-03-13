@@ -10,6 +10,8 @@
 import type { StructuredError } from "../errors/structured-errors.js";
 import { IdTracker } from "./id-tracker.js";
 import { validateModule, validateFragment } from "./schema-walker.js";
+import { expandCompact } from "../compact/expand.js";
+import { migrateToLatest } from "../migration/migrate.js";
 
 export interface ValidationSuccess {
     ok: true;
@@ -32,19 +34,26 @@ export type ValidationResult = ValidationSuccess | ValidationFailure;
  * @returns `{ ok: true }` if valid, or `{ ok: false, errors }` with all structural errors
  */
 export function validate(ast: unknown): ValidationResult {
+    const expanded = expandCompact(ast);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) {
+        return { ok: false, errors: migrated.errors };
+    }
+    const finalAst = migrated.ast;
+
     const errors: StructuredError[] = [];
     const idTracker = new IdTracker();
 
     // Auto-detect fragment vs module
     if (
-        typeof ast === "object" &&
-        ast !== null &&
-        !Array.isArray(ast) &&
-        (ast as Record<string, unknown>)["kind"] === "fragment"
+        typeof finalAst === "object" &&
+        finalAst !== null &&
+        !Array.isArray(finalAst) &&
+        (finalAst as Record<string, unknown>)["kind"] === "fragment"
     ) {
-        validateFragment(ast, "$", errors, idTracker);
+        validateFragment(finalAst, "$", errors, idTracker);
     } else {
-        validateModule(ast, "$", errors, idTracker);
+        validateModule(finalAst, "$", errors, idTracker);
     }
 
     // Add any duplicate ID errors
@@ -67,10 +76,17 @@ export function validate(ast: unknown): ValidationResult {
  * @returns `{ ok: true }` if valid, or `{ ok: false, errors }` with all structural errors
  */
 export function validateFragmentAst(ast: unknown): ValidationResult {
+    const expanded = expandCompact(ast);
+    const migrated = migrateToLatest(expanded);
+    if (!migrated.ok) {
+        return { ok: false, errors: migrated.errors };
+    }
+    const finalAst = migrated.ast;
+
     const errors: StructuredError[] = [];
     const idTracker = new IdTracker();
 
-    validateFragment(ast, "$", errors, idTracker);
+    validateFragment(finalAst, "$", errors, idTracker);
 
     errors.push(...idTracker.getErrors());
 
