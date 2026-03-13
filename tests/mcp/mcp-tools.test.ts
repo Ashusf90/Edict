@@ -78,6 +78,66 @@ describe("MCP resource wrappers", () => {
 // Barrel exports
 // =============================================================================
 
+import { deployTool } from "../../src/mcp/tools/deploy.js";
+import { packageSkillTool } from "../../src/mcp/tools/package_skill.js";
+import { invokeSkillTool } from "../../src/mcp/tools/invoke_skill.js";
+
+describe("MCP tool wrappers — deploy", () => {
+    it("returns error for invalid AST", async () => {
+        const result = await deployTool.handler({ ast: { invalid: true }, target: "wasm_binary" });
+        expect(result.isError).toBe(true);
+    });
+
+    it("compiles valid AST to wasm_binary target", async () => {
+        const ast = {
+            kind: "module", id: "mod-001", name: "deploy_test", imports: [],
+            definitions: [{
+                kind: "fn", id: "fn-001", name: "main", params: [],
+                effects: ["pure"],
+                returnType: { kind: "basic", name: "Int" },
+                contracts: [],
+                body: [{ kind: "literal", id: "lit-001", value: 42 }],
+            }],
+        };
+        const result = await deployTool.handler({ ast, target: "wasm_binary" });
+        expect(result.isError).toBeUndefined();
+        const parsed = JSON.parse((result.content[0] as any).text);
+        expect(parsed.ok).toBe(true);
+    });
+});
+
+describe("MCP tool wrappers — package_skill", () => {
+    it("returns error for invalid AST", async () => {
+        const result = await packageSkillTool.handler({ ast: "not-an-ast", wasm: "AAAA" });
+        expect(result.isError).toBe(true);
+    });
+
+    it("packages a valid module + wasm", async () => {
+        const ast = {
+            kind: "module", id: "mod-001", name: "test_skill", imports: [],
+            definitions: [{
+                kind: "fn", id: "fn-001", name: "main", params: [],
+                effects: ["pure"],
+                returnType: { kind: "basic", name: "Int" },
+                contracts: [],
+                body: [{ kind: "literal", id: "lit-001", value: 0 }],
+            }],
+        };
+        // Provide minimal base64 wasm — the handler should accept any valid base64
+        const result = await packageSkillTool.handler({ ast, wasm: "AAAA" });
+        expect(result.isError).toBeUndefined();
+    });
+});
+
+describe("MCP tool wrappers — invoke_skill", () => {
+    it("returns error for invalid skill package", async () => {
+        const result = await invokeSkillTool.handler({
+            skill: { binary: { wasm: "invalid-base64", checksum: "wrong" } },
+        });
+        expect(result.isError).toBe(true);
+    });
+});
+
 describe("MCP barrel exports", () => {
     it("ALL_TOOLS exports the expected number of tools", () => {
         expect(ALL_TOOLS.length).toBe(21);

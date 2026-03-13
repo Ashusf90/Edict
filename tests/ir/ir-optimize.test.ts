@@ -724,6 +724,155 @@ describe("IR Optimize — DCE: unused let elimination", () => {
         const result = optimize(ir);
         expect(result.functions[0]!.body).toHaveLength(1);
     });
+
+    // -- Coverage for mayHaveSideEffects / collectUsedNamesExpr branches --
+
+    it("should remove unused let with array value (pure)", () => {
+        const arr: IRExpr = {
+            kind: "ir_array", sourceId: "arr-001",
+            resolvedType: { kind: "array", element: INT },
+            elements: [lit(1), lit(2)],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("a", arr), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should remove unused let with tuple value (pure)", () => {
+        const tup: IRExpr = {
+            kind: "ir_tuple", sourceId: "tup-001", resolvedType: INT,
+            elements: [lit(1), lit(2)],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("t", tup), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should remove unused let with record value (pure)", () => {
+        const rec: IRExpr = {
+            kind: "ir_record", sourceId: "rec-001", resolvedType: INT,
+            typeName: "Point",
+            fields: [{ sourceId: "f-001", name: "x", value: lit(1) }],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("r", rec), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should remove unused let with enum_constructor value (pure)", () => {
+        const ec: IRExpr = {
+            kind: "ir_enum_constructor", sourceId: "ec-001", resolvedType: INT,
+            enumName: "Color", variant: "Red",
+            fields: [{ sourceId: "f-001", name: "val", value: lit(255) }],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("c", ec), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should remove unused let with access value (pure)", () => {
+        const acc: IRExpr = {
+            kind: "ir_access", sourceId: "acc-001", resolvedType: INT,
+            target: ident("p"), field: "x",
+        };
+        const ir = mkModule([mkFn("main", [mkLet("v", acc), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should preserve unused let with string_interp value (effectful)", () => {
+        const interp: IRExpr = {
+            kind: "ir_string_interp", sourceId: "interp-001", resolvedType: STRING,
+            parts: [{ expr: ident("x"), coercion: "intToString" }],
+        };
+        // string_interp is treated as effectful → preserved even if unused
+        const ir = mkModule([mkFn("main", [mkLet("s", interp), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(2);
+    });
+
+    it("should remove unused let with lambda_ref value", () => {
+        const lam: IRExpr = {
+            kind: "ir_lambda_ref", sourceId: "lam-001", resolvedType: INT,
+            functionName: "lambda_0", closureEnv: [],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("f", lam), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should remove unused let with block value (pure)", () => {
+        const blk: IRExpr = {
+            kind: "ir_block", sourceId: "blk-001", resolvedType: INT,
+            body: [lit(42)],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("b", blk), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should remove unused let with unop value (pure)", () => {
+        const ir = mkModule([mkFn("main", [
+            mkLet("n", { kind: "ir_unop" as const, sourceId: "un-001", resolvedType: INT, op: "-" as const, operand: lit(5) }),
+            lit(0),
+        ])]);
+        const result = optimize(ir);
+        // After constant folding, unop(-5) becomes lit(-5), then DCE removes the unused let
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should preserve unused let with if-value containing call (effectful)", () => {
+        const ifVal: IRExpr = {
+            kind: "ir_if", sourceId: "if-001", resolvedType: INT,
+            condition: lit(true, BOOL),
+            then: [mkCall("print", [lit("a", STRING)], STRING)],
+            else: [lit(0)],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("x", ifVal), lit(0)])]);
+        const result = optimize(ir);
+        // if has effectful branch → preserved
+        expect(result.functions[0]!.body).toHaveLength(2);
+    });
+
+    it("should remove unused let with if-value (pure branches)", () => {
+        const ifVal: IRExpr = {
+            kind: "ir_if", sourceId: "if-001", resolvedType: INT,
+            condition: ident("flag", BOOL),
+            then: [lit(1)],
+            else: [lit(2)],
+        };
+        const ir = mkModule([mkFn("main", [mkLet("x", ifVal), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
+
+    it("should preserve unused let with match-value containing call", () => {
+        const matchVal: IRExpr = {
+            kind: "ir_match", sourceId: "m-001", resolvedType: INT,
+            target: ident("x"),
+            arms: [{
+                sourceId: "arm-001",
+                pattern: { kind: "wildcard" },
+                body: [mkCall("print", [lit("hit", STRING)], STRING)],
+            }],
+            targetTypeName: undefined,
+        };
+        const ir = mkModule([mkFn("main", [mkLet("m", matchVal), lit(0)])]);
+        const result = optimize(ir);
+        // match has effectful arm → preserved
+        expect(result.functions[0]!.body).toHaveLength(2);
+    });
+
+    it("should remove unused let with let-value (pure nested let)", () => {
+        // let x = (let y = 1); 0 → removed (ir_let value is a let — pure)
+        const innerLet: IRExpr = {
+            kind: "ir_let", sourceId: "let-inner", resolvedType: INT,
+            name: "y", boundType: INT, value: lit(1),
+        };
+        const ir = mkModule([mkFn("main", [mkLet("x", innerLet), lit(0)])]);
+        const result = optimize(ir);
+        expect(result.functions[0]!.body).toHaveLength(1);
+    });
 });
 
 // =============================================================================
