@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.15.0](https://github.com/Sowiedu/Edict/compare/v1.14.0...v1.15.0) (2026-03-13)
+
+
+### Features
+
+* QuickJS feasibility study — self-hosting check pipeline ([#134](https://github.com/Sowiedu/Edict/issues/134)) ([d7a81ab](https://github.com/Sowiedu/Edict/commit/d7a81ab0302dba98fb373fec3bdd9a7a1b5aabdf))
+
+
+### Bug Fixes
+
+* add compact AST expansion to direct API entry points ([d501539](https://github.com/Sowiedu/Edict/commit/d501539bf696d6d4b509818ceb84ab2ac4f2fdb7))
+* correct VerificationCoverage field names in browser demo + update ROADMAP stats ([7baa9fb](https://github.com/Sowiedu/Edict/commit/7baa9fb9d8ef237f1a87ac3f3ee8bc62b5785f8d))
+
 ## [1.14.0](https://github.com/Sowiedu/Edict/compare/v1.13.1...v1.14.0) (2026-03-13)
 
 
