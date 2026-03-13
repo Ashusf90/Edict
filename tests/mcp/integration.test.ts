@@ -181,6 +181,18 @@ describe("MCP integration — tools", () => {
         expect(minimal.tokenEstimate).toBeLessThan(full.tokenEstimate);
     });
 
+    it("edict_schema agent format returns bootstrap bundle", async () => {
+        const { parsed } = await callTool("edict_schema", { format: "agent" });
+        expect(parsed.format).toBe("agent");
+        const combined = parsed.schema;
+        expect(combined.schema).toBeDefined();
+        expect(combined.compactFormat).toBeDefined();
+        expect(combined.compactFormat.kindMap).toBeDefined();
+        expect(combined.builtins).toContain("print");
+        expect(combined.effects).toContain("pure");
+        expect(combined.schemaVersion).toBeDefined();
+    });
+
     // ─── edict_examples ──────────────────────────────────────────────────────
     it("edict_examples returns example programs", async () => {
         const { parsed } = await callTool("edict_examples");

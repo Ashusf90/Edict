@@ -25,7 +25,7 @@ import { lint } from "../lint/lint.js";
 import type { LintWarning } from "../lint/warnings.js";
 import { expandCompact, compactSchemaReference } from "../compact/expand.js";
 import { compose } from "../compose/compose.js";
-import type { EdictFragment, EdictModule } from "../ast/nodes.js";
+import { VALID_EFFECTS, type EdictFragment, type EdictModule } from "../ast/nodes.js";
 import { checkMultiModule } from "../multi-module.js";
 import { incrementalCheck } from "../incremental/check.js";
 import { generateTests } from "../contracts/generate-tests.js";
@@ -93,7 +93,7 @@ function loadExamples(): { name: string; ast: unknown; isMultiModule?: boolean }
 
 export interface SchemaResult {
     schema: unknown;
-    format: "full" | "minimal" | "compact";
+    format: "full" | "minimal" | "compact" | "agent";
     tokenEstimate: number;
 }
 
@@ -163,7 +163,22 @@ export interface SupportResult {
 // Handlers
 // =============================================================================
 
-export function handleSchema(format: "full" | "minimal" | "compact" = "full"): SchemaResult {
+export function handleSchema(format: "full" | "minimal" | "compact" | "agent" = "full"): SchemaResult {
+    if (format === "agent") {
+        const compactRef = compactSchemaReference();
+        if (!cachedMinimalSchema) {
+            cachedMinimalSchema = stripDescriptions(JSON.parse(loadSchema()));
+        }
+        const combined = {
+            schema: cachedMinimalSchema,
+            compactFormat: compactRef,
+            builtins: Array.from(BUILTIN_FUNCTIONS.keys()),
+            effects: [...VALID_EFFECTS],
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+        };
+        const text = JSON.stringify(combined);
+        return { schema: combined, format: "agent", tokenEstimate: Math.ceil(text.length / 4) };
+    }
     if (format === "compact") {
         const ref = compactSchemaReference();
         const text = JSON.stringify(ref);

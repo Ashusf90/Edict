@@ -319,6 +319,51 @@ describe("handleSchema — format variants", () => {
         expect(compact.format).toBe("compact");
         expect(compact.schema).toBeDefined();
     });
+
+    it("returns agent bootstrap bundle with all required fields", () => {
+        const agent = handleSchema("agent");
+        expect(agent.format).toBe("agent");
+        const combined = agent.schema as Record<string, unknown>;
+        expect(combined.schema).toBeDefined();
+        expect(combined.compactFormat).toBeDefined();
+        expect(combined.builtins).toBeDefined();
+        expect(combined.effects).toBeDefined();
+        expect(combined.schemaVersion).toBeDefined();
+    });
+
+    it("agent format includes compact kind and key maps", () => {
+        const agent = handleSchema("agent");
+        const combined = agent.schema as Record<string, unknown>;
+        const compactFormat = combined.compactFormat as Record<string, unknown>;
+        expect(compactFormat.kindMap).toBeDefined();
+        expect(compactFormat.keyMap).toBeDefined();
+    });
+
+    it("agent format builtins includes print", () => {
+        const agent = handleSchema("agent");
+        const combined = agent.schema as Record<string, unknown>;
+        expect(combined.builtins).toContain("print");
+    });
+
+    it("agent format effects match VALID_EFFECTS", () => {
+        const agent = handleSchema("agent");
+        const combined = agent.schema as Record<string, unknown>;
+        expect(combined.effects).toContain("pure");
+        expect(combined.effects).toContain("io");
+    });
+
+    it("agent format token estimate is reasonable", () => {
+        const minimal = handleSchema("minimal");
+        const compact = handleSchema("compact");
+        const agent = handleSchema("agent");
+        // Agent bundles minimal + compact + extras (builtins, effects, schemaVersion)
+        // Should be close to minimal + compact (within 20% overhead for the extras)
+        expect(agent.tokenEstimate).toBeLessThan(
+            (minimal.tokenEstimate + compact.tokenEstimate) * 1.2,
+        );
+        // But more than compact alone (it includes the full minimal schema)
+        expect(agent.tokenEstimate).toBeGreaterThan(compact.tokenEstimate);
+    });
 });
 
 // =============================================================================
