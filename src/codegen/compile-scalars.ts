@@ -259,7 +259,40 @@ export function compileIf(
         return mod.if(cond, thenBody, elseBody);
     }
 
-    return mod.if(cond, thenBody);
+    // if-without-else produces Option<T>: Some(value) on true, None on false.
+    // Construct heap-allocated Option matching the built-in enum layout.
+    const optLayout = cc.enumLayouts.get("Option");
+    const someVariant = optLayout?.variants.find(v => v.name === "Some");
+    const optSize = someVariant?.totalSize ?? 16;
+    const optPtrIdx = ctx.addLocal(`__opt_${expr.id}`, binaryen.i32);
+
+    const thenValueType = expr.then.length > 0
+        ? inferExprWasmType(expr.then[expr.then.length - 1]!, cc, ctx)
+        : binaryen.i32;
+
+    const storeValue = thenValueType === binaryen.f64
+        ? mod.f64.store(8, 0, mod.local.get(optPtrIdx, binaryen.i32), thenBody)
+        : mod.i32.store(8, 0, mod.local.get(optPtrIdx, binaryen.i32), thenBody);
+
+    const someBranch = mod.block(null, [
+        mod.local.set(optPtrIdx, mod.global.get("__heap_ptr", binaryen.i32)),
+        mod.global.set("__heap_ptr", mod.i32.add(
+            mod.local.get(optPtrIdx, binaryen.i32), mod.i32.const(optSize))),
+        mod.i32.store(0, 0, mod.local.get(optPtrIdx, binaryen.i32), mod.i32.const(1)),
+        storeValue,
+    ], binaryen.none);
+
+    const noneBranch = mod.block(null, [
+        mod.local.set(optPtrIdx, mod.global.get("__heap_ptr", binaryen.i32)),
+        mod.global.set("__heap_ptr", mod.i32.add(
+            mod.local.get(optPtrIdx, binaryen.i32), mod.i32.const(optSize))),
+        mod.i32.store(0, 0, mod.local.get(optPtrIdx, binaryen.i32), mod.i32.const(0)),
+    ], binaryen.none);
+
+    return mod.block(null, [
+        mod.if(cond, someBranch, noneBranch),
+        mod.local.get(optPtrIdx, binaryen.i32),
+    ], binaryen.i32);
 }
 
 export function compileLet(
@@ -311,7 +344,33 @@ export function compileBlock(
         compileExpr(e, cc, ctx),
     );
     if (bodyExprs.length === 0) return mod.nop();
-    if (bodyExprs.length === 1) return bodyExprs[0]!;
-    const blockType = inferExprWasmType(expr.body[expr.body.length - 1]!, cc, ctx);
+    if (bodyExprs.length === 1) {
+        // Single let: append local.get to produce the bound value
+        const singleExpr = expr.body[0]!;
+        if (singleExpr.kind === "let") {
+            const local = ctx.getLocal(singleExpr.name);
+            if (local) {
+                return mod.block(null, [
+                    bodyExprs[0]!,
+                    mod.local.get(local.index, local.type),
+                ], local.type);
+            }
+        }
+        return bodyExprs[0]!;
+    }
+
+    const lastBodyExpr = expr.body[expr.body.length - 1]!;
+    let blockType = inferExprWasmType(lastBodyExpr, cc, ctx);
+
+    // Fixup: if the last expression is `let`, its codegen is void (local.set),
+    // but the block may need to produce its value. Append local.get read-back.
+    if (lastBodyExpr.kind === "let") {
+        const local = ctx.getLocal(lastBodyExpr.name);
+        if (local) {
+            bodyExprs.push(mod.local.get(local.index, local.type));
+            blockType = local.type;
+        }
+    }
+
     return mod.block(null, bodyExprs, blockType);
 }

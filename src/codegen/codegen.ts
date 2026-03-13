@@ -440,6 +440,16 @@ function compileFunction(
         return compiled;
     });
 
+    // Fixup: if the last body expression is `let` and the function returns a value,
+    // append a local.get to re-read the just-bound variable (local.set is void in WASM).
+    if (returnType !== binaryen.none && fn.body.length > 0) {
+        const lastExpr = fn.body[fn.body.length - 1]!;
+        if (lastExpr.kind === "let") {
+            const local = ctx.getLocal(lastExpr.name);
+            if (local) bodyExprs.push(mod.local.get(local.index, local.type));
+        }
+    }
+
     // Debug mode: wrap body with __trace_enter at entry and __trace_exit at exit
     if (debugFnNamePtrs) {
         const namePtr = debugFnNamePtrs.get(fn.name);

@@ -336,3 +336,9 @@ if (url.endsWith(".ts")) {
 - **Root cause**: Assumed `panic` was a builtin because it appeared in host import objects. But host imports ≠ builtins. The builtins registry (`src/builtins/`) is the source of truth for what agents can call.
 - **Fix**: Only reference builtin names that exist in `src/builtins/domains/`. `exit` is legitimate; `panic` was removed.
 - **Rule**: Before hardcoding any builtin name in optimizer/codegen code, verify it exists in the builtins registry. Grep `src/builtins/domains/` for the name. Host imports in runners are implementation details, not language-level builtins.
+
+## Type Checker vs Codegen WASM Type Disagreement
+- **Problem**: The type checker models `let` as producing the bound value's type and `if-without-else` as `Option<T>`, but codegen emits `local.set` (void) and void WASM `if`. When either is the last expression in a function body, WASM validation fails: "function body type must match."
+- **Root cause**: Two parallel type systems — the type checker's Edict type inference and codegen's `inferExprWasmType` — can disagree on expressions that are "value-like" in the language but "statement-like" in WASM.
+- **Fix**: Apply boundary fixups: (1) in `compileFunction` and `compileBlock`, if the last expression is `let`, append `local.get` to produce the value; (2) in `compileIf`, if no `else`, construct a heap-allocated `Option` (Some/None) instead of emitting a void `if`.
+- **Rule**: When adding new expression kinds, always verify that `inferExprWasmType`, the type checker's `inferExpr`, and the actual compiled expression all agree on the WASM type. Check both "value position" (last in body) and "statement position" (non-final).

@@ -67,7 +67,9 @@ export function inferExprWasmType(
             return binaryen.i32;
         }
         case "if":
-            // Type of if is the type of the then branch's last expression
+            // if-without-else produces Option<T> → i32 heap pointer
+            if (!expr.else) return binaryen.i32;
+            // if-with-else: type is the then branch's last expression
             if (expr.then.length > 0) {
                 return inferExprWasmType(expr.then[expr.then.length - 1]!, cc, ctx);
             }
