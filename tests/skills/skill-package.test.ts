@@ -190,4 +190,54 @@ describe("Skill Package — standalone library", () => {
             expect(invokeResult.returnValue).toBe(7);
         });
     });
+
+    describe("typeToString()", () => {
+        // Import the function to test directly
+        it("should convert all TypeExpr kinds to strings", async () => {
+            const { typeToString } = await import("../../src/skills/package.js");
+
+            expect(typeToString({ kind: "basic", name: "Int" })).toBe("Int");
+            expect(typeToString({ kind: "array", element: { kind: "basic", name: "Int" } })).toBe("Array<Int>");
+            expect(typeToString({ kind: "option", inner: { kind: "basic", name: "String" } })).toBe("Option<String>");
+            expect(typeToString({
+                kind: "result",
+                ok: { kind: "basic", name: "String" },
+                err: { kind: "basic", name: "String" },
+            })).toBe("Result<String, String>");
+            expect(typeToString({ kind: "unit_type", base: "Temperature", unit: "celsius" })).toBe("Temperature<celsius>");
+            expect(typeToString({
+                kind: "refined",
+                variable: "x",
+                base: { kind: "basic", name: "Int" },
+                predicate: { kind: "literal", id: "lit", value: true },
+            })).toBe("{ x: Int | ... }");
+            expect(typeToString({
+                kind: "confidence",
+                base: { kind: "basic", name: "Float" },
+                confidence: 0.95,
+            })).toBe("Confidence<Float, 0.95>");
+            expect(typeToString({
+                kind: "provenance",
+                base: { kind: "basic", name: "String" },
+                sources: ["api", "cache"],
+            })).toBe('Provenance<String, ["api", "cache"]>');
+            expect(typeToString({
+                kind: "capability",
+                permissions: ["io", "net"],
+            })).toBe('Capability<"io", "net">');
+            expect(typeToString({
+                kind: "fn_type",
+                params: [{ kind: "basic", name: "Int" }],
+                returnType: { kind: "basic", name: "Bool" },
+                effects: [],
+            })).toBe("(Int) -> Bool");
+            expect(typeToString({ kind: "named", name: "MyRecord" })).toBe("MyRecord");
+            expect(typeToString({
+                kind: "tuple",
+                elements: [{ kind: "basic", name: "Int" }, { kind: "basic", name: "String" }],
+            })).toBe("(Int, String)");
+            // Unknown kind → default "unknown"
+            expect(typeToString({ kind: "something_else" } as any)).toBe("unknown");
+        });
+    });
 });
