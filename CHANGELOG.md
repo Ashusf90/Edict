@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/Sowiedu/Edict/compare/v1.13.0...v1.13.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* include examples/ in npm package for edict_examples tool ([e249e4d](https://github.com/Sowiedu/Edict/commit/e249e4d138ab3aa4936d70b404ac70760ebdf54f))
+
 ## [1.13.0](https://github.com/Sowiedu/Edict/compare/v1.12.0...v1.13.0) (2026-03-13)
 
 
