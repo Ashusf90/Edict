@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/Sowiedu/Edict/compare/v1.13.1...v1.14.0) (2026-03-13)
+
+
+### Features
+
+* **builtins:** add toString builtin and auto-coercion for print/println ([88af7ca](https://github.com/Sowiedu/Edict/commit/88af7ca08c7b9ea6cf933ce4b669fe0fdb9716db))
+
 ## [1.13.1](https://github.com/Sowiedu/Edict/compare/v1.13.0...v1.13.1) (2026-03-13)
 
 
