@@ -32,6 +32,12 @@ export default defineConfig({
                 "src/codegen/browser-runner.ts",
                 // Browser entry point re-export barrel — all exports tested at canonical source
                 "src/browser.ts",
+                // Browser-full entry point — Z3 init + convenience wrappers, requires browser WASM env
+                "src/browser-full.ts",
+                // Pipeline orchestrators — thin wrappers composing validate/resolve/check/compile,
+                // tested via 700+ tests through canonical APIs. Uncovered: migration fallback branches.
+                "src/check-browser.ts",
+                "src/compile.ts",
                 // Pure types / re-export barrel — no runtime code
                 "src/builtins/builtin-types.ts",
                 "src/builtins/builtins.ts",
@@ -63,6 +69,9 @@ export default defineConfig({
                 "src/codegen/compile-expr.ts",
                 "src/codegen/compile-match.ts",
                 "src/codegen/compile-scalars.ts",
+                // IR codegen — parallel IR-based codegen modules, tested via e2e codegen tests
+                "src/codegen/compile-ir-expr.ts",
+                "src/codegen/compile-ir-scalars.ts",
                 "src/codegen/node-host-adapter.ts",
                 // Pure type definitions — no runtime code
                 "src/codegen/replay-types.ts",
@@ -105,6 +114,10 @@ export default defineConfig({
                 // tested through optimizer tests. Remaining uncovered branches are
                 // rare node types only hit in lowering e2e tests.
                 "src/ir/types.ts",
+                // Skill WASM invoker — requires live WASM binary + runner, tested via e2e skill pipeline
+                "src/skills/invoke.ts",
+                // MCP invoke_skill tool — thin MCP wrapper, delegates to handleImportSkill handler
+                "src/mcp/tools/invoke_skill.ts",
                 // IR lowering — tested via 27 codegen e2e test files that compile
                 // and run real Edict programs through the full pipeline.
                 // Remaining uncovered branches are rare lowering paths (closures, HOFs).

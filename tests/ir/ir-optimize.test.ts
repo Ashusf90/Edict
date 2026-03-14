@@ -604,6 +604,109 @@ describe("IR Optimize — nested structures", () => {
             expect((arr.elements[1]! as IRLiteral).value).toBe(12);
         }
     });
+
+    it("should fold inside tuple elements", () => {
+        const tup: IRExpr = {
+            kind: "ir_tuple", sourceId: "tup-001", resolvedType: INT,
+            elements: [binop("+", lit(10), lit(20)), binop("-", lit(5), lit(3))],
+        };
+        const ir = mkModule([mkFn("main", [tup])]);
+        const result = optimize(ir);
+        const res = result.functions[0]!.body[0]!;
+        expect(res.kind).toBe("ir_tuple");
+        if (res.kind === "ir_tuple") {
+            expect((res.elements[0]! as IRLiteral).value).toBe(30);
+            expect((res.elements[1]! as IRLiteral).value).toBe(2);
+        }
+    });
+
+    it("should fold inside record fields", () => {
+        const rec: IRExpr = {
+            kind: "ir_record", sourceId: "rec-001", resolvedType: INT,
+            typeName: "Point",
+            fields: [
+                { sourceId: "f-x", name: "x", value: binop("+", lit(1), lit(2)) },
+                { sourceId: "f-y", name: "y", value: binop("*", lit(3), lit(4)) },
+            ],
+        };
+        const ir = mkModule([mkFn("main", [rec])]);
+        const result = optimize(ir);
+        const res = result.functions[0]!.body[0]!;
+        expect(res.kind).toBe("ir_record");
+        if (res.kind === "ir_record") {
+            expect((res.fields[0]!.value as IRLiteral).value).toBe(3);
+            expect((res.fields[1]!.value as IRLiteral).value).toBe(12);
+        }
+    });
+
+    it("should fold inside enum_constructor fields", () => {
+        const ec: IRExpr = {
+            kind: "ir_enum_constructor", sourceId: "ec-001", resolvedType: INT,
+            enumName: "Color", variant: "RGB",
+            fields: [
+                { sourceId: "f-r", name: "r", value: binop("+", lit(200), lit(55)) },
+            ],
+        };
+        const ir = mkModule([mkFn("main", [ec])]);
+        const result = optimize(ir);
+        const res = result.functions[0]!.body[0]!;
+        expect(res.kind).toBe("ir_enum_constructor");
+        if (res.kind === "ir_enum_constructor") {
+            expect((res.fields[0]!.value as IRLiteral).value).toBe(255);
+        }
+    });
+
+    it("should fold inside access target", () => {
+        // Wraps binop in an access — the binop should still fold
+        const acc: IRExpr = {
+            kind: "ir_access", sourceId: "acc-001", resolvedType: INT,
+            target: binop("+", lit(1), lit(2)),
+            field: "x",
+        };
+        const ir = mkModule([mkFn("main", [acc])]);
+        const result = optimize(ir);
+        const res = result.functions[0]!.body[0]!;
+        expect(res.kind).toBe("ir_access");
+        if (res.kind === "ir_access") {
+            expect(res.target.kind).toBe("ir_literal");
+            expect((res.target as IRLiteral).value).toBe(3);
+        }
+    });
+
+    it("should fold inside string_interp parts", () => {
+        const interp: IRExpr = {
+            kind: "ir_string_interp", sourceId: "interp-001", resolvedType: STRING,
+            parts: [
+                { expr: binop("+", lit(1), lit(2)), coercion: "intToString" },
+            ],
+        };
+        const ir = mkModule([mkFn("main", [interp])]);
+        const result = optimize(ir);
+        const res = result.functions[0]!.body[0]!;
+        expect(res.kind).toBe("ir_string_interp");
+        if (res.kind === "ir_string_interp") {
+            expect(res.parts[0]!.expr.kind).toBe("ir_literal");
+            expect((res.parts[0]!.expr as IRLiteral).value).toBe(3);
+        }
+    });
+});
+
+// =============================================================================
+// Boolean Equality/Inequality Folding
+// =============================================================================
+
+describe("IR Optimize — boolean equality", () => {
+    it("should fold true == true → true", () => {
+        const ir = mkModule([mkFn("main", [binop("==", lit(true, BOOL), lit(true, BOOL), BOOL, BOOL)], BOOL)]);
+        const result = optimize(ir);
+        expect((result.functions[0]!.body[0]! as IRLiteral).value).toBe(true);
+    });
+
+    it("should fold true != false → true", () => {
+        const ir = mkModule([mkFn("main", [binop("!=", lit(true, BOOL), lit(false, BOOL), BOOL, BOOL)], BOOL)]);
+        const result = optimize(ir);
+        expect((result.functions[0]!.body[0]! as IRLiteral).value).toBe(true);
+    });
 });
 
 // =============================================================================
