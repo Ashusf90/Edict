@@ -50,6 +50,77 @@ if (!fragmentSchema) {
     process.exit(1);
 }
 
+// =============================================================================
+// Post-processing: inject kind enum constraints on discriminated unions
+// =============================================================================
+// For anyOf union definitions (Definition, Expression, TypeExpr, Pattern, etc.),
+// add a top-level properties.kind.enum listing all valid kind values.
+// This lets LLMs with structured output mode reject invalid kinds at schema level.
+// Enum values are derived from the schema's own const/enum values — no hand-written lists.
+
+type SchemaObj = Record<string, unknown>;
+
+function injectKindEnums(schemaRoot: SchemaObj): void {
+    const defs = schemaRoot["definitions"] as Record<string, SchemaObj> | undefined;
+    if (!defs) return;
+
+    for (const [, defSchema] of Object.entries(defs)) {
+        const anyOf = defSchema["anyOf"] as SchemaObj[] | undefined;
+        if (!anyOf || !Array.isArray(anyOf)) continue;
+
+        // Already has properties.kind — skip
+        const existingProps = defSchema["properties"] as Record<string, SchemaObj> | undefined;
+        if (existingProps?.["kind"]) continue;
+
+        // Collect kind values from all branches
+        const kindValues: string[] = [];
+        let allBranchesHaveKind = true;
+
+        for (const branch of anyOf) {
+            // Resolve $ref
+            let resolved: SchemaObj = branch;
+            if (branch["$ref"]) {
+                const ref = branch["$ref"] as string;
+                const prefix = "#/definitions/";
+                if (ref.startsWith(prefix)) {
+                    const name = decodeURIComponent(ref.slice(prefix.length));
+                    resolved = defs[name] as SchemaObj;
+                    if (!resolved) { allBranchesHaveKind = false; break; }
+                } else {
+                    allBranchesHaveKind = false; break;
+                }
+            }
+
+            // Branch must be an object type with properties.kind
+            const props = resolved["properties"] as Record<string, SchemaObj> | undefined;
+            if (!props?.["kind"]) {
+                // Non-object branch (e.g., string enum in Effect union) — skip this definition
+                allBranchesHaveKind = false;
+                break;
+            }
+
+            const kindProp = props["kind"];
+            if (kindProp["const"]) {
+                kindValues.push(kindProp["const"] as string);
+            } else if (kindProp["enum"]) {
+                kindValues.push(...(kindProp["enum"] as string[]));
+            } else {
+                allBranchesHaveKind = false;
+                break;
+            }
+        }
+
+        if (allBranchesHaveKind && kindValues.length > 0) {
+            defSchema["properties"] = {
+                "kind": { "type": "string", "enum": kindValues },
+            };
+        }
+    }
+}
+
+injectKindEnums(schema as SchemaObj);
+injectKindEnums(fragmentSchema as SchemaObj);
+
 // Write output
 const outputDir = resolve(projectRoot, "schema");
 mkdirSync(outputDir, { recursive: true });

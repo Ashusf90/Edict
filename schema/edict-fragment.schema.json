@@ -101,7 +101,20 @@
         {
           "$ref": "#/definitions/ToolDef"
         }
-      ]
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fn",
+            "type",
+            "record",
+            "enum",
+            "const",
+            "tool"
+          ]
+        }
+      }
     },
     "FunctionDef": {
       "description": "Function definition with effects, contracts, and body.",
@@ -360,7 +373,27 @@
         {
           "$ref": "#/definitions/FreshnessType"
         }
-      ]
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "basic",
+            "array",
+            "option",
+            "result",
+            "unit_type",
+            "refined",
+            "fn_type",
+            "named",
+            "tuple",
+            "confidence",
+            "provenance",
+            "capability",
+            "fresh"
+          ]
+        }
+      }
     },
     "OptionType": {
       "description": "Optional value — None or Some(T).",
@@ -513,7 +546,33 @@
         {
           "$ref": "#/definitions/ToolCallExpr"
         }
-      ]
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "literal",
+            "ident",
+            "binop",
+            "unop",
+            "call",
+            "if",
+            "let",
+            "match",
+            "array",
+            "tuple_expr",
+            "record_expr",
+            "enum_constructor",
+            "access",
+            "lambda",
+            "block",
+            "string_interp",
+            "forall",
+            "exists",
+            "tool_call"
+          ]
+        }
+      }
     },
     "Literal": {
       "type": "object",
@@ -1066,7 +1125,18 @@
         {
           "$ref": "#/definitions/ConstructorPattern"
         }
-      ]
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "literal_pattern",
+            "wildcard",
+            "binding",
+            "constructor"
+          ]
+        }
+      }
     },
     "LiteralPattern": {
       "type": "object",
@@ -1763,7 +1833,16 @@
         {
           "$ref": "#/definitions/SemanticInvariant"
         }
-      ]
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "expression",
+            "semantic"
+          ]
+        }
+      }
     },
     "ExpressionInvariant": {
       "type": "object",
