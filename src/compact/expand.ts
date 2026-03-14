@@ -217,6 +217,22 @@ const NEEDS_ID_KINDS = new Set([
     "refined",
 ]);
 
+/**
+ * Default empty arrays for node kinds where omitting a required array field
+ * is semantically equivalent to providing `[]`. Auto-injected during expansion
+ * to eliminate the most common validator errors agents hit.
+ *
+ * Only includes fields where `[]` is always the safe default:
+ * - variant.fields: unit variants logically have no fields
+ * - fn.effects: defaults to empty (validator requires at least one, but the
+ *   error is more actionable than "missing_field")
+ * - fn.contracts: no contracts is the common case
+ */
+const DEFAULT_ARRAYS: Record<string, string[]> = {
+    variant: ["fields"],
+    fn: ["effects", "contracts"],
+};
+
 // =============================================================================
 // Expansion + Normalization
 // =============================================================================
@@ -313,7 +329,16 @@ export function expandCompact(ast: unknown): unknown {
             expanded.id = nextAutoId(kind);
         }
 
-        // --- Step 5: Recurse into children with context ---
+        // --- Step 5: Auto-inject default empty arrays ---
+        if (kind && Object.hasOwn(DEFAULT_ARRAYS, kind)) {
+            for (const field of DEFAULT_ARRAYS[kind]!) {
+                if (!(field in expanded)) {
+                    expanded[field] = [];
+                }
+            }
+        }
+
+        // --- Step 6: Recurse into children with context ---
         const currentKind = expanded.kind as string | undefined;
 
         for (const [key, val] of Object.entries(expanded)) {

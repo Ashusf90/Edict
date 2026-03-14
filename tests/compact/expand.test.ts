@@ -875,3 +875,156 @@ describe("normalizeAst", () => {
         expect(result.ok).toBe(true);
     });
 });
+
+// =============================================================================
+// Default empty arrays — auto-inject missing required arrays
+// =============================================================================
+
+describe("default empty arrays", () => {
+    it("auto-injects fields: [] on variant without fields", () => {
+        const input = {
+            kind: "enum", id: "e1", name: "Color",
+            variants: [
+                { kind: "variant", id: "v1", name: "Red" },
+                { kind: "variant", id: "v2", name: "Green" },
+            ],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        const variants = result.variants as Record<string, unknown>[];
+        expect(variants[0].fields).toEqual([]);
+        expect(variants[1].fields).toEqual([]);
+    });
+
+    it("preserves explicitly-provided fields on variant", () => {
+        const input = {
+            kind: "enum", id: "e1", name: "Shape",
+            variants: [
+                {
+                    kind: "variant", id: "v1", name: "Circle",
+                    fields: [
+                        { kind: "field", id: "f1", name: "radius", type: { kind: "basic", name: "Int" } },
+                    ],
+                },
+            ],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        const variants = result.variants as Record<string, unknown>[];
+        const fields = variants[0].fields as Record<string, unknown>[];
+        expect(fields).toHaveLength(1);
+        expect(fields[0]).toMatchObject({ kind: "field", name: "radius" });
+    });
+
+    it("auto-injects effects: [] and contracts: [] on fn without them", () => {
+        const input = {
+            kind: "fn", id: "fn1", name: "add",
+            params: [{ kind: "param", id: "p1", name: "x", type: { kind: "basic", name: "Int" } }],
+            returnType: { kind: "basic", name: "Int" },
+            body: [{ kind: "ident", id: "i1", name: "x" }],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        expect(result.effects).toEqual([]);
+        expect(result.contracts).toEqual([]);
+    });
+
+    it("preserves explicitly-provided effects and contracts", () => {
+        const input = {
+            kind: "fn", id: "fn1", name: "main",
+            params: [],
+            effects: ["io"],
+            returnType: { kind: "basic", name: "Int" },
+            contracts: [{ kind: "pre", id: "c1", condition: { kind: "literal", id: "l1", value: true } }],
+            body: [{ kind: "literal", id: "l2", value: 0 }],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        expect(result.effects).toEqual(["io"]);
+        expect((result.contracts as unknown[]).length).toBe(1);
+    });
+
+    it("auto-injects fields on bare variants (kind auto-injected too)", () => {
+        const input = {
+            kind: "enum", id: "e1", name: "Color",
+            variants: [
+                { name: "Red" },
+                { name: "Green" },
+            ],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        const variants = result.variants as Record<string, unknown>[];
+        // Kind should be auto-injected
+        expect(variants[0].kind).toBe("variant");
+        // Fields should be defaulted
+        expect(variants[0].fields).toEqual([]);
+        expect(variants[1].fields).toEqual([]);
+    });
+
+    it("works with compact format variants", () => {
+        const compact = {
+            k: "en", i: "e1", n: "Option",
+            vs: [
+                { k: "var", i: "v1", n: "None" },
+                { k: "var", i: "v2", n: "Some", fs: [
+                    { k: "f", i: "f1", n: "value", t: { k: "b", n: "Int" } },
+                ]},
+            ],
+        };
+        const result = expandCompact(compact) as Record<string, unknown>;
+        const variants = result.variants as Record<string, unknown>[];
+        // None variant should have fields defaulted
+        expect(variants[0].fields).toEqual([]);
+        // Some variant should keep its explicit fields
+        expect((variants[1].fields as unknown[]).length).toBe(1);
+    });
+
+    it("E2E: variant without fields through check() pipeline succeeds", async () => {
+        const { check } = await import("../../src/check.js");
+        const ast = {
+            kind: "module", id: "m1", name: "test",
+            imports: [],
+            definitions: [
+                {
+                    kind: "enum", id: "e1", name: "Color",
+                    variants: [
+                        { kind: "variant", id: "v1", name: "Red" },
+                        { kind: "variant", id: "v2", name: "Green" },
+                    ],
+                },
+                {
+                    kind: "fn", id: "fn1", name: "main",
+                    params: [], effects: ["pure"],
+                    returnType: { kind: "basic", name: "Int" },
+                    contracts: [],
+                    body: [{ kind: "literal", id: "l1", value: 42 }],
+                },
+            ],
+        };
+        const result = await check(ast);
+        expect(result.ok).toBe(true);
+    });
+
+    it("E2E: fn without effects/contracts through check() gives actionable error", async () => {
+        const { check } = await import("../../src/check.js");
+        const ast = {
+            kind: "module", id: "m1", name: "test",
+            imports: [],
+            definitions: [
+                {
+                    kind: "fn", id: "fn1", name: "main",
+                    params: [],
+                    returnType: { kind: "basic", name: "Int" },
+                    body: [{ kind: "literal", id: "l1", value: 42 }],
+                },
+            ],
+        };
+        // Should not fail with "missing_field" — should instead get
+        // a more actionable error about effects being empty
+        const result = await check(ast);
+        // The validator will accept the module (effects: [] is valid structurally),
+        // but the checker may report that at least one effect is needed.
+        // Either way, we should NOT see a missing_field error.
+        if (!result.ok) {
+            for (const err of result.errors) {
+                expect((err as Record<string, unknown>).error).not.toBe("missing_field");
+            }
+        }
+    });
+});
