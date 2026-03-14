@@ -1,5 +1,5 @@
 // =============================================================================
-// IR Expression compilation — dispatches to compile-ir-scalars.ts
+// IR Expression compilation — dispatches to compile-ir-{scalars,calls,data,match}.ts
 // =============================================================================
 // The IR counterpart to compile-expr.ts. Instead of inferring WASM types from
 // AST node shapes, this module reads pre-resolved types from IR nodes.
@@ -24,6 +24,16 @@ import {
     compileIRLet,
     compileIRBlock,
 } from "./compile-ir-scalars.js";
+import { compileIRCall, compileIRLambdaRef } from "./compile-ir-calls.js";
+import {
+    compileIRRecord,
+    compileIRTuple,
+    compileIREnumConstructor,
+    compileIRAccess,
+    compileIRArray,
+    compileIRStringInterp,
+} from "./compile-ir-data.js";
+import { compileIRMatch } from "./compile-ir-match.js";
 
 
 // =============================================================================
@@ -51,9 +61,7 @@ export function irExprWasmType(expr: IRExpr): binaryen.Type {
 /**
  * Compile an IR expression to a binaryen ExpressionRef.
  *
- * Dispatches by IR node kind. Scalar kinds (literal, ident, binop, unop,
- * if, let, block) are fully implemented. Non-scalar kinds (call, match,
- * records, enums, etc.) are deferred to #161 and produce structured errors.
+ * Dispatches by IR node kind. All IR kinds are implemented.
  */
 export function compileIRExpr(
     expr: IRExpr,
@@ -82,20 +90,32 @@ export function compileIRExpr(
         case "ir_block":
             return compileIRBlock(expr, cc, ctx);
 
-        // Non-scalar kinds — deferred to #161
         case "ir_call":
+            return compileIRCall(expr, cc, ctx);
+
         case "ir_match":
+            return compileIRMatch(expr, cc, ctx);
+
         case "ir_record":
+            return compileIRRecord(expr, cc, ctx);
+
         case "ir_enum_constructor":
+            return compileIREnumConstructor(expr, cc, ctx);
+
         case "ir_access":
+            return compileIRAccess(expr, cc, ctx);
+
         case "ir_array":
+            return compileIRArray(expr, cc, ctx);
+
         case "ir_tuple":
+            return compileIRTuple(expr, cc, ctx);
+
         case "ir_lambda_ref":
+            return compileIRLambdaRef(expr, cc, ctx);
+
         case "ir_string_interp":
-            cc.errors.push(wasmValidationError(
-                `IR codegen not yet implemented: ${expr.kind}`,
-            ));
-            return cc.mod.unreachable();
+            return compileIRStringInterp(expr, cc, ctx);
 
         default: {
             // Exhaustiveness guard — all IR kinds should be handled above

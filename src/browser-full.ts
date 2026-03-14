@@ -158,7 +158,7 @@ export async function compileBrowserFull(ast: unknown): Promise<CompileBrowserFu
     }
 
     // Phase 5 — Compile
-    const compileResult: CompileResult = compile(checkResult.module!);
+    const compileResult: CompileResult = compile(checkResult.module!, { typeInfo: checkResult.typeInfo });
     if (!compileResult.ok) {
         return { ok: false, errors: compileResult.errors };
     }
@@ -195,7 +195,7 @@ export function compileBrowser(ast: unknown): CompileBrowserResult {
     }
 
     // Phase 5 — Compile
-    const compileResult: CompileResult = compile(checkResult.module!);
+    const compileResult: CompileResult = compile(checkResult.module!, { typeInfo: checkResult.typeInfo });
     if (!compileResult.ok) {
         return { ok: false, errors: compileResult.errors };
     }

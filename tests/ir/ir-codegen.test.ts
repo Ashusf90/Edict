@@ -1,7 +1,7 @@
 // =============================================================================
 // IR Codegen Tests — compile IR expressions to WASM
 // =============================================================================
-// Tests the parallel IR-based codegen path (compile-ir-expr.ts + compile-ir-scalars.ts).
+// Tests the parallel IR-based codegen path (compile-ir-{expr,scalars,calls,data,match}.ts).
 // Verifies that IR nodes with pre-resolved types produce correct binaryen output,
 // and that the heuristic-free IR path matches the AST path's behavior.
 
@@ -16,12 +16,26 @@ import {
     compileIRLet,
     compileIRBlock,
 } from "../../src/codegen/compile-ir-scalars.js";
+import { compileIRCall, compileIRLambdaRef } from "../../src/codegen/compile-ir-calls.js";
+import {
+    compileIRRecord,
+    compileIRTuple,
+    compileIREnumConstructor,
+    compileIRAccess,
+    compileIRArray,
+    compileIRStringInterp,
+} from "../../src/codegen/compile-ir-data.js";
+import { compileIRMatch } from "../../src/codegen/compile-ir-match.js";
 import { FunctionContext, edictTypeToWasm } from "../../src/codegen/types.js";
 import { StringTable } from "../../src/codegen/string-table.js";
 import type { CompilationContext } from "../../src/codegen/types.js";
 import type { EdictModule } from "../../src/ast/nodes.js";
 import type { TypedModuleInfo } from "../../src/checker/check.js";
-import type { IRModule, IRFunction, IRExpr, IRLiteral, IRIdent, IRBinop } from "../../src/ir/types.js";
+import type {
+    IRModule, IRFunction, IRExpr, IRLiteral, IRIdent, IRBinop,
+    IRCall, IRMatch, IRRecordExpr, IREnumConstructor, IRAccess,
+    IRArray, IRTuple, IRLambdaRef, IRStringInterp,
+} from "../../src/ir/types.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -641,56 +655,607 @@ describe("compileIRExpr — block", () => {
 
 
 // =============================================================================
-// Non-scalar stubs — deferred to #161
+// Call compilation
 // =============================================================================
 
-describe("compileIRExpr — non-scalar stubs", () => {
-    it("should produce wasmValidationError for ir_call", () => {
+describe("compileIRCall", () => {
+    it("should compile direct call with __env prepended", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        // Register a user function sig and table index
+        cc.fnSigs.set("add", { returnType: binaryen.i32, paramTypes: [binaryen.i32, binaryen.i32, binaryen.i32] });
+        cc.fnTableIndices.set("add", 0);
+        cc.tableFunctions.push("add");
+        // Add dummy function so mod.call works
+        mod.addFunction("add",
+            binaryen.createType([binaryen.i32, binaryen.i32, binaryen.i32]),
+            binaryen.i32, [],
+            mod.i32.add(mod.local.get(1, binaryen.i32), mod.local.get(2, binaryen.i32)));
+
+        const ctx = new FunctionContext([]);
+        const expr: IRCall = {
+            kind: "ir_call", sourceId: "call-1",
+            resolvedType: { kind: "basic", name: "Int" },
+            fn: { kind: "ir_ident", sourceId: "id-1", resolvedType: { kind: "basic", name: "Int" }, name: "add", scope: "function" },
+            args: [
+                { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 10 },
+                { kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 20 },
+            ],
+            callKind: "direct",
+            stringParamIndices: [],
+            argCoercions: {},
+        };
+        const ref = compileIRCall(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("call $add");
+    });
+
+    it("should compile builtin call without __env", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.fnSigs.set("intToString", { returnType: binaryen.i32, paramTypes: [binaryen.i32] });
+        mod.addFunctionImport("intToString", "host", "intToString",
+            binaryen.createType([binaryen.i32]), binaryen.i32);
+
+        const ctx = new FunctionContext([]);
+        const expr: IRCall = {
+            kind: "ir_call", sourceId: "call-1",
+            resolvedType: { kind: "basic", name: "String" },
+            fn: { kind: "ir_ident", sourceId: "id-1", resolvedType: { kind: "basic", name: "String" }, name: "intToString", scope: "function" },
+            args: [{ kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 42 }],
+            callKind: "builtin",
+            stringParamIndices: [],
+            argCoercions: {},
+        };
+        const ref = compileIRCall(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("call $intToString");
+    });
+
+    it("should apply argCoercions from IR (pre-resolved)", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.fnSigs.set("println", { returnType: binaryen.i32, paramTypes: [binaryen.i32] });
+        mod.addFunctionImport("println", "host", "println",
+            binaryen.createType([binaryen.i32]), binaryen.i32);
+        mod.addFunctionImport("intToString", "host", "intToString",
+            binaryen.createType([binaryen.i32]), binaryen.i32);
+
+        const ctx = new FunctionContext([]);
+        const expr: IRCall = {
+            kind: "ir_call", sourceId: "call-1",
+            resolvedType: { kind: "basic", name: "Int" },
+            fn: { kind: "ir_ident", sourceId: "id-1", resolvedType: { kind: "basic", name: "Int" }, name: "println", scope: "function" },
+            args: [{ kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 42 }],
+            callKind: "builtin",
+            stringParamIndices: [],
+            argCoercions: { 0: "intToString" },
+        };
+        const ref = compileIRCall(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("call $intToString");
+        expect(wat).toContain("call $println");
+    });
+
+    it("should produce error for non-ident fn in direct call", () => {
         const mod = createMod();
         const cc = makeCC(mod);
         const ctx = new FunctionContext([]);
-        const expr: IRExpr = {
+        const expr: IRCall = {
             kind: "ir_call", sourceId: "call-1",
             resolvedType: { kind: "basic", name: "Int" },
-            fn: { kind: "ir_ident", sourceId: "id-1", resolvedType: { kind: "basic", name: "Int" }, name: "foo", scope: "function" },
+            fn: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 0 },
             args: [],
             callKind: "direct",
             stringParamIndices: [],
             argCoercions: {},
         };
-        compileIRExpr(expr, cc, ctx);
-        expect(cc.errors.length).toBe(1);
+        compileIRCall(expr, cc, ctx);
+        expect(cc.errors.length).toBeGreaterThan(0);
         expect(cc.errors[0]!.error).toBe("wasm_validation_error");
     });
+});
 
-    it("should produce wasmValidationError for ir_match", () => {
+
+// =============================================================================
+// Record compilation
+// =============================================================================
+
+describe("compileIRRecord", () => {
+    it("should compile record with field stores at correct offsets", () => {
         const mod = createMod();
         const cc = makeCC(mod);
+        cc.recordLayouts.set("Point", {
+            fields: [
+                { name: "x", offset: 0, wasmType: binaryen.i32 },
+                { name: "y", offset: 4, wasmType: binaryen.i32 },
+            ],
+            totalSize: 8,
+        });
         const ctx = new FunctionContext([]);
-        const expr: IRExpr = {
-            kind: "ir_match", sourceId: "match-1",
-            resolvedType: { kind: "basic", name: "Int" },
-            target: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 42 },
-            arms: [],
-            targetTypeName: undefined,
-        };
-        compileIRExpr(expr, cc, ctx);
-        expect(cc.errors.length).toBe(1);
-        expect(cc.errors[0]!.error).toBe("wasm_validation_error");
-    });
-
-    it("should produce wasmValidationError for ir_record", () => {
-        const mod = createMod();
-        const cc = makeCC(mod);
-        const ctx = new FunctionContext([]);
-        const expr: IRExpr = {
+        const expr: IRRecordExpr = {
             kind: "ir_record", sourceId: "rec-1",
             resolvedType: { kind: "named", name: "Point" },
             name: "Point",
+            fields: [
+                { name: "x", value: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 10 }, resolvedType: { kind: "basic", name: "Int" } },
+                { name: "y", value: { kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 20 }, resolvedType: { kind: "basic", name: "Int" } },
+            ],
+        };
+        const ref = compileIRRecord(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.store");
+        expect(wat).toContain("global.get $__heap_ptr");
+    });
+
+    it("should produce error for unknown record type", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRRecordExpr = {
+            kind: "ir_record", sourceId: "rec-1",
+            resolvedType: { kind: "named", name: "Unknown" },
+            name: "Unknown",
             fields: [],
         };
-        compileIRExpr(expr, cc, ctx);
-        expect(cc.errors.length).toBe(1);
+        compileIRRecord(expr, cc, ctx);
+        expect(cc.errors.length).toBeGreaterThan(0);
+    });
+});
+
+
+// =============================================================================
+// Enum constructor compilation
+// =============================================================================
+
+describe("compileIREnumConstructor", () => {
+    it("should compile enum variant with tag and field stores", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.enumLayouts.set("Color", {
+            variants: [
+                { name: "Red", tag: 0, fields: [], totalSize: 8 },
+                { name: "Rgb", tag: 1, fields: [
+                    { name: "r", offset: 8, wasmType: binaryen.i32 },
+                    { name: "g", offset: 12, wasmType: binaryen.i32 },
+                    { name: "b", offset: 16, wasmType: binaryen.i32 },
+                ], totalSize: 24 },
+            ],
+        });
+        const ctx = new FunctionContext([]);
+        const expr: IREnumConstructor = {
+            kind: "ir_enum_constructor", sourceId: "enum-1",
+            resolvedType: { kind: "named", name: "Color" },
+            enumName: "Color",
+            variant: "Rgb",
+            tag: 1,
+            fields: [
+                { name: "r", value: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 255 }, resolvedType: { kind: "basic", name: "Int" } },
+                { name: "g", value: { kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 128 }, resolvedType: { kind: "basic", name: "Int" } },
+                { name: "b", value: { kind: "ir_literal", sourceId: "l-3", resolvedType: { kind: "basic", name: "Int" }, value: 0 }, resolvedType: { kind: "basic", name: "Int" } },
+            ],
+        };
+        const ref = compileIREnumConstructor(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.store"); // tag and field stores
+        expect(wat).toContain("global.get $__heap_ptr");
+    });
+
+    it("should produce error for unknown enum layout", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IREnumConstructor = {
+            kind: "ir_enum_constructor", sourceId: "enum-1",
+            resolvedType: { kind: "named", name: "Missing" },
+            enumName: "Missing",
+            variant: "A",
+            tag: 0,
+            fields: [],
+        };
+        compileIREnumConstructor(expr, cc, ctx);
+        expect(cc.errors.length).toBeGreaterThan(0);
+    });
+});
+
+
+// =============================================================================
+// Access compilation
+// =============================================================================
+
+describe("compileIRAccess", () => {
+    it("should compile record field access using pre-resolved targetTypeName", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.recordLayouts.set("Point", {
+            fields: [
+                { name: "x", offset: 0, wasmType: binaryen.i32 },
+                { name: "y", offset: 4, wasmType: binaryen.i32 },
+            ],
+            totalSize: 8,
+        });
+        const ctx = new FunctionContext([{ name: "p", wasmType: binaryen.i32, edictTypeName: "Point" }]);
+        const expr: IRAccess = {
+            kind: "ir_access", sourceId: "acc-1",
+            resolvedType: { kind: "basic", name: "Int" },
+            target: { kind: "ir_ident", sourceId: "id-1", resolvedType: { kind: "named", name: "Point" }, name: "p", scope: "local" },
+            field: "x",
+            targetTypeName: "Point",
+        };
+        const ref = compileIRAccess(expr, cc, ctx);
+        mod.addFunction("test", binaryen.createType([binaryen.i32]), binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.load");
+    });
+
+    it("should compile tuple access using __tuple targetTypeName", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const tupleType = { kind: "tuple" as const, elements: [{ kind: "basic" as const, name: "Int" as const }, { kind: "basic" as const, name: "Float" as const }] };
+        const ctx = new FunctionContext([{ name: "t", wasmType: binaryen.i32, edictTypeName: "__tuple" }]);
+        const expr: IRAccess = {
+            kind: "ir_access", sourceId: "acc-1",
+            resolvedType: { kind: "basic", name: "Float" },
+            target: { kind: "ir_ident", sourceId: "id-1", resolvedType: tupleType, name: "t", scope: "local" },
+            field: "1",
+            targetTypeName: "__tuple",
+        };
+        const ref = compileIRAccess(expr, cc, ctx);
+        mod.addFunction("test", binaryen.createType([binaryen.i32]), binaryen.f64, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("f64.load");
+    });
+});
+
+
+// =============================================================================
+// Tuple compilation
+// =============================================================================
+
+describe("compileIRTuple", () => {
+    it("should compile tuple with uniform 8-byte slots", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRTuple = {
+            kind: "ir_tuple", sourceId: "tup-1",
+            resolvedType: { kind: "tuple", elements: [{ kind: "basic", name: "Int" }, { kind: "basic", name: "Int" }] },
+            elements: [
+                { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 1 },
+                { kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 2 },
+            ],
+        };
+        const ref = compileIRTuple(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.store");
+        expect(wat).toContain("global.get $__heap_ptr");
+    });
+});
+
+
+// =============================================================================
+// Array compilation
+// =============================================================================
+
+describe("compileIRArray", () => {
+    it("should compile array with length header + element stores", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRArray = {
+            kind: "ir_array", sourceId: "arr-1",
+            resolvedType: { kind: "array", element: { kind: "basic", name: "Int" } },
+            elements: [
+                { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 10 },
+                { kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 20 },
+                { kind: "ir_literal", sourceId: "l-3", resolvedType: { kind: "basic", name: "Int" }, value: 30 },
+            ],
+        };
+        const ref = compileIRArray(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        // Verify length store and element stores
+        expect(wat).toContain("i32.store");
+        expect(wat).toContain("global.get $__heap_ptr");
+    });
+});
+
+
+// =============================================================================
+// Match compilation
+// =============================================================================
+
+describe("compileIRMatch", () => {
+    it("should compile match with literal patterns", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRMatch = {
+            kind: "ir_match", sourceId: "match-1",
+            resolvedType: { kind: "basic", name: "Int" },
+            target: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 42 },
+            targetTypeName: undefined,
+            arms: [
+                {
+                    sourceId: "arm-1",
+                    pattern: { kind: "literal_pattern", value: 1 },
+                    body: [{ kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 100 }],
+                },
+                {
+                    sourceId: "arm-2",
+                    pattern: { kind: "wildcard" },
+                    body: [{ kind: "ir_literal", sourceId: "l-3", resolvedType: { kind: "basic", name: "Int" }, value: 0 }],
+                },
+            ],
+        };
+        const ref = compileIRMatch(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("if");
+        expect(wat).toContain("i32.eq");
+    });
+
+    it("should compile match with constructor patterns using targetTypeName", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.enumLayouts.set("Option", {
+            variants: [
+                { name: "None", tag: 0, fields: [], totalSize: 8 },
+                { name: "Some", tag: 1, fields: [{ name: "value", offset: 8, wasmType: binaryen.i32 }], totalSize: 16 },
+            ],
+        });
+        const ctx = new FunctionContext([]);
+        const expr: IRMatch = {
+            kind: "ir_match", sourceId: "match-1",
+            resolvedType: { kind: "basic", name: "Int" },
+            target: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "named", name: "Option" }, value: 0 },
+            targetTypeName: "Option",
+            arms: [
+                {
+                    sourceId: "arm-1",
+                    pattern: { kind: "constructor", name: "Some", fields: [{ kind: "binding", name: "v" }] },
+                    body: [{ kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 1 }],
+                },
+                {
+                    sourceId: "arm-2",
+                    pattern: { kind: "constructor", name: "None", fields: [] },
+                    body: [{ kind: "ir_literal", sourceId: "l-3", resolvedType: { kind: "basic", name: "Int" }, value: 0 }],
+                },
+            ],
+        };
+        const ref = compileIRMatch(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.load"); // tag load
+        expect(wat).toContain("if");
+    });
+
+    it("should compile match with binding pattern", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRMatch = {
+            kind: "ir_match", sourceId: "match-1",
+            resolvedType: { kind: "basic", name: "Int" },
+            target: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 42 },
+            targetTypeName: undefined,
+            arms: [
+                {
+                    sourceId: "arm-1",
+                    pattern: { kind: "binding", name: "x" },
+                    body: [{ kind: "ir_ident", sourceId: "id-1", resolvedType: { kind: "basic", name: "Int" }, name: "x", scope: "local" }],
+                },
+            ],
+        };
+        const ref = compileIRMatch(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("local.set"); // binding store
+        expect(wat).toContain("local.get"); // binding use
+    });
+});
+
+
+// =============================================================================
+// String interpolation compilation
+// =============================================================================
+
+describe("compileIRStringInterp", () => {
+    it("should compile string interp with coercion builtin", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        mod.addFunctionImport("intToString", "host", "intToString",
+            binaryen.createType([binaryen.i32]), binaryen.i32);
+        mod.addFunctionImport("string_concat", "host", "string_concat",
+            binaryen.createType([binaryen.i32, binaryen.i32]), binaryen.i32);
+
+        const ctx = new FunctionContext([]);
+        const expr: IRStringInterp = {
+            kind: "ir_string_interp", sourceId: "interp-1",
+            resolvedType: { kind: "basic", name: "String" },
+            parts: [
+                {
+                    expr: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "String" }, value: "value: " },
+                    coercionBuiltin: undefined,
+                },
+                {
+                    expr: { kind: "ir_literal", sourceId: "l-2", resolvedType: { kind: "basic", name: "Int" }, value: 42 },
+                    coercionBuiltin: "intToString",
+                },
+            ],
+        };
+        const ref = compileIRStringInterp(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("call $intToString");
+        expect(wat).toContain("call $string_concat");
+    });
+
+    it("should compile single-part string interp without concat", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRStringInterp = {
+            kind: "ir_string_interp", sourceId: "interp-1",
+            resolvedType: { kind: "basic", name: "String" },
+            parts: [
+                {
+                    expr: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "String" }, value: "hello" },
+                    coercionBuiltin: undefined,
+                },
+            ],
+        };
+        const ref = compileIRStringInterp(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.const");
+        expect(wat).not.toContain("string_concat");
+    });
+
+    it("should compile empty string interp to empty string", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRStringInterp = {
+            kind: "ir_string_interp", sourceId: "interp-1",
+            resolvedType: { kind: "basic", name: "String" },
+            parts: [],
+        };
+        const ref = compileIRStringInterp(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+    });
+});
+
+
+// =============================================================================
+// Lambda ref compilation
+// =============================================================================
+
+describe("compileIRLambdaRef", () => {
+    it("should produce error if lifted function not in table", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRLambdaRef = {
+            kind: "ir_lambda_ref", sourceId: "lam-1",
+            resolvedType: { kind: "fn_type", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" } },
+            liftedName: "__lambda_0",
+            captures: [],
+        };
+        compileIRLambdaRef(expr, cc, ctx);
+        expect(cc.errors.length).toBeGreaterThan(0);
+        expect(cc.errors[0]!.error).toBe("wasm_validation_error");
+    });
+
+    it("should compile lambda ref with no captures to closure pair", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.fnTableIndices.set("__lambda_0", 0);
+        const ctx = new FunctionContext([]);
+        const expr: IRLambdaRef = {
+            kind: "ir_lambda_ref", sourceId: "lam-1",
+            resolvedType: { kind: "fn_type", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" } },
+            liftedName: "__lambda_0",
+            captures: [],
+        };
+        const ref = compileIRLambdaRef(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        // Closure pair stores table index and env pointer
+        expect(wat).toContain("i32.store");
+        expect(wat).toContain("global.get $__heap_ptr");
+    });
+
+    it("should compile lambda ref with captures (env allocation)", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.fnTableIndices.set("__lambda_0", 0);
+        const ctx = new FunctionContext([{ name: "x", wasmType: binaryen.i32 }]);
+        const expr: IRLambdaRef = {
+            kind: "ir_lambda_ref", sourceId: "lam-1",
+            resolvedType: { kind: "fn_type", params: [], effects: ["pure"], returnType: { kind: "basic", name: "Int" } },
+            liftedName: "__lambda_0",
+            captures: [{ name: "x", resolvedType: { kind: "basic", name: "Int" } }],
+        };
+        const ref = compileIRLambdaRef(expr, cc, ctx);
+        mod.addFunction("test", binaryen.createType([binaryen.i32]), binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+        const wat = mod.emitText();
+        expect(wat).toContain("i32.store"); // env field store + closure pair stores
+        expect(wat).toContain("global.get $__heap_ptr");
+    });
+});
+
+
+// =============================================================================
+// compileIRExpr dispatcher — all kinds produce valid output
+// =============================================================================
+
+describe("compileIRExpr — all kinds dispatch", () => {
+    it("should dispatch ir_record through compileIRExpr", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        cc.recordLayouts.set("P", { fields: [{ name: "x", offset: 0, wasmType: binaryen.i32 }], totalSize: 4 });
+        const ctx = new FunctionContext([]);
+        const expr: IRExpr = {
+            kind: "ir_record", sourceId: "rec-1",
+            resolvedType: { kind: "named", name: "P" },
+            name: "P",
+            fields: [{ name: "x", value: { kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 1 }, resolvedType: { kind: "basic", name: "Int" } }],
+        };
+        const ref = compileIRExpr(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+    });
+
+    it("should dispatch ir_array through compileIRExpr", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRExpr = {
+            kind: "ir_array", sourceId: "arr-1",
+            resolvedType: { kind: "array", element: { kind: "basic", name: "Int" } },
+            elements: [{ kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 1 }],
+        };
+        const ref = compileIRExpr(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
+    });
+
+    it("should dispatch ir_tuple through compileIRExpr", () => {
+        const mod = createMod();
+        const cc = makeCC(mod);
+        const ctx = new FunctionContext([]);
+        const expr: IRExpr = {
+            kind: "ir_tuple", sourceId: "tup-1",
+            resolvedType: { kind: "tuple", elements: [{ kind: "basic", name: "Int" }] },
+            elements: [{ kind: "ir_literal", sourceId: "l-1", resolvedType: { kind: "basic", name: "Int" }, value: 1 }],
+        };
+        const ref = compileIRExpr(expr, cc, ctx);
+        mod.addFunction("test", binaryen.none, binaryen.i32, ctx.varTypes, ref);
+        expect(cc.errors).toHaveLength(0);
     });
 });
 

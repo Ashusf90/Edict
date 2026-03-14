@@ -1,67 +1,60 @@
 // =============================================================================
-// Match expression compiler — pattern matching
+// IR Match expression compiler — pattern matching
 // =============================================================================
+// The IR counterpart to compile-match.ts. Key difference:
+//
+// Uses expr.targetTypeName (pre-resolved from IR lowering) instead of the
+// 12-line type inference chain that probes ident locals, AST type annotations,
+// and type kinds to discover the matched enum name.
 
 import binaryen from "binaryen";
-import type { Expression, Pattern } from "../ast/nodes.js";
+import type { IRMatch, IRExpr } from "../ir/types.js";
+import type { Pattern } from "../ast/nodes.js";
 import { wasmValidationError } from "../errors/structured-errors.js";
 import {
     type CompilationContext,
     FunctionContext,
 } from "./types.js";
-import { compileExpr, inferExprWasmType } from "./compile-expr.js";
+import { compileIRExpr, irExprWasmType } from "./compile-ir-expr.js";
 
-export function compileMatch(
-    expr: Expression & { kind: "match" },
+
+export function compileIRMatch(
+    expr: IRMatch,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
     const { mod, strings, errors } = cc;
-    // Attempt to determine the Edict type name of the target for enum matching
-    let targetEdictTypeName: string | undefined;
-    if (expr.target.kind === "ident") {
-        const local = ctx.getLocal(expr.target.name);
-        targetEdictTypeName = local?.edictTypeName;
-    } else if (expr.target.kind === "call") {
-        // Can't easily infer return named type yet without a type env here,
-        // but let's be pragmatic if it's annotated
-    } else if ("type" in expr.target && expr.target.type && expr.target.type.kind === "named") {
-        targetEdictTypeName = expr.target.type.name;
-    } else if ("type" in expr.target && expr.target.type && expr.target.type.kind === "option") {
-        targetEdictTypeName = "Option";
-    } else if ("type" in expr.target && expr.target.type && expr.target.type.kind === "result") {
-        targetEdictTypeName = "Result";
-    }
 
-    // Infer the target and result types
-    const targetType = inferExprWasmType(expr.target, cc, ctx);
-    const matchResultType = inferExprWasmType(expr as Expression, cc, ctx);
+    // targetTypeName is pre-resolved from IR — eliminates AST probe chain
+    const targetEdictTypeName = expr.targetTypeName;
 
-    // Evaluate target once and store in a temporary local
-    const targetExpr = compileExpr(expr.target, cc, ctx);
-    const tmpIndex = ctx.addLocal(`__match_${expr.id}`, targetType);
+    // Infer WASM types from IR nodes (eliminates inferExprWasmType)
+    const targetType = irExprWasmType(expr.target);
+    const matchResultType = irExprWasmType(expr);
+
+    // Evaluate target once, store in temporary local
+    const targetExpr = compileIRExpr(expr.target, cc, ctx);
+    const tmpIndex = ctx.addLocal(`__match_${expr.sourceId}`, targetType);
     const setTarget = mod.local.set(tmpIndex, targetExpr);
     const getTarget = () => mod.local.get(tmpIndex, targetType);
 
-    // Compile body of a match arm (list of expressions → single expression)
-    function compileArmBody(body: Expression[]): binaryen.ExpressionRef {
-        const compiled = body.map((e) =>
-            compileExpr(e, cc, ctx),
-        );
+    // Compile body of a match arm (list of IR expressions)
+    function compileArmBody(body: IRExpr[]): binaryen.ExpressionRef {
+        const compiled = body.map(e => compileIRExpr(e, cc, ctx));
         if (compiled.length === 0) return mod.nop();
         if (compiled.length === 1) return compiled[0]!;
         const bodyType = body.length > 0
-            ? inferExprWasmType(body[body.length - 1]!, cc, ctx)
+            ? irExprWasmType(body[body.length - 1]!)
             : binaryen.i32;
         return mod.block(null, compiled, bodyType);
     }
 
-    // Build condition for a pattern match against the target
+    // Build condition expression for a pattern
     function compilePatternCondition(pattern: Pattern): binaryen.ExpressionRef | null {
         switch (pattern.kind) {
             case "literal_pattern": {
                 const val = pattern.value;
-                // Int64 literal pattern — value may be string or number
+                // Int64 literal pattern
                 if ((pattern as any).type?.kind === "basic" && (pattern as any).type.name === "Int64") {
                     const big = BigInt(val as string | number);
                     const low = Number(big & 0xFFFFFFFFn);
@@ -74,9 +67,7 @@ export function compileMatch(
                 if (typeof val === "boolean") {
                     return mod.i32.eq(getTarget(), mod.i32.const(val ? 1 : 0));
                 }
-                // String/float literal patterns — compare i32 representation
                 if (typeof val === "number") {
-                    // Float literal pattern — not yet supported in i32 mode
                     errors.push(wasmValidationError(`float literal patterns not yet supported in match`));
                     return null;
                 }
@@ -87,46 +78,33 @@ export function compileMatch(
                 return null;
             }
             case "wildcard":
-                return null; // always matches
+                return null;
             case "binding":
-                return null; // always matches (binding is set up in compileArmWithBinding)
+                return null;
             case "constructor": {
-                // Determine the tag value from the enum layout
-                let tagValue = -1;
-
-                if (targetEdictTypeName) {
-                    const enumLayout = cc.enumLayouts.get(targetEdictTypeName);
-                    if (enumLayout) {
-                        const variantLayout = enumLayout.variants.find(v => v.name === pattern.name);
-                        if (variantLayout) {
-                            tagValue = variantLayout.tag;
-                        } else {
-                            errors.push(wasmValidationError(`unknown variant ${pattern.name} for enum ${targetEdictTypeName}`));
-                            return null;
-                        }
-                    } else {
-                        errors.push(wasmValidationError(`unknown enum ${targetEdictTypeName}`));
-                        return null;
-                    }
-                } else {
-                    errors.push(wasmValidationError(`cannot infer enum type for match target ${expr.id}`));
+                if (!targetEdictTypeName) {
+                    errors.push(wasmValidationError(`cannot infer enum type for match target ${expr.sourceId}`));
                     return null;
                 }
-
-                if (tagValue === -1) return null;
-
-                // Load tag at offset 0 from the heap pointer (target)
+                const enumLayout = cc.enumLayouts.get(targetEdictTypeName);
+                if (!enumLayout) {
+                    errors.push(wasmValidationError(`unknown enum ${targetEdictTypeName}`));
+                    return null;
+                }
+                const variantLayout = enumLayout.variants.find(v => v.name === pattern.name);
+                if (!variantLayout) {
+                    errors.push(wasmValidationError(`unknown variant ${pattern.name} for enum ${targetEdictTypeName}`));
+                    return null;
+                }
                 const loadTag = mod.i32.load(0, 0, getTarget());
-                return mod.i32.eq(loadTag, mod.i32.const(tagValue));
+                return mod.i32.eq(loadTag, mod.i32.const(variantLayout.tag));
             }
         }
     }
 
-    // Pre-register binding locals so they're available during body compilation.
-    // We must do this before compiling arm bodies, otherwise ident lookups
-    // for bound names will fail.
-    const bindingLocals = new Map<number, number>(); // arm index → local index
-    const constructorFieldBindings = new Map<number, { localIndex: number, offset: number, wasmType: binaryen.Type }[]>();
+    // Pre-register binding locals and constructor field bindings
+    const bindingLocals = new Map<number, number>();
+    const constructorFieldBindings = new Map<number, { localIndex: number; offset: number; wasmType: binaryen.Type }[]>();
 
     for (let i = 0; i < expr.arms.length; i++) {
         const pattern = expr.arms[i]!.pattern;
@@ -139,7 +117,7 @@ export function compileMatch(
                 if (enumLayout) {
                     const variantLayout = enumLayout.variants.find(v => v.name === pattern.name);
                     if (variantLayout) {
-                        const fieldBindings: { localIndex: number, offset: number, wasmType: binaryen.Type }[] = [];
+                        const fieldBindings: { localIndex: number; offset: number; wasmType: binaryen.Type }[] = [];
                         for (let j = 0; j < pattern.fields.length; j++) {
                             const subPattern = pattern.fields[j]!;
                             if (subPattern.kind === "binding") {
@@ -149,7 +127,7 @@ export function compileMatch(
                                     fieldBindings.push({
                                         localIndex: bindIndex,
                                         offset: fieldLayout.offset,
-                                        wasmType: fieldLayout.wasmType
+                                        wasmType: fieldLayout.wasmType,
                                     });
                                 }
                             } else if (subPattern.kind !== "wildcard") {
@@ -164,14 +142,12 @@ export function compileMatch(
     }
 
     // Build nested if/else chain from arms (right to left)
-    // Start from the last arm and work backwards
     let result: binaryen.ExpressionRef = mod.unreachable();
 
     for (let i = expr.arms.length - 1; i >= 0; i--) {
         const arm = expr.arms[i]!;
         const bodyExpr = compileArmBody(arm.body);
 
-        // Wrap with binding set if this is a binding pattern
         let armExpr = bodyExpr;
         const bindIndex = bindingLocals.get(i);
         if (bindIndex !== undefined) {
@@ -194,15 +170,11 @@ export function compileMatch(
         const condition = compilePatternCondition(arm.pattern);
 
         if (condition === null) {
-            // Wildcard or binding — this arm always matches
-            // It becomes the else (or the whole result if it's the only/last arm)
             result = armExpr;
         } else {
-            // Conditional arm — if condition then this arm else previous result
             result = mod.if(condition, armExpr, result);
         }
     }
 
-    // Wrap: set target, then evaluate the if/else chain
     return mod.block(null, [setTarget, result], matchResultType);
 }

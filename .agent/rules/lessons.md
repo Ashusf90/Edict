@@ -173,3 +173,12 @@ Grep `src/builtins/domains/`. Host imports in runners ≠ language-level builtin
 
 ## 58. Normalization Must Flow Through Entire Function
 After `expandCompact()`/`migrateToLatest()`, every downstream reference must use the normalized result, not the original parameter.
+
+## 59. DCE Must Track IR Closure Captures
+`ir_lambda_ref` captures reference enclosing-scope names. `collectUsedNames` must add them or DCE eliminates the captured variable's `let` binding → closure reads uninitialized memory.
+
+## 60. Constant Folding vs Codegen Semantics
+Constant folding must not eliminate nodes that carry codegen-level semantics beyond their value: (1) if-without-else → Option wrapping, (2) float `%` → unsupported-op error, (3) string `+` → new string not in AST. Preserve the node or ensure the semantic is carried forward.
+
+## 61. IR String Interning: Scan After Optimization
+Constant folding can create NEW string values (e.g. `"hello " + "world"` → `"hello world"`) not in the original AST. Scan the optimized IR and intern strings BEFORE `toMemorySegments()`.

@@ -69,7 +69,12 @@ function collectUsedNamesExpr(expr: IRExpr, names: Set<string>): void {
             names.add(expr.name);
             break;
         case "ir_literal":
+            break;
         case "ir_lambda_ref":
+            // Lambda refs capture variables from enclosing scope — these names are "used"
+            if (expr.captures) {
+                for (const cap of expr.captures) names.add(cap.name);
+            }
             break;
         case "ir_binop":
             collectUsedNamesExpr(expr.left, names);
@@ -131,8 +136,10 @@ function mayHaveSideEffects(expr: IRExpr): boolean {
     switch (expr.kind) {
         case "ir_literal":
         case "ir_ident":
-        case "ir_lambda_ref":
             return false;
+        case "ir_lambda_ref":
+            // Lambda refs with captures allocate closure pairs on the heap
+            return (expr.captures?.length ?? 0) > 0;
         case "ir_binop":
             return mayHaveSideEffects(expr.left) || mayHaveSideEffects(expr.right);
         case "ir_unop":
@@ -211,8 +218,11 @@ function eliminateDeadLets(body: IRExpr[]): IRExpr[] {
     for (let i = 0; i < body.length; i++) {
         const expr = body[i]!;
         if (expr.kind === "ir_let") {
+            // Never eliminate the last expression — it serves as the function's
+            // implicit return value (codegen appends local.get to read it back)
+            const isLast = i === body.length - 1;
             const nameUsed = usedAfter[i]!.has(expr.name);
-            if (!nameUsed && !mayHaveSideEffects(expr.value)) {
+            if (!isLast && !nameUsed && !mayHaveSideEffects(expr.value)) {
                 // Dead let binding — skip it
                 changed = true;
                 continue;
@@ -315,7 +325,10 @@ function foldExpr(expr: IRExpr): IRExpr {
             elseBody = removeUnreachable(eliminateDeadLets(elseBody));
 
             // If condition is a literal, replace with taken branch
-            if (condition.kind === "ir_literal" && typeof condition.value === "boolean") {
+            // But NOT for if-without-else: the codegen generates Option wrapping
+            // (Some/None) which requires the ir_if structure to be preserved.
+            if (condition.kind === "ir_literal" && typeof condition.value === "boolean"
+                && elseBody.length > 0) {
                 if (condition.value) {
                     // true → take then branch
                     return wrapAsBlock(expr.sourceId, expr.resolvedType, thenBody);
@@ -410,7 +423,9 @@ function foldBinop(
                 return mkLiteral(sourceId, resolvedType, isInt ? (lv / rv) | 0 : lv / rv);
             case "%":
                 if (rv === 0) return undefined;
-                return mkLiteral(sourceId, resolvedType, isInt ? wrap32(lv % rv) : lv % rv);
+                // Don't fold float modulo — Edict doesn't support it, codegen must emit error
+                if (!isInt) return undefined;
+                return mkLiteral(sourceId, resolvedType, wrap32(lv % rv));
 
             // Comparisons
             case "==": return mkLiteral(sourceId, resolvedType, lv === rv);

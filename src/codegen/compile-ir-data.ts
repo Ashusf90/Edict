@@ -1,21 +1,42 @@
 // =============================================================================
-// Data structure expression compilers — record, tuple, enum, access, array,
+// IR Data structure expression compilers — record, tuple, enum, access, array,
 // string interpolation
 // =============================================================================
+// The IR counterpart to compile-data.ts. Key differences:
+//
+// - compileIRAccess: uses expr.targetTypeName (pre-resolved from IR) instead
+//   of the 20-line edictTypeName probe chain.
+//
+// - compileIRTuple: uses irExprWasmType instead of inferExprWasmType for
+//   element store dispatch.
+//
+// - compileIRStringInterp: reads coercionBuiltin from IRStringInterpPart
+//   instead of looking up stringInterpCoercions Map at runtime.
 
 import binaryen from "binaryen";
-import type { Expression } from "../ast/nodes.js";
-import type { TypeExpr } from "../ast/types.js";
+import type {
+    IRRecordExpr,
+    IRTuple,
+    IREnumConstructor,
+    IRAccess,
+    IRArray,
+    IRStringInterp,
+} from "../ir/types.js";
 import { wasmValidationError } from "../errors/structured-errors.js";
 import {
     type CompilationContext,
     FunctionContext,
     edictTypeToWasm,
 } from "./types.js";
-import { compileExpr, inferExprWasmType } from "./compile-expr.js";
+import { compileIRExpr, irExprWasmType } from "./compile-ir-expr.js";
 
-export function compileRecordExpr(
-    expr: Expression & { kind: "record_expr" },
+
+// =============================================================================
+// Record construction
+// =============================================================================
+
+export function compileIRRecord(
+    expr: IRRecordExpr,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
@@ -26,84 +47,75 @@ export function compileRecordExpr(
         return mod.unreachable();
     }
 
-    // Allocate heap space
-    // ptr = __heap_ptr
-    // __heap_ptr = ptr + layout.totalSize
-    const ptrIndex = ctx.addLocal(`__record_ptr_${expr.id}`, binaryen.i32);
+    // Allocate heap space: ptr = __heap_ptr; __heap_ptr += totalSize
+    const ptrIndex = ctx.addLocal(`__record_ptr_${expr.sourceId}`, binaryen.i32);
 
     const setPtr = mod.local.set(ptrIndex, mod.global.get("__heap_ptr", binaryen.i32));
     const incrementHeap = mod.global.set(
         "__heap_ptr",
         mod.i32.add(
             mod.local.get(ptrIndex, binaryen.i32),
-            mod.i32.const(layout.totalSize)
-        )
+            mod.i32.const(layout.totalSize),
+        ),
     );
 
-    // Evaluate and store each field
+    // Store each field at its layout offset
     const stores: binaryen.ExpressionRef[] = [];
     for (const fieldInit of expr.fields) {
-        const fieldLayout = layout.fields.find((f) => f.name === fieldInit.name);
+        const fieldLayout = layout.fields.find(f => f.name === fieldInit.name);
         if (!fieldLayout) {
             errors.push(wasmValidationError(`unknown field '${fieldInit.name}' on record '${expr.name}'`));
             continue;
         }
 
+        const valueExpr = compileIRExpr(fieldInit.value, cc, ctx);
         if (fieldLayout.wasmType === binaryen.f64) {
-            stores.push(
-                mod.f64.store(
-                    fieldLayout.offset,
-                    0,
-                    mod.local.get(ptrIndex, binaryen.i32),
-                    compileExpr(fieldInit.value, cc, ctx)
-                )
-            );
+            stores.push(mod.f64.store(fieldLayout.offset, 0,
+                mod.local.get(ptrIndex, binaryen.i32), valueExpr));
         } else {
-            stores.push(
-                mod.i32.store(
-                    fieldLayout.offset,
-                    0,
-                    mod.local.get(ptrIndex, binaryen.i32),
-                    compileExpr(fieldInit.value, cc, ctx)
-                )
-            );
+            stores.push(mod.i32.store(fieldLayout.offset, 0,
+                mod.local.get(ptrIndex, binaryen.i32), valueExpr));
         }
     }
 
-    // Return the pointer
-    const returnPtr = mod.local.get(ptrIndex, binaryen.i32);
-
-    return mod.block(null, [setPtr, incrementHeap, ...stores, returnPtr], binaryen.i32);
+    return mod.block(null, [
+        setPtr, incrementHeap, ...stores,
+        mod.local.get(ptrIndex, binaryen.i32),
+    ], binaryen.i32);
 }
 
-export function compileTupleExpr(
-    expr: Expression & { kind: "tuple_expr" },
+
+// =============================================================================
+// Tuple construction
+// =============================================================================
+
+export function compileIRTuple(
+    expr: IRTuple,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
     const { mod } = cc;
+    const totalSize = expr.elements.length * 8; // uniform 8-byte slots
 
-    // All elements use uniform 8-byte slots (strings are just i32 pointers)
-    const totalSize = expr.elements.length * 8;
-
-    const ptrIndex = ctx.addLocal(`__tuple_ptr_${expr.id}`, binaryen.i32);
+    const ptrIndex = ctx.addLocal(`__tuple_ptr_${expr.sourceId}`, binaryen.i32);
 
     const setPtr = mod.local.set(ptrIndex, mod.global.get("__heap_ptr", binaryen.i32));
     const incrementHeap = mod.global.set(
         "__heap_ptr",
         mod.i32.add(
             mod.local.get(ptrIndex, binaryen.i32),
-            mod.i32.const(totalSize)
-        )
+            mod.i32.const(totalSize),
+        ),
     );
 
     const stores: binaryen.ExpressionRef[] = [];
     for (let i = 0; i < expr.elements.length; i++) {
-        const elExpr = expr.elements[i]!;
+        const el = expr.elements[i]!;
         const offset = i * 8;
         const ptrExpr = mod.local.get(ptrIndex, binaryen.i32);
-        const valWasm = compileExpr(elExpr, cc, ctx);
-        const valType = inferExprWasmType(elExpr, cc, ctx);
+        const valWasm = compileIRExpr(el, cc, ctx);
+        // Use irExprWasmType instead of inferExprWasmType
+        const valType = irExprWasmType(el);
         if (valType === binaryen.f64) {
             stores.push(mod.f64.store(offset, 0, ptrExpr, valWasm));
         } else {
@@ -111,12 +123,19 @@ export function compileTupleExpr(
         }
     }
 
-    const returnPtr = mod.local.get(ptrIndex, binaryen.i32);
-    return mod.block(null, [setPtr, incrementHeap, ...stores, returnPtr], binaryen.i32);
+    return mod.block(null, [
+        setPtr, incrementHeap, ...stores,
+        mod.local.get(ptrIndex, binaryen.i32),
+    ], binaryen.i32);
 }
 
-export function compileEnumConstructor(
-    expr: Expression & { kind: "enum_constructor" },
+
+// =============================================================================
+// Enum variant construction
+// =============================================================================
+
+export function compileIREnumConstructor(
+    expr: IREnumConstructor,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
@@ -133,76 +152,75 @@ export function compileEnumConstructor(
         return mod.unreachable();
     }
 
-    const ptrIndex = ctx.addLocal(`__enum_ptr_${expr.id}`, binaryen.i32);
+    const ptrIndex = ctx.addLocal(`__enum_ptr_${expr.sourceId}`, binaryen.i32);
 
     const setPtr = mod.local.set(ptrIndex, mod.global.get("__heap_ptr", binaryen.i32));
     const incrementHeap = mod.global.set(
         "__heap_ptr",
         mod.i32.add(
             mod.local.get(ptrIndex, binaryen.i32),
-            mod.i32.const(variantLayout.totalSize)
-        )
+            mod.i32.const(variantLayout.totalSize),
+        ),
     );
 
     const stores: binaryen.ExpressionRef[] = [];
 
-    // Store tag
-    const ptrExpr = mod.local.get(ptrIndex, binaryen.i32);
-    stores.push(mod.i32.store(0, 0, ptrExpr, mod.i32.const(variantLayout.tag)));
+    // Store tag at offset 0
+    stores.push(mod.i32.store(0, 0,
+        mod.local.get(ptrIndex, binaryen.i32),
+        mod.i32.const(variantLayout.tag)));
 
-    // Store fields — all fields are uniform 8-byte slots (strings are just i32 pointers)
+    // Store fields
     for (const fieldInit of expr.fields) {
         const fieldLayout = variantLayout.fields.find(f => f.name === fieldInit.name);
-        if (!fieldLayout) continue; // Should be caught by type checker
+        if (!fieldLayout) continue;
 
-        const ptrExprForField = mod.local.get(ptrIndex, binaryen.i32);
-
+        const valueExpr = compileIRExpr(fieldInit.value, cc, ctx);
         if (fieldLayout.wasmType === binaryen.f64) {
-            stores.push(mod.f64.store(fieldLayout.offset, 0, ptrExprForField, compileExpr(fieldInit.value, cc, ctx)));
+            stores.push(mod.f64.store(fieldLayout.offset, 0,
+                mod.local.get(ptrIndex, binaryen.i32), valueExpr));
         } else {
-            stores.push(mod.i32.store(fieldLayout.offset, 0, ptrExprForField, compileExpr(fieldInit.value, cc, ctx)));
+            stores.push(mod.i32.store(fieldLayout.offset, 0,
+                mod.local.get(ptrIndex, binaryen.i32), valueExpr));
         }
     }
 
-    const returnPtr = mod.local.get(ptrIndex, binaryen.i32);
-    return mod.block(null, [setPtr, incrementHeap, ...stores, returnPtr], binaryen.i32);
+    return mod.block(null, [
+        setPtr, incrementHeap, ...stores,
+        mod.local.get(ptrIndex, binaryen.i32),
+    ], binaryen.i32);
 }
 
-export function compileAccess(
-    expr: Expression & { kind: "access" },
+
+// =============================================================================
+// Field access — record and tuple
+// =============================================================================
+
+/**
+ * Compile an IR field access expression.
+ *
+ * Uses expr.targetTypeName (pre-resolved from IR) instead of the 20-line
+ * edictTypeName probe chain in the AST path. Dispatches tuple vs record access.
+ */
+export function compileIRAccess(
+    expr: IRAccess,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
     const { mod, errors } = cc;
+    const targetTypeName = expr.targetTypeName;
 
-    // Try to resolve the target's type info from its local entry
-    let edictTypeName: string | undefined;
-    let edictType: TypeExpr | undefined;
-
-    if (expr.target.kind === "ident") {
-        const local = ctx.getLocal(expr.target.name);
-        if (local) {
-            edictTypeName = local.edictTypeName;
-            edictType = local.edictType;
-        }
-    } else if (expr.target.kind === "record_expr") {
-        edictTypeName = expr.target.name;
-    }
-
-    // Tuple access — field is a numeric index
-    // All elements use uniform 8-byte slots
-    if (edictTypeName === "__tuple" && edictType?.kind === "tuple") {
+    // Tuple access — targetTypeName is "__tuple", field is numeric index
+    if (targetTypeName === "__tuple" && expr.resolvedType) {
         const index = parseInt(expr.field, 10);
-        if (isNaN(index) || index < 0 || index >= edictType.elements.length) {
+        if (isNaN(index) || index < 0) {
             errors.push(wasmValidationError(`invalid tuple index: ${expr.field}`));
             return mod.unreachable();
         }
 
-        const elementType = edictType.elements[index]!;
-        const wasmType = edictTypeToWasm(elementType);
+        const wasmType = edictTypeToWasm(expr.resolvedType);
         const offset = index * 8;
-
-        const ptrExpr = compileExpr(expr.target, cc, ctx);
+        const ptrExpr = compileIRExpr(expr.target, cc, ctx);
 
         if (wasmType === binaryen.f64) {
             return mod.f64.load(offset, 0, ptrExpr);
@@ -211,25 +229,25 @@ export function compileAccess(
         }
     }
 
-    // Record access — existing path
-    if (!edictTypeName || edictTypeName === "__tuple") {
+    // Record access
+    if (!targetTypeName || targetTypeName === "__tuple") {
         errors.push(wasmValidationError(`cannot resolve record type for field access '${expr.field}'`));
         return mod.unreachable();
     }
 
-    const layout = cc.recordLayouts.get(edictTypeName);
+    const layout = cc.recordLayouts.get(targetTypeName);
     if (!layout) {
-        errors.push(wasmValidationError(`unknown record type: ${edictTypeName}`));
+        errors.push(wasmValidationError(`unknown record type: ${targetTypeName}`));
         return mod.unreachable();
     }
 
-    const fieldLayout = layout.fields.find((f) => f.name === expr.field);
+    const fieldLayout = layout.fields.find(f => f.name === expr.field);
     if (!fieldLayout) {
-        errors.push(wasmValidationError(`unknown field '${expr.field}' on record '${edictTypeName}'`));
+        errors.push(wasmValidationError(`unknown field '${expr.field}' on record '${targetTypeName}'`));
         return mod.unreachable();
     }
 
-    const ptrExpr = compileExpr(expr.target, cc, ctx);
+    const ptrExpr = compileIRExpr(expr.target, cc, ctx);
 
     if (fieldLayout.wasmType === binaryen.f64) {
         return mod.f64.load(fieldLayout.offset, 0, ptrExpr);
@@ -240,22 +258,22 @@ export function compileAccess(
 
 
 // =============================================================================
-// Array expression compilation
+// Array construction
 // =============================================================================
 
-export function compileArrayExpr(
-    expr: Expression & { kind: "array" },
+export function compileIRArray(
+    expr: IRArray,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
     const { mod } = cc;
     const elements = expr.elements;
     // Layout: [length: i32] [elem0: i32] [elem1: i32] ...
-    const headerSize = 4; // i32 for length
-    const elemSize = 4;   // i32 per element
+    const headerSize = 4;
+    const elemSize = 4;
     const totalSize = headerSize + elements.length * elemSize;
 
-    const ptrIndex = ctx.addLocal(`__array_ptr_${expr.id}`, binaryen.i32);
+    const ptrIndex = ctx.addLocal(`__array_ptr_${expr.sourceId}`, binaryen.i32);
 
     const setPtr = mod.local.set(ptrIndex, mod.global.get("__heap_ptr", binaryen.i32));
     const incrementHeap = mod.global.set(
@@ -266,17 +284,15 @@ export function compileArrayExpr(
         ),
     );
 
-    // Store length at offset 0
     const storeLength = mod.i32.store(
         0, 0,
         mod.local.get(ptrIndex, binaryen.i32),
         mod.i32.const(elements.length),
     );
 
-    // Store each element
     const stores: binaryen.ExpressionRef[] = [];
     for (let i = 0; i < elements.length; i++) {
-        const valueExpr = compileExpr(elements[i]!, cc, ctx);
+        const valueExpr = compileIRExpr(elements[i]!, cc, ctx);
         stores.push(
             mod.i32.store(
                 headerSize + i * elemSize,
@@ -292,12 +308,23 @@ export function compileArrayExpr(
         incrementHeap,
         storeLength,
         ...stores,
-        mod.local.get(ptrIndex, binaryen.i32), // return pointer
+        mod.local.get(ptrIndex, binaryen.i32),
     ], binaryen.i32);
 }
 
-export function compileStringInterp(
-    expr: Expression & { kind: "string_interp" },
+
+// =============================================================================
+// String interpolation
+// =============================================================================
+
+/**
+ * Compile an IR string interpolation to a chain of string_concat calls.
+ *
+ * Uses IRStringInterpPart.coercionBuiltin (pre-resolved during lowering)
+ * instead of looking up stringInterpCoercions Map at runtime.
+ */
+export function compileIRStringInterp(
+    expr: IRStringInterp,
     cc: CompilationContext,
     ctx: FunctionContext,
 ): binaryen.ExpressionRef {
@@ -310,49 +337,36 @@ export function compileStringInterp(
         return mod.i32.const(empty.offset);
     }
 
-    /**
-     * Compile a single part, wrapping it in a coercion call if the type checker
-     * recorded one (e.g. intToString for Int parts).
-     */
-    const compilePart = (part: Expression): binaryen.ExpressionRef => {
-        const compiled = compileExpr(part, cc, ctx);
-        const coercionFn = cc.typeInfo?.stringInterpCoercions.get(part.id);
-        if (!coercionFn) return compiled;
-        return mod.call(coercionFn, [compiled], binaryen.i32);
+    // Compile a single part, wrapping with coercion if needed
+    const compilePart = (part: typeof parts[number]): binaryen.ExpressionRef => {
+        const compiled = compileIRExpr(part.expr, cc, ctx);
+        if (!part.coercionBuiltin) return compiled;
+        return mod.call(part.coercionBuiltin, [compiled], binaryen.i32);
     };
 
-    // Single part → compile directly (no concat needed)
+    // Single part → no concat needed
     if (parts.length === 1) {
         return compilePart(parts[0]!);
     }
 
-    // Left-fold: concat(concat(concat(parts[0], parts[1]), parts[2]), ...)
-    // With length-prefixed strings, each part is just a single i32 pointer.
+    // Left-fold: concat(concat(parts[0], parts[1]), parts[2]), ...)
     const stmts: binaryen.ExpressionRef[] = [];
-
-    // Compile first part, save ptr to temp local
-    const accPtrIdx = ctx.addLocal(`__interp_ptr_${expr.id}`, binaryen.i32);
+    const accPtrIdx = ctx.addLocal(`__interp_ptr_${expr.sourceId}`, binaryen.i32);
     stmts.push(mod.local.set(accPtrIdx, compilePart(parts[0]!)));
 
-    // For each subsequent part, concat with accumulator
     for (let i = 1; i < parts.length; i++) {
         const partExpr = compilePart(parts[i]!);
-
-        // Save part ptr to temp local (in case the part expression is complex)
-        const tmpPartPtrIdx = ctx.addLocal(`__interp_p${i}_ptr_${expr.id}`, binaryen.i32);
+        const tmpPartPtrIdx = ctx.addLocal(`__interp_p${i}_ptr_${expr.sourceId}`, binaryen.i32);
         stmts.push(mod.local.set(tmpPartPtrIdx, partExpr));
 
-        // Call string_concat(accPtr, partPtr) — both are length-prefixed pointers
         const concatResult = mod.call("string_concat", [
             mod.local.get(accPtrIdx, binaryen.i32),
             mod.local.get(tmpPartPtrIdx, binaryen.i32),
         ], binaryen.i32);
 
-        // Save result ptr
         stmts.push(mod.local.set(accPtrIdx, concatResult));
     }
 
-    // Return the final accumulated pointer
     stmts.push(mod.local.get(accPtrIdx, binaryen.i32));
     return mod.block(null, stmts, binaryen.i32);
 }
