@@ -100,6 +100,7 @@ export interface SchemaResult {
 export interface ExamplesResult {
     count: number;
     examples: { name: string; ast: unknown; isMultiModule?: boolean }[];
+    schemaSnippet: unknown; // agent-format schema bundle (same as handleSchema("agent").schema)
 }
 
 export interface ValidateResult {
@@ -199,7 +200,8 @@ export function handleSchema(format: "full" | "minimal" | "compact" | "agent" = 
 
 export function handleExamples(): ExamplesResult {
     const examples = loadExamples();
-    return { count: examples.length, examples };
+    const agentSchema = handleSchema("agent");
+    return { count: examples.length, examples, schemaSnippet: agentSchema.schema };
 }
 
 export function handleValidate(ast: unknown): ValidateResult {

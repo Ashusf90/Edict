@@ -97,6 +97,22 @@ describe("handleExamples", () => {
         const hello = result.examples.find((e) => e.name === "hello");
         expect(hello).toBeDefined();
     });
+
+    it("includes schemaSnippet matching agent-format schema", () => {
+        const result = handleExamples();
+        const agentSchema = handleSchema("agent");
+        expect(result.schemaSnippet).toEqual(agentSchema.schema);
+    });
+
+    it("schemaSnippet contains all bootstrap fields", () => {
+        const result = handleExamples();
+        const snippet = result.schemaSnippet as Record<string, unknown>;
+        expect(snippet.schema).toBeDefined();
+        expect(snippet.compactFormat).toBeDefined();
+        expect(snippet.builtins).toBeDefined();
+        expect(snippet.effects).toBeDefined();
+        expect(snippet.schemaVersion).toBeDefined();
+    });
 });
 
 // =============================================================================
