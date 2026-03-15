@@ -182,3 +182,9 @@ Constant folding must not eliminate nodes that carry codegen-level semantics bey
 
 ## 61. IR String Interning: Scan After Optimization
 Constant folding can create NEW string values (e.g. `"hello " + "world"` → `"hello world"`) not in the original AST. Scan the optimized IR and intern strings BEFORE `toMemorySegments()`.
+
+## 62. MCP Module Circular Dependencies
+New MCP modules that import from `tools/index.ts` create cycles if they're also imported by `handlers.ts` (since tools import handlers). Trace the full import chain before deriving from `ALL_TOOLS`. Use static data or pass dependencies as function parameters instead.
+
+## 63. Miniflare workerd Sandbox Restrictions
+`workerd` (used by Miniflare 3) prevents filesystem traversal outside its sandbox root. Using `scriptPath` with a temp directory causes `can't use '..' to break out of starting directory` errors. **Fix**: Use the inline modules array API — `modules: [{ type: "ESModule", path: "worker.js", contents: script }, { type: "CompiledWasm", path: "./program.wasm", contents: wasm }]` — to provide all content in-memory. Faster, cleaner, no temp directory management.
