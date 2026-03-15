@@ -12,6 +12,7 @@ import { createRequire } from "node:module";
 import { ALL_TOOLS } from "./tools/index.js";
 import { ALL_RESOURCES } from "./resources/index.js";
 import { ALL_PROMPTS } from "./prompt-defs/index.js";
+import { EDICT_INSTRUCTIONS } from "./agent-guide.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../../package.json") as { version: string };
@@ -24,6 +25,8 @@ export function createEdictServer(): McpServer {
     const server = new McpServer({
         name: "edict-compiler",
         version,
+    }, {
+        instructions: EDICT_INSTRUCTIONS,
     });
 
     // -------------------------------------------------------------------------

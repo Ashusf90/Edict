@@ -27,6 +27,8 @@ import {
     handleSupport,
 } from "../../src/mcp/handlers.js";
 
+import { EDICT_INSTRUCTIONS, buildAgentGuide } from "../../src/mcp/agent-guide.js";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, "..", "..");
 
@@ -345,6 +347,7 @@ describe("handleSchema — format variants", () => {
         expect(combined.builtins).toBeDefined();
         expect(combined.effects).toBeDefined();
         expect(combined.schemaVersion).toBeDefined();
+        expect(combined.guide).toBeDefined();
     });
 
     it("agent format includes compact kind and key maps", () => {
@@ -369,15 +372,12 @@ describe("handleSchema — format variants", () => {
     });
 
     it("agent format token estimate is reasonable", () => {
-        const minimal = handleSchema("minimal");
-        const compact = handleSchema("compact");
         const agent = handleSchema("agent");
-        // Agent bundles minimal + compact + extras (builtins, effects, schemaVersion)
-        // Should be close to minimal + compact (within 20% overhead for the extras)
-        expect(agent.tokenEstimate).toBeLessThan(
-            (minimal.tokenEstimate + compact.tokenEstimate) * 1.2,
-        );
-        // But more than compact alone (it includes the full minimal schema)
+        // Agent bundles minimal + compact + extras (builtins, effects, schemaVersion, guide)
+        // Should be under 10K tokens total as the full bootstrap bundle
+        expect(agent.tokenEstimate).toBeLessThan(10000);
+        // But more than compact alone (it includes the full minimal schema + guide)
+        const compact = handleSchema("compact");
         expect(agent.tokenEstimate).toBeGreaterThan(compact.tokenEstimate);
     });
 });
@@ -638,5 +638,85 @@ describe("tool and resource registration", () => {
     it("edict://support is in ALL_RESOURCES", async () => {
         const { ALL_RESOURCES } = await import("../../src/mcp/resources/index.js");
         expect(ALL_RESOURCES.some((r: { uri: string }) => r.uri === "edict://support")).toBe(true);
+    });
+
+    it("edict://guide is in ALL_RESOURCES", async () => {
+        const { ALL_RESOURCES } = await import("../../src/mcp/resources/index.js");
+        expect(ALL_RESOURCES.some((r: { uri: string }) => r.uri === "edict://guide")).toBe(true);
+    });
+});
+
+// =============================================================================
+// Agent Guide — bootstrap guide for MCP-first onboarding
+// =============================================================================
+
+describe("buildAgentGuide", () => {
+    it("returns all required fields", () => {
+        const guide = buildAgentGuide();
+        expect(typeof guide.whatIsEdict).toBe("string");
+        expect(guide.whatIsEdict.length).toBeGreaterThan(0);
+        expect(Array.isArray(guide.workflow)).toBe(true);
+        expect(guide.workflow.length).toBeGreaterThanOrEqual(4);
+        expect(guide.template).toBeDefined();
+        expect(Array.isArray(guide.rules)).toBe(true);
+        expect(guide.rules.length).toBeGreaterThan(0);
+        expect(Array.isArray(guide.errorRecovery)).toBe(true);
+        expect(guide.errorRecovery.length).toBeGreaterThanOrEqual(3);
+        expect(Array.isArray(guide.builtins)).toBe(true);
+        expect(guide.builtins.length).toBeGreaterThan(0);
+        expect(typeof guide.toolReference).toBe("object");
+        expect(Object.keys(guide.toolReference).length).toBeGreaterThan(0);
+    });
+
+    it("template is a valid AST", () => {
+        const guide = buildAgentGuide();
+        const result = handleValidate(guide.template);
+        expect(result.ok).toBe(true);
+    });
+
+    it("builtins include print (derived from registry)", () => {
+        const guide = buildAgentGuide();
+        expect(guide.builtins).toContain("print");
+    });
+
+    it("guide fits within 3K token budget", () => {
+        const guide = buildAgentGuide();
+        const tokenEstimate = Math.ceil(JSON.stringify(guide).length / 4);
+        expect(tokenEstimate).toBeLessThanOrEqual(3000);
+    });
+
+    it("toolReference includes core workflow tools", () => {
+        const guide = buildAgentGuide();
+        const tools = Object.keys(guide.toolReference);
+        expect(tools).toContain("edict_schema");
+        expect(tools).toContain("edict_check");
+        expect(tools).toContain("edict_compile");
+        expect(tools).toContain("edict_run");
+    });
+
+    it("is cached — returns same reference on repeated calls", () => {
+        const first = buildAgentGuide();
+        const second = buildAgentGuide();
+        expect(first).toBe(second);
+    });
+});
+
+// =============================================================================
+// EDICT_INSTRUCTIONS — MCP server instructions
+// =============================================================================
+
+describe("EDICT_INSTRUCTIONS", () => {
+    it("is a non-empty string", () => {
+        expect(typeof EDICT_INSTRUCTIONS).toBe("string");
+        expect(EDICT_INSTRUCTIONS.length).toBeGreaterThan(0);
+    });
+
+    it("mentions edict_schema and edict_check", () => {
+        expect(EDICT_INSTRUCTIONS).toContain("edict_schema");
+        expect(EDICT_INSTRUCTIONS).toContain("edict_check");
+    });
+
+    it("mentions caching", () => {
+        expect(EDICT_INSTRUCTIONS.toLowerCase()).toContain("cache");
     });
 });

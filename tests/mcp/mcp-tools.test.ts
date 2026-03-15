@@ -154,9 +154,10 @@ describe("MCP barrel exports", () => {
     });
 
     it("ALL_RESOURCES exports the expected number of resources", () => {
-        expect(ALL_RESOURCES.length).toBe(6);
+        expect(ALL_RESOURCES.length).toBe(7);
         const uris = ALL_RESOURCES.map(r => r.uri);
         expect(uris).toContain("edict://schema/patch");
         expect(uris).toContain("edict://support");
+        expect(uris).toContain("edict://guide");
     });
 });

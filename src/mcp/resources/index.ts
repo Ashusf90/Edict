@@ -9,6 +9,7 @@ import { examplesResource } from "./examples.js";
 import { errorsResource } from "./errors.js";
 import { schemaPatchResource } from "./schema-patch.js";
 import { supportResource } from "./support.js";
+import { guideResource } from "./guide.js";
 
 /** All registered MCP resources. Add new resources by creating a file and adding to this array. */
 export const ALL_RESOURCES: EdictMcpResource[] = [
@@ -18,4 +19,5 @@ export const ALL_RESOURCES: EdictMcpResource[] = [
     errorsResource,
     schemaPatchResource,
     supportResource,
+    guideResource,
 ];

@@ -35,6 +35,7 @@ import type { ExplainResult } from "../errors/explain.js";
 import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "../migration/migrate.js";
 import { generateWorkerScaffold } from "../deploy/scaffold.js";
 import type { WorkerConfig } from "../deploy/scaffold.js";
+import { buildAgentGuide } from "./agent-guide.js";
 
 // =============================================================================
 // Support note — edit this to change the message agents see in edict_version
@@ -176,6 +177,7 @@ export function handleSchema(format: "full" | "minimal" | "compact" | "agent" = 
             builtins: Array.from(BUILTIN_FUNCTIONS.keys()),
             effects: [...VALID_EFFECTS],
             schemaVersion: CURRENT_SCHEMA_VERSION,
+            guide: buildAgentGuide(),
         };
         const text = JSON.stringify(combined);
         return { schema: combined, format: "agent", tokenEstimate: Math.ceil(text.length / 4) };
