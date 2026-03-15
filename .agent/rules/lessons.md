@@ -188,3 +188,6 @@ New MCP modules that import from `tools/index.ts` create cycles if they're also 
 
 ## 63. Miniflare workerd Sandbox Restrictions
 `workerd` (used by Miniflare 3) prevents filesystem traversal outside its sandbox root. Using `scriptPath` with a temp directory causes `can't use '..' to break out of starting directory` errors. **Fix**: Use the inline modules array API — `modules: [{ type: "ESModule", path: "worker.js", contents: script }, { type: "CompiledWasm", path: "./program.wasm", contents: wasm }]` — to provide all content in-memory. Faster, cleaner, no temp directory management.
+
+## 64. z.record MCP SDK Schema Serialization
+`z.record(z.string())` (single-arg form) breaks MCP SDK's schema serialization with `Cannot read properties of undefined (reading '_zod')`. **Fix**: Always use `z.record(z.string(), z.string())` (explicit key+value types) in MCP tool schemas. The existing `run.ts` already follows this pattern.
