@@ -306,6 +306,8 @@ export { NodeHostAdapter } from "./codegen/node-host-adapter.js";
 export { BrowserHostAdapter } from "./codegen/browser-host-adapter.js";
 export { CloudflareHostAdapter } from "./codegen/cloudflare-host-adapter.js";
 export type { CloudflareHostAdapterOptions } from "./codegen/cloudflare-host-adapter.js";
+export { DenoHostAdapter } from "./codegen/deno-host-adapter.js";
+export type { DenoHostAdapterOptions } from "./codegen/deno-host-adapter.js";
 export { EdictOomError } from "./builtins/host-helpers.js";
 
 // ---------------------------------------------------------------------------
