@@ -175,6 +175,7 @@ describe("Skill Lifecycle — crystallized intelligence pattern", () => {
     describe("compile → package → store → invoke lifecycle", () => {
         for (const { name, ast, expectedReturn } of skillPrograms) {
             it(`should crystallize and invoke "${name}" (expected: ${expectedReturn})`, async () => {
+                // Worker thread startup takes 2-5s under full suite load (see lesson #16).
                 // Compile
                 const { module, wasm, coverage } = await compileModule(ast);
 
@@ -205,7 +206,7 @@ describe("Skill Lifecycle — crystallized intelligence pattern", () => {
                 expect(invokeResult.ok).toBe(true);
                 expect(invokeResult.exitCode).toBe(0);
                 expect(invokeResult.returnValue).toBe(expectedReturn);
-            });
+            }, 30_000);
         }
     });
 
