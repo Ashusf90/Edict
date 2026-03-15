@@ -191,3 +191,6 @@ New MCP modules that import from `tools/index.ts` create cycles if they're also 
 
 ## 64. z.record MCP SDK Schema Serialization
 `z.record(z.string())` (single-arg form) breaks MCP SDK's schema serialization with `Cannot read properties of undefined (reading '_zod')`. **Fix**: Always use `z.record(z.string(), z.string())` (explicit key+value types) in MCP tool schemas. The existing `run.ts` already follows this pattern.
+
+## 65. Mental Review ≠ /review Workflow
+Thinking through the /review checklist in your head does NOT satisfy the process rule. You must run the actual `/review` workflow steps explicitly, document findings, fix them, then run a second pass. The process rule is: "Run `/review` at least twice on every implementation plan before presenting to the user." No shortcuts.

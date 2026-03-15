@@ -399,6 +399,8 @@ export type { Migration, MigrationOp, MigrationResult, MigrationSuccess, Migrati
 // ---------------------------------------------------------------------------
 export { packageSkill, typeToString } from "./skills/package.js";
 export { invokeSkill } from "./skills/invoke.js";
+export { SkillMemory } from "./skills/memory.js";
+export type { SkillSearchResult } from "./skills/memory.js";
 export type {
     SkillPackage,
     SkillMetadata,
