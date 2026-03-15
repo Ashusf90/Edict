@@ -137,7 +137,7 @@ See [docs/quickjs-feasibility-report.md](docs/quickjs-feasibility-report.md) for
 |---|---|
 | `edict_schema` | Returns the full AST JSON Schema — the spec for how to write programs |
 | `edict_version` | Returns compiler version and capability info |
-| `edict_examples` | Returns 40 example programs as JSON ASTs |
+| `edict_examples` | Returns 40 example programs as JSON ASTs (includes schema snippet) |
 | `edict_validate` | Validates AST structure (field names, types, node kinds) |
 | `edict_check` | Full pipeline: validate → resolve names → type check → effect check → verify contracts |
 | `edict_compile` | Compiles a checked AST to WASM (returns base64-encoded binary) |
@@ -152,6 +152,11 @@ See [docs/quickjs-feasibility-report.md](docs/quickjs-feasibility-report.md) for
 | `edict_import_skill` | Imports and executes a UASF skill package |
 | `edict_generate_tests` | Generates tests from Z3-verified contracts |
 | `edict_replay` | Records and replays deterministic execution traces |
+| `edict_deploy` | Compiles and deploys an Edict program to edge runtimes (Cloudflare Workers) |
+| `edict_invoke` | Invokes a deployed Edict WASM service via HTTP |
+| `edict_invoke_skill` | Invokes a UASF skill package directly |
+| `edict_package` | Packages a compiled program as a deployable skill bundle |
+| `edict_support` | Returns diagnostics and environment info for troubleshooting |
 
 ### MCP Resources
 
@@ -162,6 +167,8 @@ See [docs/quickjs-feasibility-report.md](docs/quickjs-feasibility-report.md) for
 | `edict://examples` | All example programs |
 | `edict://errors` | Machine-readable error catalog |
 | `edict://schema/patch` | JSON Schema for the AST patch protocol |
+| `edict://guide` | Agent bootstrap guide for MCP-first onboarding |
+| `edict://support` | Diagnostics and environment info |
 
 ## Example Program
 
@@ -235,9 +242,9 @@ src/
 ├── effects/       # Effect checking (call-graph propagation)
 ├── contracts/     # Contract verification (Z3/SMT integration)
 ├── codegen/       # WASM code generation (binaryen)
-│   ├── codegen.ts       # AST → WASM module orchestration
-│   ├── compile-expr.ts  # Expression compilation
-│   ├── compile-*.ts     # Specialized compilers (calls, data, match, scalars)
+│   ├── codegen.ts       # IR → WASM module orchestration
+│   ├── compile-ir-expr.ts  # IR expression compilation
+│   ├── compile-ir-*.ts  # Specialized IR compilers (calls, data, match, scalars)
 │   ├── runner.ts        # WASM execution (Node.js WebAssembly API)
 │   ├── host-adapter.ts  # EdictHostAdapter interface + platform adapters
 │   ├── closures.ts      # Closure capture and compilation
@@ -245,13 +252,16 @@ src/
 │   ├── recording-adapter.ts # Execution recording for replay
 │   ├── replay-adapter.ts  # Deterministic replay from recorded traces
 │   └── string-table.ts  # String interning for WASM memory
+├── ir/            # Mid-level IR (lowering, optimization)
 ├── builtins/      # Builtin registry and domain-specific builtins
 ├── compact/       # Compact AST format (token-efficient for agents)
 ├── compose/       # Composable program fragments
+├── deploy/        # Edge deployment scaffolding (Cloudflare Workers)
 ├── incremental/   # Incremental checking (dependency graph + diff)
 ├── lint/          # Non-blocking quality warnings
 ├── patch/         # Surgical AST patching by nodeId
 ├── migration/     # Schema version migration (auto-upgrade older ASTs)
+├── skills/        # Skill packaging and invocation
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 

@@ -37,9 +37,9 @@ npm run mcp       # stdio transport
 npx edict-lang    # after npm install
 ```
 
-**Tools**: `edict_schema`, `edict_version`, `edict_examples`, `edict_validate`, `edict_check`, `edict_compile`, `edict_run`, `edict_patch`, `edict_errors`, `edict_lint`, `edict_debug`, `edict_compose`, `edict_explain`, `edict_export`, `edict_import_skill`, `edict_generate_tests`, `edict_replay`
+**Tools**: `edict_schema`, `edict_version`, `edict_examples`, `edict_validate`, `edict_check`, `edict_compile`, `edict_run`, `edict_patch`, `edict_errors`, `edict_lint`, `edict_debug`, `edict_compose`, `edict_explain`, `edict_export`, `edict_import_skill`, `edict_generate_tests`, `edict_replay`, `edict_deploy`, `edict_invoke`, `edict_invoke_skill`, `edict_package`, `edict_support`
 
-**Resources**: `edict://schema`, `edict://schema/minimal`, `edict://examples`, `edict://errors`, `edict://schema/patch`
+**Resources**: `edict://schema`, `edict://schema/minimal`, `edict://examples`, `edict://errors`, `edict://schema/patch`, `edict://guide`, `edict://support`
 
 ## The Agent Loop
 
@@ -61,13 +61,16 @@ src/
 ├── effects/       # Phase 3: Effect checking (call-graph propagation)
 ├── contracts/     # Phase 4: Contract verification (Z3/SMT)
 ├── codegen/       # Phase 5: WASM generation (binaryen) + execution
+├── ir/            # Mid-level IR (lowering, optimization)
 ├── builtins/      # Builtin registry
 ├── compact/       # Token-efficient compact AST format
 ├── compose/       # Composable program fragments
+├── deploy/        # Edge deployment scaffolding (Cloudflare Workers)
 ├── incremental/   # Incremental checking (dependency graph + diff)
 ├── lint/          # Non-blocking quality warnings
 ├── patch/         # Surgical AST patching by nodeId
 ├── migration/     # Schema version migration (auto-upgrade older ASTs)
+├── skills/        # Skill packaging and invocation
 ├── mcp/           # MCP server (tools + resources)
 └── errors/        # Structured error types
 

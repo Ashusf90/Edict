@@ -24,13 +24,16 @@ src/
 ├── effects/       # Effect checking (call-graph propagation)
 ├── contracts/     # Contract verification (Z3/SMT integration)
 ├── codegen/       # WASM code generation (binaryen)
+├── ir/            # Mid-level IR (lowering, optimization)
 ├── builtins/      # Builtin registry and domain-specific builtins
 ├── compact/       # Compact AST format (token-efficient for agents)
 ├── compose/       # Composable program fragments
+├── deploy/        # Edge deployment scaffolding (Cloudflare Workers)
 ├── incremental/   # Incremental checking (dependency graph + diff)
 ├── lint/          # Non-blocking quality warnings
 ├── patch/         # Surgical AST patching by nodeId
 ├── migration/     # Schema version migration (auto-upgrade older ASTs)
+├── skills/        # Skill packaging and invocation
 ├── mcp/           # MCP server (tools + resources + prompts)
 └── errors/        # Structured error types
 

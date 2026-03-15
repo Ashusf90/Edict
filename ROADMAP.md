@@ -196,7 +196,7 @@ interface Contract {
 ```
 edict.schema()          → JSON Schema (the full AST spec)
 edict.version()         → Compiler version and capability info
-edict.examples()        → 40 example programs as AST JSON
+edict.examples()        → 40 example programs as AST JSON (with schema snippet)
 edict.validate(ast)     → StructuredError[] | "ok"
 edict.check(ast)        → StructuredError[] | "ok"       // types + effects + contracts
 edict.compile(ast)      → { wasm: Base64 } | StructuredError[]
@@ -204,6 +204,18 @@ edict.run(wasm)         → { output: string, exitCode: number }
 edict.patch(ast, ops)   → Apply targeted AST patches by nodeId and re-check
 edict.errors()          → Machine-readable catalog of all error types
 edict.lint(ast)         → Non-blocking quality warnings
+edict.debug(wasm,opts)  → Execution tracing and crash diagnostics
+edict.compose(frags)    → Combine composable program fragments
+edict.explain(query)    → Explain AST nodes, errors, or compiler behavior
+edict.export(ast)       → Package a program as a UASF portable skill
+edict.import_skill(pkg) → Import and execute a UASF skill package
+edict.generate_tests()  → Generate tests from Z3-verified contracts
+edict.replay(trace)     → Record and replay deterministic execution traces
+edict.deploy(ast,cfg)   → Compile and deploy to edge runtimes (Cloudflare Workers)
+edict.invoke(url,input) → Invoke a deployed WASM service via HTTP
+edict.invoke_skill(pkg) → Invoke a UASF skill package directly
+edict.package(ast)      → Package a compiled program as a deployable skill bundle
+edict.support()         → Diagnostics and environment info for troubleshooting
 ```
 
 **The full agent loop**:
@@ -248,7 +260,7 @@ Multi-file programs use a simple module system:
 | **5** | WASM Code Gen | ✅ Complete |
 | **6** | MCP Toolchain | ✅ Complete |
 
-All 6 phases are implemented and shipping (v1.14.0+). 2245+ tests across 122 test files. 40 example programs.
+All 6 phases are implemented and shipping (v1.19.0+). 2357 tests across 126 test files. 40 example programs.
 
 ---
 
@@ -272,15 +284,15 @@ With the full pipeline operational, these are the open areas for further develop
 
 | Area | Issues | Impact |
 |---|---|---|
-| **Mid-level IR** | #89 | Introduce IR between AST and WASM for optimizations and retargetability. |
-| **Effect polymorphism** | #94 | ✅ Complete — effect variables in fn_type, inference at call sites, codegen (erased). |
-| **Edge deployment** | #77 | Deploy compiled WASM to Cloudflare Workers, Deno Deploy, etc. |
-| **Deploy pipeline** | #78 | One-step `edict_deploy` MCP tool: AST → WASM → live service. |
+| **Edge deployment** | #77 | Deploy compiled WASM to Cloudflare Workers, Deno Deploy, etc. Scaffold generator and Cloudflare adapter implemented; remaining cloud targets open. |
+| **Deploy pipeline** | #78 | One-step `edict_deploy` MCP tool: AST → WASM → live service. Tool and `edict_invoke` implemented; additional deploy targets open. |
 | **Self-hosting** | #81, #134 ✅ | QuickJS feasibility proven: check pipeline (phases 1–3) runs at 3.7x slowdown, 357 KB bundle. Codegen blocked by binaryen. See [report](docs/quickjs-feasibility-report.md). |
 
 ### Recently Completed
 
 | Area | Issues | Outcome |
 |---|---|---|
+| **Mid-level IR** | #89 ✅ | Full IR pipeline: AST → IR lowering → optimization → WASM codegen. All codegen routes through IR. |
+| **Effect polymorphism** | #94 ✅ | Effect variables in fn_type, inference at call sites, codegen (erased). |
 | **Type system reconciliation** | #87 ✅ | Resolved via honest monomorphism: `unsupported_container` lint warning derived from builtin registry. |
 | **Browser compilation** | #75 ✅ | Full pipeline in browser: phases 1-5, binaryen codegen, Z3 contract verification, WASM execution. |
