@@ -137,7 +137,7 @@ See [docs/quickjs-feasibility-report.md](docs/quickjs-feasibility-report.md) for
 |---|---|
 | `edict_schema` | Returns the full AST JSON Schema — the spec for how to write programs |
 | `edict_version` | Returns compiler version and capability info |
-| `edict_examples` | Returns 40 example programs as JSON ASTs (includes schema snippet) |
+| `edict_examples` | Returns 41 example programs as JSON ASTs (includes schema snippet) |
 | `edict_validate` | Validates AST structure (field names, types, node kinds) |
 | `edict_check` | Full pipeline: validate → resolve names → type check → effect check → verify contracts |
 | `edict_compile` | Compiles a checked AST to WASM (returns base64-encoded binary) |
@@ -266,7 +266,7 @@ src/
 └── errors/        # Structured error types
 
 tests/             # 2414 tests across 129 files
-examples/          # 40 example programs (⭐→⭐⭐⭐ difficulty in README)
+examples/          # 41 example programs (⭐→⭐⭐⭐ difficulty in README)
 schema/            # Auto-generated JSON Schema
 ```
 

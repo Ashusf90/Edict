@@ -1,0 +1,215 @@
+{
+    "kind": "module",
+    "id": "mod-edge-api-001",
+    "name": "edge-api-handler",
+    "schemaVersion": "1.1",
+    "imports": [],
+    "definitions": [
+        {
+            "kind": "fn",
+            "id": "fn-transform-001",
+            "name": "transformInput",
+            "params": [
+                {
+                    "kind": "param",
+                    "id": "param-input-001",
+                    "name": "input",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    }
+                }
+            ],
+            "effects": [
+                "pure"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "String"
+            },
+            "contracts": [
+                {
+                    "kind": "pre",
+                    "id": "pre-nonempty-001",
+                    "condition": {
+                        "kind": "binop",
+                        "id": "binop-len-001",
+                        "op": ">",
+                        "left": {
+                            "kind": "call",
+                            "id": "call-len-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-strlen-001",
+                                "name": "string_length"
+                            },
+                            "args": [
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-input-pre-001",
+                                    "name": "input"
+                                }
+                            ]
+                        },
+                        "right": {
+                            "kind": "literal",
+                            "id": "lit-zero-pre-001",
+                            "value": 0
+                        }
+                    }
+                }
+            ],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-upper-001",
+                    "name": "upper",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-upper-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-upper-001",
+                            "name": "toUpperCase"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-input-001",
+                                "name": "input"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "let",
+                    "id": "let-len-001",
+                    "name": "len",
+                    "type": {
+                        "kind": "basic",
+                        "name": "Int"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-len-body-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-strlen-body-001",
+                            "name": "string_length"
+                        },
+                        "args": [
+                            {
+                                "kind": "ident",
+                                "id": "ident-input-body-001",
+                                "name": "input"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "string_interp",
+                    "id": "interp-result-001",
+                    "parts": [
+                        {
+                            "kind": "ident",
+                            "id": "ident-upper-ret-001",
+                            "name": "upper"
+                        },
+                        {
+                            "kind": "literal",
+                            "id": "lit-bracket-001",
+                            "value": " ("
+                        },
+                        {
+                            "kind": "call",
+                            "id": "call-itos-001",
+                            "fn": {
+                                "kind": "ident",
+                                "id": "ident-itos-001",
+                                "name": "intToString"
+                            },
+                            "args": [
+                                {
+                                    "kind": "ident",
+                                    "id": "ident-len-ret-001",
+                                    "name": "len"
+                                }
+                            ]
+                        },
+                        {
+                            "kind": "literal",
+                            "id": "lit-chars-001",
+                            "value": " chars)"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "kind": "fn",
+            "id": "fn-main-001",
+            "name": "main",
+            "params": [],
+            "effects": [
+                "io"
+            ],
+            "returnType": {
+                "kind": "basic",
+                "name": "Int"
+            },
+            "contracts": [],
+            "body": [
+                {
+                    "kind": "let",
+                    "id": "let-result-001",
+                    "name": "result",
+                    "type": {
+                        "kind": "basic",
+                        "name": "String"
+                    },
+                    "value": {
+                        "kind": "call",
+                        "id": "call-transform-001",
+                        "fn": {
+                            "kind": "ident",
+                            "id": "ident-transform-001",
+                            "name": "transformInput"
+                        },
+                        "args": [
+                            {
+                                "kind": "literal",
+                                "id": "lit-hello-001",
+                                "value": "hello world"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "kind": "call",
+                    "id": "call-print-001",
+                    "fn": {
+                        "kind": "ident",
+                        "id": "ident-print-001",
+                        "name": "print"
+                    },
+                    "args": [
+                        {
+                            "kind": "ident",
+                            "id": "ident-result-001",
+                            "name": "result"
+                        }
+                    ]
+                },
+                {
+                    "kind": "literal",
+                    "id": "lit-exit-001",
+                    "value": 0
+                }
+            ]
+        }
+    ]
+}

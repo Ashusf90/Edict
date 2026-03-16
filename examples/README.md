@@ -29,6 +29,7 @@ Start with ⭐ **Beginner** examples to learn the basics, then progress through 
 | [arrays](arrays.edict.json) | `array`, `array_length`, `array_get`, `array_push`, `array_concat` | Array builtins: create, query, mutate, slice, reverse |
 | [constants](constants.edict.json) | `const`, `block`, `literal_pattern`, `and`, `or`, `not` | Constants, block expressions, literal pattern matching, boolean ops |
 | [crypto](crypto.edict.json) | `sha256`, `md5`, `hmac` | Cryptographic hashing and HMAC authentication |
+| [edge-api-handler](edge-api-handler.edict.json) | `pre` contract, `string_length`, `toUpperCase`, `print`, deploy | Edge deployment example: string transformation API handler with contracts |
 | [int64](int64.edict.json) | `intToInt64`, `int64ToInt`, `int64ToFloat`, `int64ToString` | 64-bit integer conversions and arithmetic |
 | [json](json.edict.json) | `enum`, `match`, nested `enum_constructor` | JSON-like data model using recursive enum variants |
 | [intent-declarations](intent-declarations.edict.json) | `intent`, `fn`, contracts | Functions with structured intent metadata |
