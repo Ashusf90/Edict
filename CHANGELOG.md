@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.20.0](https://github.com/Sowiedu/Edict/compare/v1.19.0...v1.20.0) (2026-03-16)
+
+
+### Features
+
+* add edict_invoke MCP tool for remote WASM service invocation ([#158](https://github.com/Sowiedu/Edict/issues/158)) ([b5475f7](https://github.com/Sowiedu/Edict/commit/b5475f7ca38841130c9df905837469aa36927394))
+* add Miniflare integration test for edge deployment pipeline ([#160](https://github.com/Sowiedu/Edict/issues/160)) ([d76410a](https://github.com/Sowiedu/Edict/commit/d76410a9bee1446bcd704b4e6d2fcdefb1bbf99e))
+* **codegen:** add DenoHostAdapter for Deno Deploy edge runtime ([#159](https://github.com/Sowiedu/Edict/issues/159)) ([d254079](https://github.com/Sowiedu/Edict/commit/d2540797d85ad96c0f60afcbff3c19480b617ad4))
+* **deploy:** wire up Cloudflare Workers API deployment ([a7b0fef](https://github.com/Sowiedu/Edict/commit/a7b0fef2b46dd9f96edaaf5833d8b239c9e9af7e)), closes [#165](https://github.com/Sowiedu/Edict/issues/165)
+* **mcp:** agent bootstrap guide for MCP-first onboarding ([#179](https://github.com/Sowiedu/Edict/issues/179)) ([b493a14](https://github.com/Sowiedu/Edict/commit/b493a145f9726e935913ff1503bc62e8dd546370)), closes [#178](https://github.com/Sowiedu/Edict/issues/178)
+* **skills:** add SkillMemory adapter with keyword search and execution ([#157](https://github.com/Sowiedu/Edict/issues/157)) ([8e8d554](https://github.com/Sowiedu/Edict/commit/8e8d5545d2bec626912508f42a4f0772f2fcec01))
+
+
+### Bug Fixes
+
+* **tests:** increase skill-lifecycle per-test timeout to 30s ([888b9cf](https://github.com/Sowiedu/Edict/commit/888b9cffabfcb2c11115a149971017092ac4fb60))
+
 ## [1.19.0](https://github.com/Sowiedu/Edict/compare/v1.18.0...v1.19.0) (2026-03-14)
 
 
