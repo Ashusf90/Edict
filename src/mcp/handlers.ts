@@ -35,6 +35,7 @@ import type { ExplainResult } from "../errors/explain.js";
 import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "../migration/migrate.js";
 import { generateWorkerScaffold } from "../deploy/scaffold.js";
 import type { WorkerConfig } from "../deploy/scaffold.js";
+import { deployToCloudflare } from "../deploy/cloudflare-api.js";
 import { buildAgentGuide } from "./agent-guide.js";
 
 // =============================================================================
@@ -719,6 +720,8 @@ export interface DeployResult {
     url?: string;
     status?: string;
     errors?: StructuredError[];
+    /** Env vars required for live deployment (set when falling back to bundle-only). */
+    credentialsRequired?: string[];
 }
 
 export async function handleDeploy(
@@ -785,7 +788,51 @@ export async function handleDeploy(
                 };
             }
 
-            // Serialize bundle files: text stays as string, binary → base64
+            const commonMeta = {
+                wasmSize: compileResult.wasm.length,
+                verified,
+                effects: Array.from(allEffects),
+                contracts: contractCount,
+            };
+
+            // Live deployment when credentials are available
+            const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
+            const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+
+            if (cfApiToken && cfAccountId) {
+                const deployResult = await deployToCloudflare({
+                    accountId: cfAccountId,
+                    apiToken: cfApiToken,
+                    scriptName: workerName,
+                    bundle: scaffoldResult.bundle,
+                    compatibilityDate: config?.compatibilityDate,
+                });
+
+                if (deployResult.ok) {
+                    return {
+                        ok: true,
+                        target: "cloudflare",
+                        ...commonMeta,
+                        url: `${deployResult.url}${config?.route || ""}`,
+                        status: "live",
+                    };
+                }
+
+                return {
+                    ok: false,
+                    target: "cloudflare",
+                    errors: [{
+                        error: "deploy_failed",
+                        code: deployResult.code,
+                        reason: deployResult.error,
+                        ...(deployResult.responseBody !== undefined
+                            ? { responseBody: deployResult.responseBody }
+                            : {}),
+                    } as unknown as StructuredError],
+                };
+            }
+
+            // Fallback: bundle-only when no credentials
             const bundle = scaffoldResult.bundle.files.map(f => ({
                 path: f.path,
                 content: f.content instanceof Uint8Array
@@ -797,12 +844,10 @@ export async function handleDeploy(
                 ok: true,
                 target: "cloudflare",
                 bundle,
-                wasmSize: compileResult.wasm.length,
-                verified,
-                effects: Array.from(allEffects),
-                contracts: contractCount,
+                ...commonMeta,
                 url: `https://${workerName}.workers.dev${config?.route || ""}`,
                 status: "bundled",
+                credentialsRequired: ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"],
             };
         }
 

@@ -70,6 +70,8 @@ export { optimize } from "./ir/optimize.js";
 // ---------------------------------------------------------------------------
 export { generateWorkerScaffold, getHostBuiltinNames } from "./deploy/scaffold.js";
 export type { WorkerConfig, WorkerBundle, WorkerBundleFile, ScaffoldResult } from "./deploy/scaffold.js";
+export { deployToCloudflare } from "./deploy/cloudflare-api.js";
+export type { CloudflareDeployConfig, CloudflareDeployResult } from "./deploy/cloudflare-api.js";
 
 // ---------------------------------------------------------------------------
 // Full Pipeline: validate → resolve → typeCheck → effectCheck → contractVerify

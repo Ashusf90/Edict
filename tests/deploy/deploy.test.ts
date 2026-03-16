@@ -2,7 +2,7 @@
 // Deploy Handler Tests — edict_deploy MCP tool handler
 // =============================================================================
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { handleDeploy } from "../../src/mcp/handlers.js";
 
 // ---------------------------------------------------------------------------
@@ -193,5 +193,105 @@ describe("handleDeploy: error paths", () => {
         expect(result.ok).toBe(false);
         expect(result.errors).toBeDefined();
         expect(result.errors!.length).toBeGreaterThan(0);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Cloudflare: no credentials → fallback to bundled
+// ---------------------------------------------------------------------------
+
+describe("handleDeploy: cloudflare without credentials", () => {
+    afterEach(() => {
+        delete process.env.CLOUDFLARE_API_TOKEN;
+        delete process.env.CLOUDFLARE_ACCOUNT_ID;
+    });
+
+    it("falls back to bundled status with credentialsRequired", async () => {
+        // Ensure no credentials are set
+        delete process.env.CLOUDFLARE_API_TOKEN;
+        delete process.env.CLOUDFLARE_ACCOUNT_ID;
+
+        const result = await handleDeploy(VALID_AST, "cloudflare", { name: "my-worker" });
+        expect(result.ok).toBe(true);
+        expect(result.status).toBe("bundled");
+        expect(result.credentialsRequired).toEqual(["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]);
+        expect(result.bundle).toBeDefined();
+        expect(result.bundle).toHaveLength(3);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Cloudflare: with credentials → live deploy (mocked fetch)
+// ---------------------------------------------------------------------------
+
+describe("handleDeploy: cloudflare with credentials", () => {
+    afterEach(() => {
+        delete process.env.CLOUDFLARE_API_TOKEN;
+        delete process.env.CLOUDFLARE_ACCOUNT_ID;
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+    });
+
+    it("deploys live when credentials are set", async () => {
+        process.env.CLOUDFLARE_API_TOKEN = "test-token";
+        process.env.CLOUDFLARE_ACCOUNT_ID = "test-account";
+
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ success: true }),
+        });
+        vi.stubGlobal("fetch", mockFetch);
+
+        const result = await handleDeploy(VALID_AST, "cloudflare", { name: "live-worker" });
+        expect(result.ok).toBe(true);
+        expect(result.status).toBe("live");
+        expect(result.url).toContain("live-worker.workers.dev");
+        expect(result.bundle).toBeUndefined(); // No bundle in live mode
+        expect(result.credentialsRequired).toBeUndefined();
+
+        // Verify fetch called Cloudflare API
+        expect(mockFetch).toHaveBeenCalledOnce();
+        const [url] = mockFetch.mock.calls[0];
+        expect(url).toContain("/accounts/test-account/workers/scripts/live-worker");
+    });
+
+    it("includes route in live URL", async () => {
+        process.env.CLOUDFLARE_API_TOKEN = "test-token";
+        process.env.CLOUDFLARE_ACCOUNT_ID = "test-account";
+
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ success: true }),
+        });
+        vi.stubGlobal("fetch", mockFetch);
+
+        const result = await handleDeploy(VALID_AST, "cloudflare", {
+            name: "api-worker",
+            route: "/v1/process",
+        });
+        expect(result.ok).toBe(true);
+        expect(result.url).toBe("https://api-worker.workers.dev/v1/process");
+    });
+
+    it("propagates API errors as structured deploy_failed", async () => {
+        process.env.CLOUDFLARE_API_TOKEN = "bad-token";
+        process.env.CLOUDFLARE_ACCOUNT_ID = "test-account";
+
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 403,
+            text: async () => JSON.stringify({ success: false, errors: [{ message: "Forbidden" }] }),
+        });
+        vi.stubGlobal("fetch", mockFetch);
+
+        const result = await handleDeploy(VALID_AST, "cloudflare", { name: "fail-worker" });
+        expect(result.ok).toBe(false);
+        expect(result.errors).toBeDefined();
+        expect(result.errors!.length).toBe(1);
+        expect((result.errors![0] as any).error).toBe("deploy_failed");
+        expect((result.errors![0] as any).code).toBe("api_error");
+        expect((result.errors![0] as any).responseBody).toContain("Forbidden");
     });
 });
