@@ -172,6 +172,7 @@ describe("body-type-match — if without else (Option)", () => {
                         { kind: "param", id: "p-b", name: "b", type: { kind: "basic", name: "Bool" } },
                     ],
                     effects: ["pure"], contracts: [],
+                    returnType: { kind: "option", inner: { kind: "basic", name: "Int" } },
                     body: [
                         {
                             kind: "if", id: "if-1",
