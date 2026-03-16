@@ -233,6 +233,20 @@ const DEFAULT_ARRAYS: Record<string, string[]> = {
     fn: ["effects", "contracts"],
 };
 
+/**
+ * Default scalar values for node kinds where omitting a field has an obvious
+ * safe default.  Auto-injected during expansion to save agent tokens.
+ *
+ * - fn.returnType: defaults to `{ kind: "basic", name: "Int" }` — the most
+ *   common return type; agents can override for String/Bool/etc.
+ * - arm.pattern: defaults to `{ kind: "wildcard" }` — a bare arm with only a
+ *   body acts as a catch-all.
+ */
+const DEFAULT_VALUES: Record<string, Record<string, unknown>> = {
+    fn: { returnType: { kind: "basic", name: "Int" } },
+    arm: { pattern: { kind: "wildcard" } },
+};
+
 // =============================================================================
 // Expansion + Normalization
 // =============================================================================
@@ -334,6 +348,15 @@ export function expandCompact(ast: unknown): unknown {
             for (const field of DEFAULT_ARRAYS[kind]!) {
                 if (!(field in expanded)) {
                     expanded[field] = [];
+                }
+            }
+        }
+
+        // --- Step 5b: Auto-inject default scalar values ---
+        if (kind && Object.hasOwn(DEFAULT_VALUES, kind)) {
+            for (const [field, defaultVal] of Object.entries(DEFAULT_VALUES[kind]!)) {
+                if (!(field in expanded)) {
+                    expanded[field] = defaultVal;
                 }
             }
         }

@@ -1028,3 +1028,85 @@ describe("default empty arrays", () => {
         }
     });
 });
+
+// =============================================================================
+// Default scalar values — auto-inject missing returnType / pattern
+// =============================================================================
+
+describe("default scalar values", () => {
+    it("auto-injects returnType: { kind: 'basic', name: 'Int' } on fn without returnType", () => {
+        const input = {
+            kind: "fn", id: "fn1", name: "main",
+            params: [], effects: ["pure"], contracts: [],
+            body: [{ kind: "literal", id: "l1", value: 42 }],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        expect(result.returnType).toEqual({ kind: "basic", name: "Int" });
+    });
+
+    it("preserves explicitly-provided returnType", () => {
+        const input = {
+            kind: "fn", id: "fn1", name: "greet",
+            params: [], effects: ["pure"], contracts: [],
+            returnType: { kind: "basic", name: "String" },
+            body: [{ kind: "literal", id: "l1", value: "hi" }],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        expect(result.returnType).toEqual({ kind: "basic", name: "String" });
+    });
+
+    it("auto-injects pattern: { kind: 'wildcard' } on arm without pattern", () => {
+        const input = {
+            kind: "arm", id: "a1",
+            body: [{ kind: "literal", id: "l1", value: 0 }],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        expect(result.pattern).toEqual({ kind: "wildcard" });
+    });
+
+    it("preserves explicitly-provided pattern on arm", () => {
+        const input = {
+            kind: "arm", id: "a1",
+            pattern: { kind: "literal_pattern", value: 42 },
+            body: [{ kind: "literal", id: "l1", value: 42 }],
+        };
+        const result = expandCompact(input) as Record<string, unknown>;
+        expect(result.pattern).toEqual({ kind: "literal_pattern", value: 42 });
+    });
+
+    it("works with compact format fn", () => {
+        const compact = {
+            k: "fn", i: "fn1", n: "main",
+            ps: [], fx: ["pure"], ct: [],
+            b: [{ k: "lit", i: "l1", v: 0 }],
+        };
+        const result = expandCompact(compact) as Record<string, unknown>;
+        expect(result.returnType).toEqual({ kind: "basic", name: "Int" });
+    });
+
+    it("works with compact format arm", () => {
+        const compact = {
+            k: "a", i: "a1",
+            b: [{ k: "lit", i: "l1", v: 0 }],
+        };
+        const result = expandCompact(compact) as Record<string, unknown>;
+        expect(result.pattern).toEqual({ kind: "wildcard" });
+    });
+
+    it("E2E: fn without returnType through check() defaults to Int", async () => {
+        const { check } = await import("../../src/check.js");
+        const ast = {
+            kind: "module", id: "m1", name: "test",
+            imports: [],
+            definitions: [
+                {
+                    kind: "fn", id: "fn1", name: "main",
+                    params: [], effects: ["pure"], contracts: [],
+                    body: [{ kind: "literal", id: "l1", value: 42 }],
+                },
+            ],
+        };
+        const result = await check(ast);
+        expect(result.ok).toBe(true);
+    });
+});
