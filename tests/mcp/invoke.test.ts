@@ -147,3 +147,43 @@ describe("edict_invoke registration", () => {
         expect(version.features.invoke).toBe(true);
     });
 });
+
+
+import { invokeTool } from "../../src/mcp/tools/invoke.js";
+
+describe("invokeTool MCP wrapper", () => {
+
+  it("returns valid JSON content for success case", async () => {
+    const result = await invokeTool.handler({
+      url: "https://example.com",
+      method: "GET"
+    });
+
+    expect(result).toBeDefined();
+    expect(result.contents).toBeDefined();
+
+    const content = result.contents[0];
+
+    // JSON should be valid
+    expect(() => JSON.parse(content.text)).not.toThrow();
+
+    // success → isError false
+    expect(result.isError).toBe(false);
+  });
+
+
+  it("sets isError correctly when request fails", async () => {
+    const result = await invokeTool.handler({
+      url: "invalid-url",
+      method: "GET"
+    });
+
+    const content = result.contents[0];
+
+    expect(() => JSON.parse(content.text)).not.toThrow();
+
+    // error → isError true
+    expect(result.isError).toBe(true);
+  });
+
+});
