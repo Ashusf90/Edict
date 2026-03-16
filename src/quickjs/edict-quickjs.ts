@@ -66,6 +66,8 @@ globalThis.TextDecoder = class TextDecoder {
 export interface EdictQuickJSOptions {
     /** Override the default bundle path (dist/edict-quickjs-check.js) */
     bundlePath?: string;
+    /** Pass the IIFE bundle source directly (avoids readFileSync — use in fs-free environments) */
+    bundleSource?: string;
     /** Memory limit in bytes (default: 256MB) */
     memoryLimit?: number;
     /** Stack size in bytes (default: 1MB) */
@@ -123,7 +125,7 @@ export class EdictQuickJS {
         pfResult.value.dispose();
 
         // Load the IIFE compiler bundle
-        const bundleSource = readFileSync(bundlePath, "utf-8");
+        const bundleSource = options?.bundleSource ?? readFileSync(bundlePath, "utf-8");
         const loadResult = vm.evalCode(bundleSource, "edict-bundle.js");
         if (loadResult.error) {
             const err = vm.dump(loadResult.error);
